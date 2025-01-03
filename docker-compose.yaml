@@ -1,0 +1,101 @@
+# 2025-01-02 // maxylan@torpssons.se
+networks:
+  magenet:
+    driver: bridge
+
+volumes:
+  mage.db_data:
+
+services:
+  mage.storage: # Postgresql Database
+    container_name: "${STORAGE_NAME}"
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - "${STORAGE_MOUNT_POINT}/init:/docker-entrypoint-initdb.d"
+      - "mage.db_data:/${STORAGE_VOLUME_TARGET}"
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GATE_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      STORAGE_NAME: "${STORAGE_NAME}"
+      STORAGE_VERSION: "${STORAGE_VERSION}"
+      STORAGE_ENVIRONMENT: "${STORAGE_ENVIRONMENT}"
+    env_file:
+      - "${STORAGE_CONFIGURATION_FILE}"
+    networks:
+      - magenet
+    ports:
+      - "${STORAGE_PORT}:${STORAGE_PORT}"
+
+  mage.reception: # ASP.NET 8.0 Backend
+    container_name: "${RECEPTION_NAME}"
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    restart: unless-stopped
+    working_dir: "${RECEPTION_VOLUME_TARGET}"
+    command: [ "dotnet", "run", "-c", "Debug" ]
+    volumes:
+      - "${RECEPTION_MOUNT_POINT}:${RECEPTION_VOLUME_TARGET}"
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GATE_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      RECEPTION_NAME: "${RECEPTION_NAME}"
+      RECEPTION_VERSION: "${RECEPTION_VERSION}"
+      RECEPTION_ENVIRONMENT: "${RECEPTION_ENVIRONMENT}"
+      ASPNETCORE_ENVIRONMENT: "${RECEPTION_ENVIRONMENT}"
+      RECEPTION_BLOB_STORAGE_FOLDER: "${RECEPTION_BLOB_STORAGE_FOLDER}"
+      RECEPTION_BLOB_STORAGE: "${RECEPTION_VOLUME_TARGET}/${RECEPTION_BLOB_STORAGE_FOLDER}"
+      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
+      STORAGE_URL: "127.0.0.1:${STORAGE_PORT}${STORAGE_PATH}"
+      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
+      GATE_URL: "127.0.0.1:${GATE_PORT}${GATE_PATH}"
+      HTTP_PORTS: "${RECEPTION_PORT}"
+    networks:
+      - magenet
+    ports:
+      - "${RECEPTION_PORT}:${RECEPTION_PORT}"
+
+  mage.garden: # Angular 2 Frontend
+    container_name: "${GARDEN_NAME}"
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: "${GARDEN_VOLUME_TARGET}"
+    build: ${GARDEN_MOUNT_POINT}
+    command: [ "npm", "run", "watch" ]
+    volumes:
+      - "${GARDEN_MOUNT_POINT}:${GARDEN_VOLUME_TARGET}"
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GATE_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      GARDEN_NAME: "${GARDEN_NAME}"
+      GARDEN_VERSION: "${GARDEN_VERSION}"
+      GARDEN_ENVIRONMENT: "${GARDEN_ENVIRONMENT}"
+      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
+      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
+      GATE_URL: "127.0.0.1:${GATE_PORT}${GATE_PATH}"
+    networks:
+      - magenet
+    ports:
+      - "${GARDEN_PORT}:${GARDEN_PORT}"
+
+  mage.gate: # Angular 2 Initial / Login Window, Frontend
+    container_name: "${GATE_NAME}"
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: "${GATE_VOLUME_TARGET}"
+    build: ${GATE_MOUNT_POINT}
+    command: [ "npm", "run", "watch" ]
+    volumes:
+      - "${GATE_MOUNT_POINT}:${GATE_VOLUME_TARGET}"
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GATE_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      GATE_NAME: "${GATE_NAME}"
+      GATE_VERSION: "${GATE_VERSION}"
+      GATE_ENVIRONMENT: "${GATE_ENVIRONMENT}"
+      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
+      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
+      GATE_URL: "127.0.0.1:${GATE_PORT}${GATE_PATH}"
+    networks:
+      - magenet
+    ports:
+      - "${GATE_PORT}:${GATE_PORT}"
