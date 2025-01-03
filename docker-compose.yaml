@@ -9,8 +9,9 @@ volumes:
 services:
   mage.storage: # Postgresql Database
     container_name: "${STORAGE_NAME}"
-    image: postgres:latest
+    image: postgres:17.2
     restart: unless-stopped
+    command: [ "-p", "${STORAGE_PORT}" ]
     volumes:
       - "${STORAGE_MOUNT_POINT}/init:/docker-entrypoint-initdb.d"
       - "mage.db_data:/${STORAGE_VOLUME_TARGET}"
@@ -20,12 +21,34 @@ services:
       STORAGE_NAME: "${STORAGE_NAME}"
       STORAGE_VERSION: "${STORAGE_VERSION}"
       STORAGE_ENVIRONMENT: "${STORAGE_ENVIRONMENT}"
+      PGTZ: "Europe/Stockholm"
+      TZ: "Europe/Stockholm"
     env_file:
       - "${STORAGE_CONFIGURATION_FILE}"
     networks:
       - magenet
+    expose:
+      - "${STORAGE_PORT}"
+
+  mage.window: # Postgresql Database UI for the browser
+    container_name: "${WINDOW_NAME}"
+    image: adminer:latest
+    restart: unless-stopped
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GATE_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      ADMINER_PLUGINS: "tables-filter tinymce"
+      ADMINER_DEFAULT_SERVER: "${STORAGE_NAME}:${STORAGE_PORT}"
+      ADMINER_DEFAULT_DB_DRIVER: "pgsql"
+      ADMINER_PORT: "${WINDOW_PORT}"
+      PGTZ: "Europe/Stockholm"
+      TZ: "Europe/Stockholm"
+    networks:
+      - magenet
+    expose:
+      - "${WINDOW_PORT}"
     ports:
-      - "${STORAGE_PORT}:${STORAGE_PORT}"
+      - "${WINDOW_PORT}:8080"
 
   mage.reception: # ASP.NET 8.0 Backend
     container_name: "${RECEPTION_NAME}"
