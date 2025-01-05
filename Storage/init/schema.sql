@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS filepaths (
     id SERIAL NOT NULL,
     photo_id INT NOT NULL,
     filename VARCHAR(127) UNIQUE NOT NULL,
+    path VARCHAR(255) NOT NULL,
     dimension DIMENSION NOT NULL,
     filesize INT NOT NULL CHECK (filesize >= 0),
     PRIMARY KEY(id),
