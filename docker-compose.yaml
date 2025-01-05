@@ -9,8 +9,8 @@ volumes:
 services:
   mage.storage: # Postgresql Database
     container_name: "${STORAGE_NAME}"
-    image: postgres:17.2
     restart: unless-stopped
+    image: postgres:17.2
     command: [ "-p", "${STORAGE_PORT}" ]
     volumes:
       - "${STORAGE_MOUNT_POINT}/init:/docker-entrypoint-initdb.d"
@@ -32,8 +32,8 @@ services:
 
   mage.window: # Postgresql Database UI for the browser
     container_name: "${WINDOW_NAME}"
-    image: adminer:latest
     restart: unless-stopped
+    image: adminer:latest
     environment:
       APP_NAME: "${APP_NAME}"
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
@@ -47,13 +47,11 @@ services:
       - magenet
     expose:
       - "${WINDOW_PORT}"
-    ports:
-      - "${WINDOW_PORT}:8080"
 
   mage.reception: # ASP.NET 8.0 Backend
     container_name: "${RECEPTION_NAME}"
-    image: mcr.microsoft.com/dotnet/sdk:8.0
     restart: unless-stopped
+    image: mcr.microsoft.com/dotnet/sdk:8.0
     working_dir: "${RECEPTION_VOLUME_TARGET}"
     command: [ "dotnet", "run", "-c", "Debug" ]
     volumes:
@@ -67,24 +65,23 @@ services:
       ASPNETCORE_ENVIRONMENT: "${RECEPTION_ENVIRONMENT}"
       RECEPTION_BLOB_STORAGE_FOLDER: "${RECEPTION_BLOB_STORAGE_FOLDER}"
       RECEPTION_BLOB_STORAGE: "${RECEPTION_VOLUME_TARGET}/${RECEPTION_BLOB_STORAGE_FOLDER}"
-      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
-      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
-      GUARD_URL: "127.0.0.1:${GUARD_PORT}${GUARD_PATH}"
+      RECEPTION_URL: "ttp://${RECEPTION_NAME}:${RECEPTION_PORT}"
+      GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
+      GUARD_URL: "http://${GUARD_NAME}:${GUARD_PORT}"
       STORAGE_URL: "${STORAGE_NAME}:${STORAGE_PORT}"
       HTTP_PORTS: "${RECEPTION_PORT}"
     env_file:
       - "${STORAGE_CONFIGURATION_FILE}"
     networks:
       - magenet
-    ports:
-      - "${RECEPTION_PORT}:${RECEPTION_PORT}"
+    expose:
+      - "${RECEPTION_PORT}"
 
   mage.garden: # Angular 2 Frontend
     container_name: "${GARDEN_NAME}"
-    image: node:20-alpine
-    restart: unless-stopped
-    working_dir: "${GARDEN_VOLUME_TARGET}"
+    restart: unless-stopped # image: node:20-alpine
     build: ${GARDEN_MOUNT_POINT}
+    working_dir: "${GARDEN_VOLUME_TARGET}"
     command: [ "npm", "run", "watch" ]
     volumes:
       - "${GARDEN_MOUNT_POINT}:${GARDEN_VOLUME_TARGET}"
@@ -94,33 +91,46 @@ services:
       GARDEN_NAME: "${GARDEN_NAME}"
       GARDEN_VERSION: "${GARDEN_VERSION}"
       GARDEN_ENVIRONMENT: "${GARDEN_ENVIRONMENT}"
-      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
-      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
-      GUARD_URL: "127.0.0.1:${GUARD_PORT}${GUARD_PATH}"
+      RECEPTION_URL: "ttp://${RECEPTION_NAME}:${RECEPTION_PORT}"
+      GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
+      GUARD_URL: "http://${GUARD_NAME}:${GUARD_PORT}"
     networks:
       - magenet
-    ports:
-      - "${GARDEN_PORT}:${GARDEN_PORT}"
+    expose:
+      - "${GARDEN_PORT}"
 
   mage.gate: # Apache2 / httpd
     container_name: "${GUARD_NAME}"
-    image: node:20-alpine
     restart: unless-stopped
+    build: ${GUARD_MOUNT_POINT} # image: httpd:2.4-alpine
     working_dir: "${GUARD_VOLUME_TARGET}"
-    build: ${GUARD_MOUNT_POINT}
-    command: [ "npm", "run", "watch" ]
+    command: [ "apachectl", "-D", "FOREGROUND" ]
     volumes:
-      - "${GUARD_MOUNT_POINT}:${GUARD_VOLUME_TARGET}"
+      - "${GUARD_MOUNT_POINT}/httpd.conf:/usr/local/apache2/conf/httpd.conf"
+      - "${GUARD_MOUNT_POINT}/mage.conf:/usr/local/apache2/conf/extra/mage.conf"
+      - "${GUARD_MOUNT_POINT}/dist/guard:${GUARD_VOLUME_TARGET}"
     environment:
       APP_NAME: "${APP_NAME}"
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      WINDOW_PORT: "${WINDOW_PORT}"
+      WINDOW_BASE_PATH: "${WINDOW_BASE_PATH}"
+      WINDOW_URL: "http://${WINDOW_NAME}:${WINDOW_PORT}"
+      RECEPTION_PORT: "${RECEPTION_PORT}"
+      RECEPTION_BASE_PATH: "${RECEPTION_BASE_PATH}"
+      RECEPTION_URL: "http://${RECEPTION_NAME}:${RECEPTION_PORT}"
+      GARDEN_PORT: "${GARDEN_PORT}"
+      GARDEN_BASE_PATH: "${GARDEN_BASE_PATH}"
+      GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
       GUARD_NAME: "${GUARD_NAME}"
+      GUARD_PORT: "${GUARD_PORT}"
       GUARD_VERSION: "${GUARD_VERSION}"
+      GUARD_BASE_PATH: "${GUARD_BASE_PATH}"
+      GUARD_URL: "http://${GUARD_NAME}:${GUARD_PORT}"
       GUARD_ENVIRONMENT: "${GUARD_ENVIRONMENT}"
-      RECEPTION_URL: "127.0.0.1:${RECEPTION_PORT}${RECEPTION_PATH}"
-      GARDEN_URL: "127.0.0.1:${GARDEN_PORT}${GARDEN_PATH}"
-      GUARD_URL: "127.0.0.1:${GUARD_PORT}${GUARD_PATH}"
+      APACHE_LOG_DIR: "/var/log/apache2/mage"
     networks:
       - magenet
+    expose:
+      - "${GUARD_PORT}"
     ports:
-      - "${GUARD_PORT}:${GUARD_PORT}"
+      - "80:${GUARD_PORT}"
