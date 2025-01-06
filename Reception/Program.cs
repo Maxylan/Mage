@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Configuration;
+using Reception.Interfaces;
 using Reception.Services;
 
 namespace Reception;
@@ -37,6 +38,7 @@ public sealed class Program
 
         // Add services to the container.
 
+        builder.Services.AddHttpContextAccessor();
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {
@@ -56,6 +58,10 @@ public sealed class Program
             }
             opts.EnableSensitiveDataLogging();
         });
+
+        builder.Services.AddScoped<ILoggingService, LoggingService>();
+        builder.Services.AddScoped<ISessionService, SessionService>();
+        builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
         var app = builder.Build();
 

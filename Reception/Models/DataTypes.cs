@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Reception.Models;
+﻿namespace Reception.Models;
 
 public static class DataTypes
 {
