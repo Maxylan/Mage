@@ -1,7 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Models;
+using Reception.Models.Entities;
 
 namespace Reception.Interfaces;
 
@@ -27,7 +27,10 @@ public interface ISessionService
     /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
     /// clean-up duplicates / old sessions from the database.
     /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUserId(int userId, bool deleteDuplicates);
+    /// <param name="deleteDuplicates">
+    /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
+    /// </param>
+    public abstract Task<ActionResult<Session?>> GetSessionByUserId(int userId, bool deleteDuplicates = false);
     /// <summary>
     /// Get the current <see cref="Session"/> of the <see cref="Account"/> with unique '<paramref ref="userName"/>'
     /// </summary>
@@ -35,7 +38,10 @@ public interface ISessionService
     /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
     /// clean-up duplicates / old sessions from the database.
     /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUsername(int userName, bool deleteDuplicates);
+    /// <param name="deleteDuplicates">
+    /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
+    /// </param>
+    public abstract Task<ActionResult<Session?>> GetSessionByUsername(string userName, bool deleteDuplicates = false);
     /// <summary>
     /// Get the current <see cref="Session"/> of the given '<see cref="Account"/>'.
     /// </summary>
@@ -43,7 +49,10 @@ public interface ISessionService
     /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
     /// clean-up duplicates / old sessions from the database.
     /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUser(Account user, bool deleteDuplicates);
+    /// <param name="deleteDuplicates">
+    /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
+    /// </param>
+    public abstract Task<ActionResult<Session?>> GetSessionByUser(Account account, bool deleteDuplicates = false);
 
     /// <summary>
     /// Delete expired sessions &amp; duplicates from the database.

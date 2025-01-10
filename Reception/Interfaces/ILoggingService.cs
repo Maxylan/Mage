@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Reception.Models.Entities;
 using Reception.Models;
 
 namespace Reception.Interfaces;
@@ -18,108 +19,103 @@ public interface ILoggingService
     public abstract DbSet<LogEntry> GetEvents();
 
     /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
+    /// Set what action triggered this entry to be created.
+    /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogNewEvent"/>.
     /// </summary>
-    public abstract Task<int> LogTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract ILoggingService Action(string actionName);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogTrace(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalTrace(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalTrace(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogDebug(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalDebug(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalDebug(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogInformation(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalInformation(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalInformation(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogSuspicious(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogWarning(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalWarning(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalWarning(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogError(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalError(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalError(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> InternalCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogCritical(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> ExternalCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalCritical(string message, Action<LogEntry>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract Task<int> LogNewEvent(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalCritical(string message, Action<LogEntry>? predicate = null);
     /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event, attempts to add it to the database, but does 
-    /// <strong>not</strong> call <see cref="DbContext.SaveChangesAsync"/>.
+    /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    /// <remarks>
-    /// Note: Shares a similar name with <seealso cref="ILoggingService.LogEvents"/>, but the two methods couldn't be more different.
-    /// </remarks>
-    public abstract Task LogEvent(LogEntry entry);
+    public abstract StoreLogsInDatabase LogEvent(string message, Action<LogEntry>? predicate = null);
     /// <summary>
-    /// Log any number of custom <see cref="LogEntry"/>-events to the database.
+    /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
+    /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
     /// </summary>
-    /// <remarks>
-    /// Plural name (<see cref="ILoggingService.LogEvents"/>), but you can do one/single entry, or many (plural)
-    /// </remarks>
-    public abstract Task<int> LogEvents(params LogEntry[] entries);
+    public abstract StoreLogsInDatabase LogEvents(params LogEntry[] entries);
 
     /// <summary>
     /// Deletes all provided <see cref="LogEntry"/>-entries.

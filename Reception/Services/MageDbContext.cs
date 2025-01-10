@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 using Npgsql.NameTranslation;
-using Reception.Models;
+using Microsoft.EntityFrameworkCore;
+using Reception.Models.Entities;
 
 namespace Reception.Services;
 
@@ -50,10 +50,10 @@ public partial class MageDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresEnum<DataTypes.Dimension>("magedb", "dimension") // new[] { "THUMBNAIL", "MEDIUM", "SOURCE" }
-            .HasPostgresEnum<DataTypes.Method>("magedb", "method") // new[] { "HEAD", "GET", "POST", "PUT", "PATCH", "DELETE" }
-            .HasPostgresEnum<DataTypes.Severity>("magedb", "severity") // new[] { "TRACE", "DEBUG", "INFORMATION", "SUSPICIOUS", "WARNING", "ERROR", "CRITICAL" }
-            .HasPostgresEnum<DataTypes.Source>("magedb", "source", new NpgsqlNullNameTranslator()); // new[] { "INTERNAL", "EXTERNAL" }
+            .HasPostgresEnum<Dimension>("magedb", "dimension") // new[] { "THUMBNAIL", "MEDIUM", "SOURCE" }
+            .HasPostgresEnum<Method>("magedb", "method") // new[] { "HEAD", "GET", "POST", "PUT", "PATCH", "DELETE" }
+            .HasPostgresEnum<Severity>("magedb", "severity") // new[] { "TRACE", "DEBUG", "INFORMATION", "SUSPICIOUS", "WARNING", "ERROR", "CRITICAL" }
+            .HasPostgresEnum<Source>("magedb", "source", new NpgsqlNullNameTranslator()); // new[] { "INTERNAL", "EXTERNAL" }
 
         modelBuilder.Entity(Account.Build);
         modelBuilder.Entity(Album.Build);
