@@ -29,6 +29,11 @@ public class LoggingService(
     }
 
     /// <summary>
+    /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
+    /// </summary>
+    public ILogger GetLogger() => logger;
+
+    /// <summary>
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
     public async Task<ActionResult<LogEntry?>> GetEvent(int id)

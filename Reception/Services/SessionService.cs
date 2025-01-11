@@ -3,23 +3,24 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Models.Entities;
 using Reception.Interfaces;
+using System.Net;
 
 namespace Reception.Services;
 
-public class SessionService(ILoggingService logging, MageDbContext context) : ISessionService
+public class SessionService(ILoggingService logging, MageDbContext db) : ISessionService
 {
     /// <summary>
     /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Session&gt;"/>) set of 
     /// <see cref="Session"/>-entries, you may use it to freely fetch some sessions.
     /// </summary>
-    public DbSet<Session> GetSessions() => context.Sessions;
+    public DbSet<Session> GetSessions() => db.Sessions;
 
     /// <summary>
     /// Get the <see cref="Session"/> with matching '<paramref ref="code"/>'
     /// </summary>
-    public async Task<ActionResult<Session?>> GetSession(string code)
+    public async Task<ActionResult<Session>> GetSession(string code)
     {
-        Session? session = await context.Sessions.FirstOrDefaultAsync(s => s.Code == code);
+        Session? session = await db.Sessions.FirstOrDefaultAsync(s => s.Code == code);
 
         if (session is null)
         {
@@ -28,7 +29,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSession))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
         if (session.ExpiresAt <= DateTime.UtcNow)
@@ -38,7 +41,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSession))
                 .ExternalDebug(message, m => m.Method = Method.GET);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
         return session;
@@ -46,9 +51,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// <summary>
     /// Get the <see cref="Session"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
-    public async Task<ActionResult<Session?>> GetSessionById(int id)
+    public async Task<ActionResult<Session>> GetSessionById(int id)
     {
-        Session? session = await context.Sessions.FindAsync(id);
+        Session? session = await db.Sessions.FindAsync(id);
 
         if (session is null)
         {
@@ -57,7 +62,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSessionById))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
         return session;
@@ -72,9 +79,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public async Task<ActionResult<Session?>> GetSessionByUserId(int userId, bool deleteDuplicates = false)
+    public async Task<ActionResult<Session>> GetSessionByUserId(int userId, bool deleteDuplicates = false)
     {
-        Account? account = await context.Accounts
+        Account? account = await db.Accounts
             .Include(account => account.Sessions)
             .FirstOrDefaultAsync(account => account.Id == userId);
 
@@ -83,10 +90,11 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
             string message = $"Failed to find an {nameof(Account)} with UID (PK) #{userId}.";
             logging
                 .Action(nameof(GetSessionByUserId))
-                .ExternalDebug(message)
-                .Save();
+                .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
         if (account.Sessions is null || account.Sessions.Count == 0)
@@ -96,7 +104,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSessionByUserId))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
         else if (account.Sessions.Count > 1)
         {
@@ -104,10 +114,13 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .OrderByDescending(session => session.CreatedAt)
                 .ToArray();
         
-            if (deleteDuplicates) {
+            if (deleteDuplicates)
+            {
                 for (int i = 1; i < account.Sessions.Count; i++) {
-                    context.Remove(account.Sessions.ElementAt(i));
+                    db.Remove(account.Sessions.ElementAt(i));
                 }
+
+                await db.SaveChangesAsync();
             }
         }
 
@@ -123,9 +136,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public async Task<ActionResult<Session?>> GetSessionByUsername(string userName, bool deleteDuplicates = false)
+    public async Task<ActionResult<Session>> GetSessionByUsername(string userName, bool deleteDuplicates = false)
     {
-        Account? account = await context.Accounts
+        Account? account = await db.Accounts
             .Include(account => account.Sessions)
             .FirstOrDefaultAsync(account => account.Username == userName);
 
@@ -136,7 +149,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSessionByUsername))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
         if (account.Sessions is null || account.Sessions.Count == 0)
@@ -146,7 +161,9 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSessionByUsername))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
         else if (account.Sessions.Count > 1)
         {
@@ -154,10 +171,13 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .OrderByDescending(session => session.CreatedAt)
                 .ToArray();
         
-            if (deleteDuplicates) {
+            if (deleteDuplicates)
+            {
                 for (int i = 1; i < account.Sessions.Count; i++) {
-                    context.Remove(account.Sessions.ElementAt(i));
+                    db.Remove(account.Sessions.ElementAt(i));
                 }
+
+                await db.SaveChangesAsync();
             }
         }
 
@@ -173,7 +193,7 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public async Task<ActionResult<Session?>> GetSessionByUser(Account account, bool deleteDuplicates = false)
+    public async Task<ActionResult<Session>> GetSessionByUser(Account account, bool deleteDuplicates = false)
     {
         if (account.Sessions is not null && account.Sessions.Count > 0)
         {
@@ -183,10 +203,13 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                     .OrderByDescending(session => session.CreatedAt)
                     .ToArray();
             
-                if (deleteDuplicates) {
+                if (deleteDuplicates)
+                {
                     for (int i = 1; i < account.Sessions.Count; i++) {
-                        context.Remove(account.Sessions.ElementAt(i));
+                        db.Remove(account.Sessions.ElementAt(i));
                     }
+
+                    await db.SaveChangesAsync();
                 }
             }
 
@@ -200,7 +223,7 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
             }
         }
 
-        var sessions = await context.Sessions
+        var sessions = await db.Sessions
             .Where(session => session.UserId == account.Id)
             .OrderByDescending(session => session.CreatedAt)
             .ToListAsync();
@@ -212,16 +235,92 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
                 .Action(nameof(GetSessionByUsername))
                 .ExternalDebug(message);
             
-            return new NotFoundObjectResult(message);
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
         else if (sessions.Count > 1 && deleteDuplicates)
         {
             for (int i = 1; i < sessions.Count; i++) {
-                context.Remove(sessions.ElementAt(i));
+                db.Remove(sessions.ElementAt(i));
             }
+
+            await db.SaveChangesAsync();
         }
 
         return sessions.First();
+    }
+
+    /// <summary>
+    /// Get the <see cref="Account"/> associated with a given '<see cref="Session"/>'.
+    /// </summary>
+    public async Task<ActionResult<Account>> GetUserBySession(Session session)
+    {
+        Account? user = session.User;
+        if (user is not null)
+        {
+            bool exists = await db.Accounts.ContainsAsync(user);
+            
+            if (exists) {
+                return user;
+            }
+        }
+
+        user = await db.Accounts.FindAsync(session.UserId);
+        
+        if (user is null)
+        {
+            string message = $"Failed to find an {nameof(Account)} matching the given {nameof(Session)}'s {nameof(Session.UserId)} #{session.UserId}.";
+            logging
+                .Action(nameof(GetSession))
+                .ExternalDebug(message);
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return user;
+    }
+
+    /// <summary>
+    /// Create a new <see cref="Session"/> for the given '<see cref="Account"/>'.
+    /// </summary>
+    public async Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request, Source source = Source.INTERNAL)
+    {
+        string? userAgentHeader = null;
+        if (request is not null) {
+            userAgentHeader = request.Headers.UserAgent.ToString();
+        }
+
+        Session newSession = new() {
+            UserId = account.Id,
+            Code = Guid.NewGuid().ToString("D"),
+            UserAgent = userAgentHeader,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow + (
+                string.IsNullOrWhiteSpace(userAgentHeader)
+                    ? TimeSpan.FromHours(1)
+                    : TimeSpan.FromDays(1)
+            )
+        };
+
+
+        string message = $"Created new {nameof(Session)} '{newSession.Code}'";
+        if (source == Source.EXTERNAL)
+        {
+            await logging
+                .LogTrace(message, m => {
+                    m.Action = nameof(CreateSession);
+                    m.Source = source;
+                })
+                .SaveAsync();
+        }
+        else {
+            logging.GetLogger().LogTrace(message);
+        }
+
+        return new OkObjectResult(newSession);
     }
 
     /// <summary>
@@ -235,7 +334,7 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
         await DeleteExpired();
         await DeleteDuplicates();
 
-        return await context.SaveChangesAsync();
+        return await db.SaveChangesAsync();
     }
 
     /// <summary>
@@ -243,13 +342,13 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// </summary>
     public async Task<int> DeleteExpired()
     {
-        var sessions = await context.Sessions
+        var sessions = await db.Sessions
             .Where(session => session.ExpiresAt <= DateTime.UtcNow)
             .ToListAsync();
 
         if (sessions is not null && sessions.Count > 0)
         {
-            context.RemoveRange(sessions);
+            db.RemoveRange(sessions);
 
             logging
                 .Action(nameof(DeleteExpired))
@@ -269,7 +368,7 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
     /// </remarks>
     public async Task<int> DeleteDuplicates()
     {
-        var sessions = await context.Sessions
+        var sessions = await db.Sessions
             .Where(session => session.ExpiresAt <= DateTime.UtcNow)
             .OrderByDescending(session => session.CreatedAt)
             .ToListAsync();
@@ -280,7 +379,7 @@ public class SessionService(ILoggingService logging, MageDbContext context) : IS
 
         if (sessions is not null && sessions.Count > 0)
         {
-            context.RemoveRange(sessions);
+            db.RemoveRange(sessions);
 
             logging
                 .Action(nameof(DeleteDuplicates))
