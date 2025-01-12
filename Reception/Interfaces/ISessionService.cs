@@ -62,7 +62,15 @@ public interface ISessionService
     /// <summary>
     /// Create a new <see cref="Session"/> for the given '<see cref="Account"/>'.
     /// </summary>
-    public abstract Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request, Source source = Source.INTERNAL);
+    /// <remarks>
+    /// You may optionally provide '<paramref ref="request"/>' if you want to include a UserAgent header.
+    /// <br/>Returns a '<see cref="NoContentResult"/>' if nothing was created/added, but nothing failed.
+    /// </remarks>
+    /// <param name="request">
+    /// Provide an '<see cref="HttpRequest"/>' if you want to include a UserAgent header in the session.
+    /// This will in turn extend its expiry from 1h to 24h (1 day).
+    /// </param>
+    public abstract Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request = null, Source source = Source.INTERNAL);
 
     /// <summary>
     /// Delete expired sessions &amp; duplicates from the database.

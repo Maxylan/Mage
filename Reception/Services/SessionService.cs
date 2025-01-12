@@ -232,7 +232,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
         {
             string message = $"{nameof(Account)} '{account.Username}' (UID #{account.Id}) have no active/stored {nameof(Session)} instances.";
             logging
-                .Action(nameof(GetSessionByUsername))
+                .Action(nameof(GetSessionByUser))
                 .ExternalDebug(message);
             
             return new NotFoundObjectResult(
@@ -286,7 +286,15 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     /// <summary>
     /// Create a new <see cref="Session"/> for the given '<see cref="Account"/>'.
     /// </summary>
-    public async Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request, Source source = Source.INTERNAL)
+    /// <remarks>
+    /// You may optionally provide '<paramref ref="request"/>' if you want to include a UserAgent header.
+    /// <br/>Returns a '<see cref="NoContentResult"/>' if nothing was created/added, but nothing failed.
+    /// </remarks>
+    /// <param name="request">
+    /// Provide an '<see cref="HttpRequest"/>' if you want to include a UserAgent header in the session.
+    /// This will in turn extend its expiry from 1h to 24h (1 day).
+    /// </param>
+    public async Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request = null, Source source = Source.INTERNAL)
     {
         string? userAgentHeader = null;
         if (request is not null) {
@@ -305,22 +313,27 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             )
         };
 
+        db.Add(newSession);
+        account.LastVisit = DateTime.UtcNow;
 
-        string message = $"Created new {nameof(Session)} '{newSession.Code}'";
+        string message = $"Created new {nameof(Session)} '{newSession.Code}' for user '{account.Username}' (#{account.Id})";
         if (source == Source.EXTERNAL)
         {
-            await logging
+            logging
                 .LogTrace(message, m => {
                     m.Action = nameof(CreateSession);
                     m.Source = source;
-                })
-                .SaveAsync();
+                });
         }
         else {
             logging.GetLogger().LogTrace(message);
         }
 
-        return new OkObjectResult(newSession);
+        int rowsInserted = await db.SaveChangesAsync();
+
+        return rowsInserted > 0 && newSession.Id != default
+            ? new OkObjectResult(newSession)
+            : new NoContentResult();
     }
 
     /// <summary>
