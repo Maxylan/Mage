@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Configuration;
+using Microsoft.OpenApi.Models;
 using Reception.Interfaces;
 using Reception.Services;
 
@@ -44,13 +45,9 @@ public sealed class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {
-            conf.AddServer(new Microsoft.OpenApi.Models.OpenApiServer() {
-                Description = $"{AppName} Backend Server (ASP.NET 8.0, '{ApiPathBase}'). {VERSION}",
-                Url = ApiPathBase + "/swagger"
-            });
-
             conf.SwaggerDoc(VERSION, new() {
                 Title = $"{AppName} '{ApiName}' ({ApiVersion}) {VERSION}",
+                Description = $"{AppName} Backend Server (ASP.NET 8.0, '{ApiPathBase}'). {VERSION}",
                 Version = VERSION
             });
 
@@ -71,23 +68,45 @@ public sealed class Program
 
         var app = builder.Build();
 
-        app.UsePathBase(ApiPathBase);
-
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment() || IsDevelopment)
         {
-            app.UseSwagger(/* opts => {
-                opts.RouteTemplate = "{documentName}" + ApiPathBase + "/swagger/v1/swagger.json";
-            } */);
-            
-            app.UseSwaggerUI(opts => {
-                opts.EnableFilter();
-                opts.EnablePersistAuthorization();
-                opts.EnableTryItOutByDefault();
-                opts.DisplayRequestDuration();
+            if (string.IsNullOrWhiteSpace(ApiPathBase)) {
+                Console.WriteLine($"Won't initialize with Swagger; {nameof(ApiPathBase)} is null/empty.");
+            }
+            else {
+                app.UseSwagger(/* opts =>{
+                    opts.RouteTemplate = ApiPathBase + "/swagger/{documentName}/swagger.json";
+                    Console.WriteLine("Swagger Route Template: " + opts.RouteTemplate);
+                } */);
+                app.MapSwagger(ApiPathBase + "/swagger/{documentName}/swagger.json", opts => {
+                    opts.PreSerializeFilters.Add((swaggerDoc, request) => {
+                        var serverUrl = $"{request.Scheme}://{request.Host}{ApiPathBase}";
+                        swaggerDoc.Servers.Add(new OpenApiServer() { Url = serverUrl });
 
-                // opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
-            });
+                        swaggerDoc.Paths = new OpenApiPaths(swaggerDoc.Paths.Select(p => new KeyValuePair<string, OpenApiPathItem>(p.Key, p.Value)).ToDictionary(), swaggerDoc.Paths.Extensions);
+                        /* OpenApiPaths newPaths = new(,);
+
+                        for(int i = 0; i < swaggerDoc.Paths.Keys.Count; i++) {
+                            swaggerDoc.Paths.Key[i] = swaggerDoc.Paths.Keys[i];
+                        }
+
+                        foreach(var path in swaggerDoc.Paths) {
+                            path.Key = ApiPathBase + path.Key;
+                        } */
+                    });
+                });
+                app.UseSwaggerUI(opts => {
+                    opts.EnableFilter();
+                    opts.EnablePersistAuthorization();
+                    opts.EnableTryItOutByDefault();
+                    opts.DisplayRequestDuration();
+
+                    opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
+                    // opts.RoutePrefix = ApiPathBase[1..];
+                    Console.WriteLine("Swagger Path: " + opts.RoutePrefix);
+                });
+            }
         }
 
         app.UseAuthorization();
