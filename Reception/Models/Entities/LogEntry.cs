@@ -55,28 +55,28 @@ public class LogEntry
                 .HasColumnName("created_at");
             entity.Property(e => e.LogLevel)
                 .HasColumnName("log_level")
-                .HasDefaultValue(Severity.INFORMATION.ToString())
+                .HasDefaultValue(Reception.Models.Entities.Severity.INFORMATION)
                 .HasSentinel(null)
-                .HasConversion(
-                    x => x.ToString() ?? Severity.ERROR.ToString(),
+                /* .HasConversion(
+                    x => x.ToString() ?? Reception.Models.Entities.Severity.ERROR.ToString(),
                     y => Enum.Parse<Severity>(y, true)
-                );
+                ) */;
             entity.Property(e => e.Source)
                 .HasColumnName("source")
-                .HasDefaultValue(Reception.Models.Entities.Source.INTERNAL.ToString())
+                .HasDefaultValue(Reception.Models.Entities.Source.INTERNAL)
                 .HasSentinel(null)
-                .HasConversion(
+                /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Source.INTERNAL.ToString(),
                     y => Enum.Parse<Source>(y, true)
-                );
+                ) */;
             entity.Property(e => e.Method)
                 .HasColumnName("method")
-                .HasDefaultValue(Reception.Models.Entities.Method.UNKNOWN.ToString())
+                .HasDefaultValue(Reception.Models.Entities.Method.UNKNOWN)
                 .HasSentinel(null)
-                .HasConversion(
+                /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Method.UNKNOWN.ToString(),
                     y => Enum.Parse<Method>(y, true)
-                );
+                ) */;
             entity.Property(e => e.Log).HasColumnName("log");
             entity.Property(e => e.UserEmail)
                 .HasMaxLength(255)
