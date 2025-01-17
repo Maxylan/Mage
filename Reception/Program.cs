@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.OpenApi.Models;
+using Reception.Authentication;
 using Reception.Interfaces;
-using Reception.Middleware;
 using Reception.Services;
 
 namespace Reception;
@@ -45,8 +46,8 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddControllers();
 
-        builder.Services.AddAuthentication("x-mage-token")
-            .AddScheme<AuthenticationSchemeOptions, ApiKeyRequirement>("x-mage-token", opts => { });
+        builder.Services.AddAuthentication(MageAuthentication.SESSION_TOKEN_HEADER)
+            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(MageAuthentication.SESSION_TOKEN_HEADER, opts => { });
 
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
