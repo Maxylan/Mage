@@ -47,6 +47,7 @@ services:
       - magenet
     expose:
       - "${WINDOW_PORT}"
+      - "8080"
 
   mage.reception: # ASP.NET 8.0 Backend
     container_name: "${RECEPTION_NAME}"
@@ -115,7 +116,7 @@ services:
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
       WINDOW_PORT: "${WINDOW_PORT}"
       WINDOW_BASE_PATH: "${WINDOW_BASE_PATH}"
-      WINDOW_URL: "http://${WINDOW_NAME}:${WINDOW_PORT}"
+      WINDOW_URL: "http://${WINDOW_NAME}:8080"
       RECEPTION_PORT: "${RECEPTION_PORT}"
       RECEPTION_BASE_PATH: "${RECEPTION_BASE_PATH}"
       RECEPTION_URL: "http://${RECEPTION_NAME}:${RECEPTION_PORT}"

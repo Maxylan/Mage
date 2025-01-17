@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,12 +24,18 @@ public class Account
 
     public short Permissions { get; set; }
 
+    // Navigation Properties
+
+    [JsonIgnore]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
+    [JsonIgnore]
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
+    [JsonIgnore]
     public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
 
+    [JsonIgnore]
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
 
     public static Action<EntityTypeBuilder<Account>> Build => (

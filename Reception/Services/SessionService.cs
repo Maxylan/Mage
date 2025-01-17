@@ -20,6 +20,18 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     /// </summary>
     public async Task<ActionResult<Session>> GetSession(string code)
     {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            string message = $"Failed to get {nameof(Session)}, '{nameof(code)}' can't be null/empty.";
+            logging
+                .Action(nameof(GetSession))
+                .ExternalDebug(message);
+            
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
         Session? session = await db.Sessions.FirstOrDefaultAsync(s => s.Code == code);
 
         if (session is null)
