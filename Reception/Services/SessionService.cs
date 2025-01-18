@@ -207,6 +207,15 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     /// </param>
     public async Task<ActionResult<Session>> GetSessionByUser(Account account, bool deleteDuplicates = false)
     {
+        if (account.Sessions is null || account.Sessions.Count == 0)
+        {
+            logging.Logger.LogInformation($"[{nameof(SessionService)}] ({nameof(GetSessionByUser)}) Asynchronously loading missing navigation entries.");
+
+            foreach(var navigationEntry in db.Entry(account).Navigations) {
+                await navigationEntry.LoadAsync();
+            }
+        }
+
         if (account.Sessions is not null && account.Sessions.Count > 0)
         {
             if (account.Sessions.Count > 1)
@@ -338,7 +347,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
                 });
         }
         else {
-            logging.GetLogger().LogTrace(message);
+            logging.Logger.LogTrace(message);
         }
 
         int rowsInserted = await db.SaveChangesAsync();

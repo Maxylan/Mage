@@ -15,15 +15,15 @@ public interface IAuthorizationService
     /// Argument <paramref name="source"/> Assumes <see cref="Source.EXTERNAL"/> by-default
     /// </remarks>
     /// <param name="source">Assumes <see cref="Source.EXTERNAL"/> by-default</param>
-    public abstract Task<IStatusCodeActionResult> ValidateSession(Source source = Source.EXTERNAL);
+    public abstract Task<ActionResult<Session>> ValidateSession(Source source = Source.EXTERNAL);
     /// <summary>
     /// Validates that a given <see cref="Session.Code"/> (string) is valid.
     /// </summary>
-    public abstract Task<IStatusCodeActionResult> ValidateSession(string sessionCode, Source source = Source.INTERNAL);
+    public abstract Task<ActionResult<Session>> ValidateSession(string sessionCode, Source source = Source.INTERNAL);
     /// <summary>
     /// Validates that a given <see cref="Session"/> is valid.
     /// </summary>
-    public abstract Task<IStatusCodeActionResult> ValidateSession(Session session, Source source = Source.INTERNAL);
+    public abstract Task<ActionResult<Session>> ValidateSession(Session session, Source source = Source.INTERNAL);
 
     /// <summary>
     /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.

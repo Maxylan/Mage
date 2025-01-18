@@ -5,6 +5,8 @@ using Reception.Models.Entities;
 using Reception.Interfaces;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using Reception.Authentication;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Reception.Services;
 
@@ -16,13 +18,30 @@ public class AuthorizationService(
 ) : IAuthorizationService
 {
     /// <summary>
+    /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
+    /// </summary>
+    /// <remarks>
+    /// Catches most errors thrown, logs them, and finally returns `null`.
+    /// </remarks>
+    /* private Account? GetAccount()
+    {
+        try {
+            return MageAuthentication.GetAccount(contextAccessor);
+        }
+        catch (Exception ex) {
+            logging.Logger.LogError(ex, $"Cought an '{ex.GetType().FullName}' invoking {nameof(LoggingService.GetAccount)}!", ex.StackTrace);
+            return null;
+        }
+    } */
+
+    /// <summary>
     /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
     /// </summary>
     /// <remarks>
     /// Argument <paramref name="source"/> Assumes <see cref="Source.EXTERNAL"/> by-default
     /// </remarks>
     /// <param name="source">Assumes <see cref="Source.EXTERNAL"/> by-default</param>
-    public async Task<IStatusCodeActionResult> ValidateSession(Source source = Source.EXTERNAL)
+    public async Task<ActionResult<Session>> ValidateSession(Source source = Source.EXTERNAL)
     {
         string message = string.Empty;
         var httpContext = contextAccessor.HttpContext;
@@ -41,32 +60,52 @@ public class AuthorizationService(
             );
         }
 
-        bool accountExists = httpContext.Items.TryGetValue(ACCOUNT_CONTEXT_KEY, out object? accountObj);
-        if (accountExists)
+        bool getAuthenticationProperties = MageAuthentication.TryGetProperties(httpContext, out AuthenticationProperties? authenticationProperties);
+        if (!getAuthenticationProperties)
         {
-            var account = (Account)accountObj!;
-            var getSession = await sessions.GetSessionByUser(account);
-            var session = getSession.Value;
+            message = $"{nameof(Session)} Validation Failed: No {nameof(AuthenticationProperties)} found.";
+            await logging
+                .LogError(message, m => {
+                    m.Action = nameof(ValidateSession);
+                    m.Source = source;
+                })
+                .SaveAsync();
 
-            if (session is not null)
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+        var user = authenticationProperties!.GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+        if (user is not null)
+        {
+            var getSession = await sessions.GetSessionByUser(user);
+            if (getSession.Value is not null)
             {
                 return await ValidateSession(
-                    account.Sessions.First(),
+                    getSession.Value,
                     source
                 );
             }
         }
 
-        bool sessionCodeExists = httpContext.Items.TryGetValue(SESSION_CONTEXT_KEY, out object? sessionCodeObj);
-
-        if (sessionCodeExists &&
-            sessionCodeObj is string sessionCode &&
-            !string.IsNullOrWhiteSpace(sessionCode)
-        ) {
-            return await ValidateSession(sessionCode, source);
+        var session = authenticationProperties!.GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
+        if (session is not null) {
+            return await ValidateSession(
+                session,
+                source
+            );
         }
 
-        message = $"Failed to infer a {nameof(Session)} from an {nameof(Account)} or Code in the {nameof(HttpContext)}";
+        bool tokenExists = authenticationProperties!.Items.TryGetValue(Parameters.TOKEN_CONTEXT_KEY, out string? token);
+        if (tokenExists && !string.IsNullOrWhiteSpace(token)) {
+            return await ValidateSession(
+                token,
+                source
+            );
+        }
+
+        message = $"Failed to infer a {nameof(Session)} or Token from contextual {nameof(Account)}, {nameof(Session.Code)} or {nameof(AuthenticationProperties)}";
         await logging
             .LogInformation(message, m => {
                 m.Action = nameof(ValidateSession);
@@ -79,7 +118,7 @@ public class AuthorizationService(
     /// <summary>
     /// Validates that a given <see cref="Session.Code"/> (string) is valid.
     /// </summary>
-    public async Task<IStatusCodeActionResult> ValidateSession(string sessionCode, Source source = Source.INTERNAL)
+    public async Task<ActionResult<Session>> ValidateSession(string sessionCode, Source source = Source.INTERNAL)
     {
         var getSession = await sessions.GetSession(sessionCode);
         var session = getSession.Value;
@@ -96,17 +135,13 @@ public class AuthorizationService(
                     : HttpStatusCode.Unauthorized.ToString()
             );
         }
-
-        else if (getSession.Result is IStatusCodeActionResult statusCodeResult) {
-            return statusCodeResult;
-        }
         
-        return new StatusCodeResult(StatusCodes.Status418ImATeapot);
+        return getSession.Result!;
     }
     /// <summary>
     /// Validates that a given <see cref="Session"/> is valid.
     /// </summary>
-    public async Task<IStatusCodeActionResult> ValidateSession(Session session, Source source = Source.INTERNAL)
+    public async Task<ActionResult<Session>> ValidateSession(Session session, Source source = Source.INTERNAL)
     {
         string message = string.Empty;
         var httpContext = contextAccessor.HttpContext;
@@ -212,7 +247,7 @@ public class AuthorizationService(
         message = $"{nameof(Session)} Validation Success";
         if (source == Source.INTERNAL)
         {
-            logging.GetLogger().LogTrace(message);
+            logging.Logger.LogTrace(message);
             return new StatusCodeResult(StatusCodes.Status200OK);
         }
 
