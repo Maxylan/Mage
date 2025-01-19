@@ -121,7 +121,7 @@ public class AuthorizationService(
             );
         }
         
-        return getSession.Result!;
+        return getSession;
     }
     /// <summary>
     /// Validates that a given <see cref="Session"/> is valid.
@@ -236,16 +236,7 @@ public class AuthorizationService(
             return new StatusCodeResult(StatusCodes.Status200OK);
         }
 
-        await logging
-            .LogTrace(message, m => {
-                m.Action = nameof(ValidateSession);
-                m.Source = source;
-            })
-            .SaveAsync();
-
-        return new OkObjectResult(
-            Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
-        );
+        return session;
     }
 
     /// <summary>
@@ -316,9 +307,11 @@ public class AuthorizationService(
                 .ExternalSuspicious(message)
                 .SaveAsync();
             
-            return new UnauthorizedObjectResult(
-                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
-            );
+            return new ObjectResult(
+                Program.IsProduction ? HttpStatusCode.RequestTimeout.ToString() : message
+            ) {
+                StatusCode = StatusCodes.Status408RequestTimeout
+            };
         }
 
         if (account.Password != hash)

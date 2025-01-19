@@ -5,6 +5,7 @@ namespace Reception.Authentication;
 /// </summary>
 public static class Parameters
 {
+    public const string TOKEN_REQUIRED_POLICY = "IncludesToken";
     public const string AUTHENTICATED_POLICY = "Authenticated";
     public const string SESSION_TOKEN_HEADER = "x-mage-token";
     public const string SCHEME = "mage-authentication";
