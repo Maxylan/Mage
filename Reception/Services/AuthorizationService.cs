@@ -228,14 +228,11 @@ public class AuthorizationService(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
             );
         }
-
-        message = $"{nameof(Session)} Validation Success";
-        if (source == Source.INTERNAL)
-        {
-            logging.Logger.LogTrace(message);
-            return new StatusCodeResult(StatusCodes.Status200OK);
+        else if (session.User is null) {
+            session.User = account;
         }
 
+        logging.Logger.LogTrace($"{nameof(Session)} Validation Success");
         return session;
     }
 

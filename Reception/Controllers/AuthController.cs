@@ -18,29 +18,39 @@ public class AuthController(
 {
     /// <summary>
     /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
+    /// In other words this endpoint tests my Authentication Pipeline.
     /// </summary>
     [Authorize]
-    [HttpHead("session/validate")]
+    [HttpHead("validate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public IStatusCodeActionResult ValidateSession() =>
+        StatusCode(StatusCodes.Status200OK);
+
+
+    /// <summary>
+    /// Returns the `<see cref="Account"/>` tied to the requesting client's session (i.e, in our `<see cref="HttpContext"/>` pipeline).
+    /// </summary>
+    [Authorize]
+    [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public IStatusCodeActionResult ValidateSession()
+    public async Task<ActionResult<Account>> Me()
     {
-        /* var sessionValidation = await authorization.ValidateSession();
+        var sessionValidation = await authorization.ValidateSession(Source.EXTERNAL);
         var session = sessionValidation.Value;
 
-        if (session is null || string.IsNullOrWhiteSpace(session.Code))
-        {
-            if (sessionValidation.Result is IStatusCodeActionResult statusCodeResult && 
-                statusCodeResult.StatusCode != StatusCodes.Status200OK
-            ) {
-                return statusCodeResult;
-            }
+        if (session is null || string.IsNullOrWhiteSpace(session.Code)) {
+            return sessionValidation.Result!;
+        }
 
-            return StatusCode(StatusCodes.Status401Unauthorized);
-        } */
+        if (session.User is Account user) {
+            return user;
+        }
 
-        return StatusCode(StatusCodes.Status200OK);
+        return await sessions.GetUserBySession(session);
     }
 
     /// <summary>
@@ -48,25 +58,32 @@ public class AuthController(
     /// </summary>
     [Authorize]
     [HttpGet("session/{id:int}")]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id) => 
-        await sessions.GetSessionById(id);
+    public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id)
+    {
+        await sessions.CleanupSessions(); // Do a little cleaning first..
+        return await sessions.GetSessionById(id);
+    }
+
 
     /// <summary>
     /// Attempt to grab a full `<see cref="Session"/>` instance, identified by unique <paramref name="session"/> code (string).
     /// </summary>
     [Authorize]
     [HttpGet("session/code/{session}")]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session) => 
-        await sessions.GetSession(session);
+    public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session)
+    {
+        await sessions.CleanupSessions(); // Do a little cleaning first..
+        return await sessions.GetSession(session);
+    }
 
     /// <summary>
     /// Attempt to login a user, creating a new `<see cref="Session"/>` instance.
