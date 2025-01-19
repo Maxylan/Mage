@@ -113,6 +113,7 @@ public sealed class Program
         builder.Services.AddScoped<ILoggingService, LoggingService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+        builder.Services.AddScoped<IAccountService, AccountService>();
 
         var app = builder.Build();
 
