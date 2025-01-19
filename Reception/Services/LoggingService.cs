@@ -23,6 +23,15 @@ public class LoggingService(
     /// </remarks>
     private Account? GetAccount()
     {
+        if (!MageAuthentication.IsAuthenticated(contextAccessor))
+        {
+            if (Program.IsDevelopment) {
+                logger.LogTrace($"{nameof(LoggingService.GetAccount)} called on an unauthorized request.");
+            }
+
+            return null;
+        }
+
         try {
             return MageAuthentication.GetAccount(contextAccessor);
         }
@@ -245,12 +254,18 @@ public class LoggingService(
         {
             entry.SetMethod(contextAccessor.HttpContext.Request.Method);
 
-            Account? user = GetAccount();
-            if (user is not null) {
-                entry.UserId = user.Id;
-                entry.UserUsername = user.Username;
-                entry.UserFullName = user.Username;
-                entry.UserEmail = user.Email;
+            entry.RequestAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
+            entry.RequestUserAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
+
+            if (MageAuthentication.IsAuthenticated(contextAccessor))
+            {
+                Account? user = GetAccount();
+                if (user is not null) {
+                    entry.UserId = user.Id;
+                    entry.UserUsername = user.Username;
+                    entry.UserFullName = user.FullName;
+                    entry.UserEmail = user.Email;
+                }
             }
         }
 
@@ -291,28 +306,39 @@ public class LoggingService(
                 }
             }
 
+            bool isUserAuthenticated = (
+                contextAccessor.HttpContext is not null &&
+                MageAuthentication.IsAuthenticated(contextAccessor.HttpContext!)
+            );
+
             switch(entry.LogLevel) {
+                #pragma warning disable CA2254
                 case Severity.TRACE:
                     logger.LogTrace(entry.Format.Short(false));
                     break;
                 case Severity.DEBUG:
                     logger.LogDebug(entry.Format.Short());
                     break;
+                case Severity.INFORMATION:
+                    logger.LogInformation(entry.Format.Standard(isUserAuthenticated));
+                    break;
                 case Severity.SUSPICIOUS:
-                    logger.LogWarning(entry.Format.Standard());
+                    logger.LogWarning(entry.Format.Standard(true));
                     break;
                 case Severity.WARNING:
-                    logger.LogWarning(entry.Format.Standard());
+                    logger.LogWarning(entry.Format.Standard(isUserAuthenticated));
                     break;
                 case Severity.ERROR:
-                    logger.LogError(entry.Format.Standard());
+                    logger.LogError(entry.Format.Full());
                     break;
                 case Severity.CRITICAL:
-                    logger.LogCritical(entry.Format.Standard());
+                    logger.LogCritical(entry.Format.Full());
                     break;
-                default: // Severity.INFORMATION:
-                    logger.LogInformation(entry.Format.Short(true, true));
+                default:
+                    entry.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    logger.LogInformation(entry.Format.Short(true));
                     break;
+                #pragma warning restore CA2254
             }
         }
 

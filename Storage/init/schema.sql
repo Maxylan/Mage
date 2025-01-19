@@ -10,7 +10,7 @@ SET datestyle TO 'Euro';
 CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL NOT NULL,
     email VARCHAR(255) UNIQUE,
-    username VARCHAR(63) UNIQUE,
+    username VARCHAR(63) NOT NULL UNIQUE,
     password VARCHAR(127) NOT NULL,
     full_name VARCHAR(127),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -174,6 +174,8 @@ CREATE TABLE IF NOT EXISTS logs (
     user_email VARCHAR(255),
     user_username VARCHAR(63),
     user_full_name VARCHAR(127),
+    request_address VARCHAR(255),
+    request_user_agent VARCHAR(1023),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     log_level SEVERITY NOT NULL DEFAULT 'INFORMATION',
     source SOURCE NOT NULL DEFAULT 'INTERNAL',

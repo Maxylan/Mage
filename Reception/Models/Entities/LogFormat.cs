@@ -6,6 +6,7 @@ public readonly struct LogFormat(LogEntry entry)
 {
     private readonly LogEntry entry = entry;
 
+    public string GetRequestDetails() => $"({(entry.RequestAddress ?? "Unknown/Hidden Address")}, {(entry.RequestUserAgent ?? "No UserAgent")})";
     public string GetTime() => $"[{entry.CreatedAt.ToShortTimeString()}]";
     public string GetSeverity() => $"[{entry.LogLevel.ToString()}]";
     public string GetSource() => $"({entry.Source.ToString()}) {entry.Method.ToString()}";
@@ -38,7 +39,7 @@ public readonly struct LogFormat(LogEntry entry)
         return $"{entry.Action} ->";
     }
 
-    public string Short(bool includeTime = true, bool includeUser = false)
+    public string Short(bool includeTime = true)
     {
         StringBuilder sb = new();
         if (includeTime) {
@@ -48,7 +49,7 @@ public readonly struct LogFormat(LogEntry entry)
         sb.AppendJoin(
             " ",
             GetSeverity(),
-            GetTitle(includeUser),
+            GetTitle(false),
             entry.Log
         );
 
@@ -64,6 +65,22 @@ public readonly struct LogFormat(LogEntry entry)
             GetSeverity(),
             GetSource(),
             GetTitle(includeUser),
+            entry.Log
+        );
+
+        return sb.ToString();
+    }
+
+    public string Full()
+    {
+        StringBuilder sb = new();
+        sb.AppendJoin(
+            " ",
+            GetTime(),
+            GetSeverity(),
+            GetSource(),
+            GetTitle(true),
+            GetRequestDetails(),
             entry.Log
         );
 
