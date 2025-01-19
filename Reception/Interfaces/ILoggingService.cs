@@ -16,12 +16,18 @@ public interface ILoggingService
     /// <summary>
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
-    public abstract Task<ActionResult<LogEntry?>> GetEvent(int id);
+    public abstract Task<ActionResult<LogEntry>> GetEvent(int id);
+    
     /// <summary>
     /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of 
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
     /// </summary>
     public abstract DbSet<LogEntry> GetEvents();
+
+    /// <summary>
+    /// Get all <see cref="LogEntry"/>-entries matching a wide range of optional filtering parameters.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<LogEntry>>> GetEvents(int? limit, int? offset, Source? source, Severity? severity, Method? method, string? action);
 
     /// <summary>
     /// Set what action triggered this entry to be created.

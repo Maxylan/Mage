@@ -25,10 +25,13 @@ public class LogEntry
 
     public DateTime CreatedAt { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public Severity? LogLevel { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public Source? Source { get; set; }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public Method? Method { get; set; }
 
     public string Action { get; set; } = null!;

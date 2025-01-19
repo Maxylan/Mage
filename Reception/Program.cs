@@ -1,11 +1,10 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
-using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.OpenApi.Models;
 using Reception.Authentication;
-using Reception.Caching;
 using Reception.Interfaces;
 using Reception.Services;
+using Reception.Caching;
 
 namespace Reception;
 
@@ -46,8 +45,12 @@ public sealed class Program
         // Add services to the container.
 
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddControllers();
-
+        builder.Services
+            .AddControllers()
+            .AddJsonOptions(opts => 
+                opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
+            );
+        
         builder.Services
             .AddAuthentication(conf => {
                 conf.DefaultAuthenticateScheme = Parameters.SCHEME;
