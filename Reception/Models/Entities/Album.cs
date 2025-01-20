@@ -84,7 +84,7 @@ public class Album
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_user");
 
-            entity.HasOne(d => d.Thumbnail).WithMany(p => p.Albums)
+            entity.HasOne(d => d.Thumbnail).WithMany(p => p.ThumbnailForAlbums)
                 .HasForeignKey(d => d.ThumbnailId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_thumbnail");
