@@ -7,10 +7,17 @@ using Reception.Models;
 using Reception.Interfaces;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using Reception.Utilities;
+using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Reception.Services;
 
-public class PhotoService(MageDbContext db, ILoggingService logging) : IPhotoService
+public class PhotoService(
+    MageDbContext db,
+    ILoggingService logging,
+    IHttpContextAccessor contextAccessor
+) : IPhotoService
 {
     #region Get single photos.
     /// <summary>
@@ -451,7 +458,39 @@ public class PhotoService(MageDbContext db, ILoggingService logging) : IPhotoSer
     /// <returns><see cref="PhotoCollection"/></returns>
     public async Task<ActionResult<PhotoCollection>> CreatePhoto(FilterPhotosOptions details)
     {
-        throw new NotImplementedException();
+        string message;
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            message = $"{nameof(CreatePhoto)} Failed: No {nameof(HttpContext)} found.";
+            await logging
+                .Action(nameof(CreatePhoto))
+                .InternalError(message)
+                .SaveAsync();
+
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+        if (!MultipartHelper.IsMultipartContentType(httpContext.Request.ContentType))
+        {
+            message = $"{nameof(CreatePhoto)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
+            await logging
+                .Action(nameof(CreatePhoto))
+                .ExternalError(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+
+        var boundary = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
+        var reader = new MultipartReader(boundary, httpContext.Request.Body);
+        var section = await reader.ReadNextSectionAsync();
+
     }
     #endregion
 
