@@ -188,13 +188,23 @@ public static class MimeVerifyer
     /// <summary>
     /// 
     /// </summary>
-    public static string ValidateContentType(MediaTypeHeaderValue contentType, string extension)
+    public static bool ValidateContentType(string filename, string extension, MemoryStream stream)
     {
-        using BinaryReader reader = new BinaryReader(uploadedFileData);
-        var headerBytes = reader.ReadBytes(MagicNumbers[extension].Item2.Max(m => m.Length) /* Longest signature */ + MagicNumbers[extension].Item1 /* Offset */);
+        if (!filename.EndsWith("."+extension)) {
+            throw new NotImplementedException("Filename does not end with the given extension!"); // TODO: HANDLE
+        }
+        if (!SupportedExtensions.Contains(extension)) {
+            throw new NotImplementedException("File extension not supported!"); // TODO: HANDLE
+        }
 
-        return MagicNumbers[extension].Item2.Any(signature => 
-            headerBytes.Take(signature.Length).SequenceEqual(signature));
+        using BinaryReader reader = new BinaryReader(stream);
+        var headerBytes = reader.ReadBytes(
+            MagicNumbers[extension].Item2.Max(m => m.Length)// Longest signature
+            + (int)MagicNumbers[extension].Item1            // Offset
+        );
+
+        return MagicNumbers[extension].Item2
+            .Any(signature => headerBytes.Take(signature.Length).SequenceEqual(signature));
     }
 
     public static bool IsMultipartContentType(string? contentType) => (

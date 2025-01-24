@@ -13,7 +13,7 @@ public class Filepath
     public string Filename { get; set; } = null!;
     public string Path { get; set; } = null!;
     public Dimension? Dimension { get; set; }
-    public int Filesize { get; set; }
+    public long? Filesize { get; set; }
 
     // Navigation Properties
 

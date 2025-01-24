@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS filepaths (
     filename VARCHAR(127) UNIQUE NOT NULL,
     path VARCHAR(255) NOT NULL,
     dimension DIMENSION NOT NULL DEFAULT 'SOURCE',
-    filesize INT NOT NULL CHECK (filesize >= 0),
+    filesize INT CHECK (filesize >= 0),
     PRIMARY KEY(id),
     CONSTRAINT fk_photo
         FOREIGN KEY(photo_id)
