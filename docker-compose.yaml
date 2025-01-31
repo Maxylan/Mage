@@ -79,29 +79,33 @@ services:
     expose:
       - "${RECEPTION_PORT}"
 
-  mage.garden: # Angular 2 Frontend
+  mage.garden: # Angular 2 Frontend (Apache2 / httpd)
     container_name: "${GARDEN_NAME}"
-    restart: unless-stopped # image: node:20-alpine
+    restart: unless-stopped # image: httpd:2.4-alpine
     build: ${GARDEN_MOUNT_POINT}
     working_dir: "${GARDEN_VOLUME_TARGET}"
-    command: [ "npm", "run", "watch" ]
+    command: [ "apachectl", "-D", "FOREGROUND" ]
     volumes:
-      - "${GARDEN_MOUNT_POINT}:${GARDEN_VOLUME_TARGET}"
+      - "${GARDEN_MOUNT_POINT}/httpd.conf:/usr/local/apache2/conf/httpd.conf"
+      - "${GARDEN_MOUNT_POINT}/mage.conf:/usr/local/apache2/conf/extra/mage.conf"
+      - "${GARDEN_MOUNT_POINT}/dist/garden:${GARDEN_VOLUME_TARGET}"
     environment:
       APP_NAME: "${APP_NAME}"
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
       GARDEN_NAME: "${GARDEN_NAME}"
       GARDEN_VERSION: "${GARDEN_VERSION}"
       GARDEN_ENVIRONMENT: "${GARDEN_ENVIRONMENT}"
-      RECEPTION_URL: "ttp://${RECEPTION_NAME}:${RECEPTION_PORT}"
+      RECEPTION_URL: "http://${RECEPTION_NAME}:${RECEPTION_PORT}"
       GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
       GUARD_URL: "http://${GUARD_NAME}:${GUARD_PORT}"
+      GARDEN_PORT: "${GARDEN_PORT}"
+      APACHE_LOG_DIR: "/var/log/apache2/mage"
     networks:
       - magenet
     expose:
       - "${GARDEN_PORT}"
 
-  mage.gate: # Apache2 / httpd
+  mage.gate: # Angular 2 Frontend (Apache2 / httpd)
     container_name: "${GUARD_NAME}"
     restart: unless-stopped
     build: ${GUARD_MOUNT_POINT} # image: httpd:2.4-alpine

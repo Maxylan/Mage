@@ -34,13 +34,13 @@ public class Account
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
     [JsonIgnore]
-    public virtual Photo? Avatar { get; set; }
+    public virtual PhotoEntity? Avatar { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
     [JsonIgnore]
-    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
+    public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
 
     [JsonIgnore]
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();

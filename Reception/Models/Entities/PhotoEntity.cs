@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Reception.Models.Entities;
 
-public class Photo
+public class PhotoEntity
 {
     public int Id { get; set; }
     public string Slug { get; set; } = null!;
@@ -35,7 +35,7 @@ public class Photo
     [JsonIgnore]
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
-    public static Action<EntityTypeBuilder<Photo>> Build => (
+    public static Action<EntityTypeBuilder<PhotoEntity>> Build => (
         entity =>
         {
             entity.HasKey(e => e.Id).HasName("photos_pkey");
@@ -78,7 +78,7 @@ public class Photo
                     r => r.HasOne<Album>().WithMany()
                         .HasForeignKey("AlbumId")
                         .HasConstraintName("fk_album"),
-                    l => l.HasOne<Photo>().WithMany()
+                    l => l.HasOne<PhotoEntity>().WithMany()
                         .HasForeignKey("PhotoId")
                         .HasConstraintName("fk_photo"),
                     j =>
@@ -97,7 +97,7 @@ public class Photo
                     r => r.HasOne<Tag>().WithMany()
                         .HasForeignKey("TagId")
                         .HasConstraintName("fk_tag"),
-                    l => l.HasOne<Photo>().WithMany()
+                    l => l.HasOne<PhotoEntity>().WithMany()
                         .HasForeignKey("PhotoId")
                         .HasConstraintName("fk_photo"),
                     j =>

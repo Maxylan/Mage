@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Dimension = Reception.Models.Entities.Dimension;
-using PhotoEntity = Reception.Models.Entities.Photo;
+using Reception.Models.Entities;
 
 namespace Reception.Models;
 

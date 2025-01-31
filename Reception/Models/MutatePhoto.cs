@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using PhotoEntity = Reception.Models.Entities.Photo;
 using Reception.Models.Entities;
 
 namespace Reception.Models;

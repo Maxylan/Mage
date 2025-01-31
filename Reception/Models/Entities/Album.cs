@@ -35,10 +35,10 @@ public class Album
     public virtual Account? CreatedByNavigation { get; set; }
 
     [JsonIgnore]
-    public virtual Photo? Thumbnail { get; set; }
+    public virtual PhotoEntity? Thumbnail { get; set; }
 
     [JsonIgnore]
-    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
+    public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
 
     [JsonIgnore]
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
