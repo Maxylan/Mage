@@ -15,6 +15,9 @@ public class Filepath
     public Dimension? Dimension { get; set; }
     public long? Filesize { get; set; }
 
+    // Method
+    public bool IsSource => this.Dimension == Reception.Models.Entities.Dimension.SOURCE;
+
     // Navigation Properties
 
     [JsonIgnore]

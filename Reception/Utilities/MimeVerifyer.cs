@@ -22,7 +22,7 @@ public static class MimeVerifyer
     ///     <see href="https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming"/>
     /// </para>
     /// </remarks>
-    public static readonly Dictionary<string, (uint, IReadOnlyCollection<byte[]>)> MagicNumbers = 
+    public static readonly Dictionary<string, (uint, IReadOnlyCollection<byte[]>)> MagicNumbers =
         new Dictionary<string, (uint, IReadOnlyCollection<byte[]>)>{
             { "jpeg", (
                 0u, [
@@ -43,22 +43,22 @@ public static class MimeVerifyer
                     [0xFF, 0xD8, 0xFF, 0xEE]
                 ]
             )},
-            { "jp2", (  // JPEG 2000 
+            { "jp2", (  // JPEG 2000
                 0u, [
                     [0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A]
                 ]
             )},
-            { "jpg2", ( // JPEG 2000 
+            { "jpg2", ( // JPEG 2000
                 0u, [
                     [0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A]
                 ]
             )},
-            { "jpm", (  // JPEG 2000 
+            { "jpm", (  // JPEG 2000
                 0u, [
                     [0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A]
                 ]
             )},
-            { "jpc", (  // JPEG 2000 
+            { "jpc", (  // JPEG 2000
                 0u, [
                     [0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A],
                     [0xFF, 0x4F, 0xFF, 0x51]
@@ -182,13 +182,14 @@ public static class MimeVerifyer
     /// <summary>
     /// MIME Types / Extensions supported for upload.
     /// </summary>
-    public static readonly IReadOnlyCollection<string> SupportedExtensions = MimeVerifyer.MagicNumbers!.Keys;
+    public static readonly IReadOnlyCollection<string> SupportedExtensions = MimeVerifyer.MagicNumbers.Keys;
 
 
     /// <summary>
-    /// 
+    /// Check the first few bytes of the stream, i.e the "Magic Numbers", to validate that
+    /// the contentType of the stream matches what was given as its '<paramref name="extension"/>'
     /// </summary>
-    public static bool ValidateContentType(string filename, string extension, MemoryStream stream)
+    public static bool ValidateContentType(string filename, string extension, Stream stream)
     {
         if (!filename.EndsWith("."+extension)) {
             throw new NotImplementedException("Filename does not end with the given extension!"); // TODO: HANDLE
@@ -198,33 +199,16 @@ public static class MimeVerifyer
         }
 
         using BinaryReader reader = new BinaryReader(stream);
-        var headerBytes = reader.ReadBytes(
-            MagicNumbers[extension].Item2.Max(m => m.Length)// Longest signature
-            + (int)MagicNumbers[extension].Item1            // Offset
-        );
 
-        return MagicNumbers[extension].Item2
+        int offset = (int)MagicNumbers[extension].Item1;
+        int longestSignature = MagicNumbers[extension].Item2.Max(m => m.Length);
+
+        // https://stackoverflow.com/questions/4883618/empty-array-with-binaryreader-on-uploadedfile-in-c-sharp
+        // Debug: Console.WriteLine($"Skipping first {offset} bytes..");
+        reader.BaseStream.Position = offset;
+        var headerBytes = reader.ReadBytes(longestSignature);
+
+        return MagicNumbers[extension].Item2 // 'if any signatures in MagicNumbers[..] matches `headerBytes`'..
             .Any(signature => headerBytes.Take(signature.Length).SequenceEqual(signature));
     }
-
-    public static bool IsMultipartContentType(string? contentType) => (
-        !string.IsNullOrEmpty(contentType) && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0
-    );
-
-    public static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition) => (
-        // Content-Disposition: form-data; name="key";
-        contentDisposition != null && 
-        contentDisposition.DispositionType.Equals("form-data") && 
-        string.IsNullOrEmpty(contentDisposition.FileName.Value) && 
-        string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)
-    );
-
-    public static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition) => (
-        // Content-Disposition: form-data; name="myfile1"; filename="Misc 002.jpg"
-        contentDisposition != null && 
-        contentDisposition.DispositionType.Equals("form-data") && (
-            !string.IsNullOrEmpty(contentDisposition.FileName.Value) || 
-            !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)
-        )
-    );
 }

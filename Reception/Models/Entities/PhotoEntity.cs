@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -56,7 +56,7 @@ public class PhotoEntity
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.Slug)
                 .HasMaxLength(127)
-                .HasColumnName("name");
+                .HasColumnName("slug");
             entity.Property(e => e.Summary)
                 .HasMaxLength(255)
                 .HasColumnName("summary");

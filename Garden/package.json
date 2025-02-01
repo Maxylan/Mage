@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "build": "ng build --deploy-url /garden/ --base-href /garden/",
+    "deploy": "ng build --deploy-url /garden/ --base-href /garden/",
+    "build": "ng build --configuration development --deploy-url /garden/ --base-href /garden/",
     "watch": "ng build --watch --configuration development --deploy-url /garden/ --base-href /garden/"
   },
   "private": true,

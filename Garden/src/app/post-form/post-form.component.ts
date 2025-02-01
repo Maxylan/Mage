@@ -7,10 +7,7 @@ import { Component } from "@angular/core";
 		<p>post-form works!</p>
 		<form
 			id="uploadForm"
-			action="Streaming/UploadDatabase"
-			method="post"
-			enctype="multipart/form-data"
-			(submit)="onSubmit(ev)"
+			(submit)="onSubmit($event)"
 		>
 			<dl>
 				<dt>
@@ -38,14 +35,17 @@ import { Component } from "@angular/core";
 })
 export class PostFormComponent {
 	constructor(private http: HttpClient) { }
-	//@ts-ignore
-	public ev: SubmitEvent;
 
-	onSubmit(ev: SubmitEvent): any {
+	onSubmit(ev: Event): any {
 		console.log('onSubmit fired.', ev);
 		if (!ev) {
 			return;
 		}
+
+		ev.preventDefault();
+
+		/* method="post"
+		enctype="multipart/form-data" */
 
 		const formElement = /* el */ ev.target as HTMLFormElement;
 		const formData = new FormData(formElement);
@@ -53,9 +53,9 @@ export class PostFormComponent {
 
 		try {
 			this.http
-				.post<FormData>(formElement.action, formData, {
+				.post<FormData>('/reception/photos/stream', formData, {
 					headers: {
-						"x-mage-token": "4db17ad8-35fd-4b93-a622-1aad1fdb73bc"
+						"x-mage-token": "820be47b-0def-42d7-be2a-92919b8f371e"
 					}
 				})
 				.subscribe((value) => {
