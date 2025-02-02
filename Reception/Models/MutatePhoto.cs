@@ -6,8 +6,8 @@ namespace Reception.Models;
 public class MutatePhoto : PhotoEntity
 {
     public new int? Id { get; set; }
-    
-    /* 
+
+    /*
     public string Name { get; set; } = null!;
     public string? Title { get; set; }
     public string? Summary { get; set; }
@@ -15,7 +15,10 @@ public class MutatePhoto : PhotoEntity
     */
 
     [JsonIgnore]
-    public new int? CreatedBy { get; set; }
+    public new int? UploadedBy { get; set; }
+
+    [JsonIgnore]
+    public new DateTime UploadedAt { get; set; }
 
     [JsonIgnore]
     public new DateTime CreatedAt { get; set; }

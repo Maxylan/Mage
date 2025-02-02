@@ -1,4 +1,6 @@
-
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Processing;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +15,7 @@ using Reception.Controllers;
 using System.Globalization;
 using System.Text;
 using System.Net;
+using Reception.Constants;
 
 namespace Reception.Services;
 
@@ -346,6 +349,26 @@ public class PhotoService(
                 .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
         }
 
+        if (filter.UploadedBy is not null)
+        {
+            if (filter.UploadedBy <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedBy, $"Filter Parameter {nameof(filter.UploadedBy)} has to be a non-zero positive integer (User ID)!");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedBy == filter.UploadedBy);
+        }
+
+        if (filter.UploadedAt is not null)
+        {
+            if (filter.UploadedAt > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAt, $"Filter Parameter {nameof(filter.UploadedAt)} cannot exceed DateTime.UtcNow");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedAt >= filter.UploadedAt);
+        }
+
         if (filter.CreatedAt is not null)
         {
             if (filter.CreatedAt > DateTime.UtcNow) {
@@ -354,16 +377,6 @@ public class PhotoService(
 
             photoQuery = photoQuery
                 .Where(photo => photo.CreatedAt >= filter.CreatedAt);
-        }
-
-        if (filter.CreatedBy is not null)
-        {
-            if (filter.CreatedBy <= 0) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedBy, $"Filter Parameter {nameof(filter.CreatedBy)} has to be a non-zero positive integer (User ID)!");
-            }
-
-            photoQuery = photoQuery
-                .Where(photo => photo.CreatedBy == filter.CreatedBy);
         }
 
         // Pagination
@@ -435,6 +448,26 @@ public class PhotoService(
                 .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
         }
 
+        if (filter.UploadedBy is not null)
+        {
+            if (filter.UploadedBy <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedBy, $"Filter Parameter {nameof(filter.UploadedBy)} has to be a non-zero positive integer (User ID)!");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedBy == filter.UploadedBy);
+        }
+
+        if (filter.UploadedAt is not null)
+        {
+            if (filter.UploadedAt > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAt, $"Filter Parameter {nameof(filter.UploadedAt)} cannot exceed DateTime.UtcNow");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedAt >= filter.UploadedAt);
+        }
+
         if (filter.CreatedAt is not null)
         {
             if (filter.CreatedAt > DateTime.UtcNow) {
@@ -443,16 +476,6 @@ public class PhotoService(
 
             photoQuery = photoQuery
                 .Where(photo => photo.CreatedAt >= filter.CreatedAt);
-        }
-
-        if (filter.CreatedBy is not null)
-        {
-            if (filter.CreatedBy <= 0) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedBy, $"Filter Parameter {nameof(filter.CreatedBy)} has to be a non-zero positive integer (User ID)!");
-            }
-
-            photoQuery = photoQuery
-                .Where(photo => photo.CreatedBy == filter.CreatedBy);
         }
 
         // Pagination
@@ -685,22 +708,31 @@ public class PhotoService(
 	        throw new NotImplementedException("The extension is invalid.. discontinuing processing of the file"); // TODO: HANDLE
 	    }
 
-	    using MemoryStream memStream = new MemoryStream();
-	    await section.Body.CopyToAsync(memStream);
+	    using MemoryStream requestStream = new MemoryStream();
+	    await section.Body.CopyToAsync(requestStream);
 
-	    if (memStream.Length <= 0)
+	    if (requestStream.Length <= 0)
 	    {
 	        throw new NotImplementedException("The file is empty."); // TODO: HANDLE
 	    }
-	    if (memStream.Length > MultipartHelper.FILE_SIZE_LIMIT)
+	    if (requestStream.Length > MultipartHelper.FILE_SIZE_LIMIT)
 	    {
 	        throw new NotImplementedException("The file is too large ... discontinuing processing of the file"); // TODO: HANDLE
 	    }
-	    if (!MimeVerifyer.ValidateContentType(trustedFilename, fileExtension, memStream))
-	    {
-	        throw new NotImplementedException("Error validating file content type / extension. Name missmatch, unsupported filetype or signature missmatch?"); // TODO: HANDLE
-	    }
 
+		// Attempt to manually detect and return image format. Also calls `MimeVerifyer.ValidateContentType()`
+		IImageFormat? format = MimeVerifyer.DetectImageFormat(trustedFilename, fileExtension, requestStream);
+
+        if (format is null)
+        {   // TODO! Handle below scenarios!
+            // - Bad filename/extension string
+            // - Extension/Filename missmatch
+            // - MIME not supported
+            // - MIME not a valid image type.
+            // - MIME not supported by ImageSharp / Missing ImageFormat
+            // - MIME Could not be validated (bad magic numbers)
+            throw new NotImplementedException($"{nameof(UploadSinglePhoto)} {nameof(format)} is null."); // TODO! Handle!!
+        }
 
 	    sourcePath = GetCombinedPath(Dimension.SOURCE, options.CreatedAt);
 	    mediumPath = GetCombinedPath(Dimension.MEDIUM, options.CreatedAt);
@@ -744,30 +776,160 @@ public class PhotoService(
             fullPath = Path.Combine(sourcePath, filename);
         }
 
-
         // Saved! :)
-        using var file = File.Create(fullPath);
-	    await file.WriteAsync(memStream.ToArray());
+        using FileStream file = File.Create(fullPath);
+        await file.WriteAsync(requestStream.ToArray());
+        await requestStream.DisposeAsync();
+        file.Position = 0;
 
-		long filesize = file.Length;
-        string filesizeFormatted = filesize.ToString();
+        long filesize = file.Length;
+		long mediumFilesize = 0L;
+		long thumbnailFilesize = 0L;
+        Size sourceDimensions;
+        Size mediumDimensions;
+        Size thumbnailDimensions;
+        string dpi = string.Empty;
+        options.UploadedAt ??= DateTime.UtcNow;
+        options.CreatedAt ??= DateTime.UtcNow; // Fallback in case no EXIF data..
+        string sourceFilesizeFormatted = filesize.ToString();
 
         if (filesize < 8388608) { // Kilobytes..
-            filesizeFormatted = $"{Math.Round((decimal)(filesize / 8192), 1)}kB";
+            sourceFilesizeFormatted = $"{Math.Round((decimal)(filesize / 8192), 1)}kB";
         }
         else if (filesize >= 8589934592) { // Gigabytes..
-        	filesizeFormatted = $"{Math.Round((decimal)(filesize / 8589934592), 3)}GB";
+            sourceFilesizeFormatted = $"{Math.Round((decimal)(filesize / 8589934592), 3)}GB";
         }
         else { // Megabytes..
-       		filesizeFormatted = $"{Math.Round((decimal)(filesize / 8388608), 2)}MB";
+            sourceFilesizeFormatted = $"{Math.Round((decimal)(filesize / 8388608), 2)}MB";
         }
 
-        options.CreatedAt ??= DateTime.UtcNow;
+        Configuration imageConfiguration = Configuration.Default.Clone();
+        imageConfiguration.ReadOrigin = 0;
+
+        DecoderOptions decoderOptions = new() {
+            Configuration = imageConfiguration
+        };
+
+        // Acquire decoder/encoder(s) for the identified format..
+        IImageDecoder imageDecoder = decoderOptions.Configuration.ImageFormatsManager.GetDecoder(format);
+        if (imageDecoder is null) {
+            throw new NotImplementedException($"{nameof(UploadSinglePhoto)} {nameof(imageDecoder)} is null."); // TODO! Handle!!
+        }
+
+        IImageEncoder imageEncoder = decoderOptions.Configuration.ImageFormatsManager.GetEncoder(format);
+        if (imageEncoder is null) {
+            throw new NotImplementedException($"{nameof(UploadSinglePhoto)} {nameof(imageEncoder)} is null."); // TODO! Handle!!
+        }
+
+        using (Image source = await imageDecoder.DecodeAsync(decoderOptions, file))
+        {
+            string alternatePath = fullPath;
+            sourceDimensions = source.Size;
+
+            var exifProfile = source.Metadata.ExifProfile;
+            if (exifProfile is not null && exifProfile.TryGetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.DateTimeOriginal, out var pictureTakenAt))
+            {
+                // Weird, example: 2024:07:20 15:12:48
+                DateTime parsedCreatedAt = options.CreatedAt.Value;
+                if (Program.IsDevelopment) {
+                    Console.WriteLine($"(Debug) Uploading image '{trustedFilename}' from '{pictureTakenAt.Value}'.");
+                }
+
+                if (DateTime.TryParse(
+                    pictureTakenAt.Value,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    DateTimeStyles.AdjustToUniversal,
+                    out parsedCreatedAt
+                )) {
+                    options.CreatedAt = parsedCreatedAt;
+                    Console.WriteLine("ParseExact " + parsedCreatedAt.ToString());
+                    Console.WriteLine("Compare = " + options.UploadedAt.ToString());
+                }
+                else if (DateTime.TryParseExact(
+                    pictureTakenAt.Value,
+                    "yyyy:MM:dd HH:mm:ss",
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    DateTimeStyles.AdjustToUniversal,
+                    out parsedCreatedAt
+                )) {
+                    options.CreatedAt = parsedCreatedAt;
+                    Console.WriteLine("TryParseExact " + parsedCreatedAt.ToString());
+                    Console.WriteLine("Compare = " + options.UploadedAt.ToString());
+                }
+            }
+
+            double dpiX = Math.Round(source.Metadata.HorizontalResolution, 1);
+            double dpiY = Math.Round(source.Metadata.VerticalResolution, 1);
+
+            if (dpiX == default) {
+                dpi = dpiY.ToString();
+            }
+            else if (dpiY == default) {
+                dpi = dpiX.ToString();
+            }
+            else if (dpiX == dpiY) {
+                dpi = dpiX.ToString();
+            }
+            else {
+                dpi = $"{dpiX}x{dpiY}";
+            }
+
+            decimal aspectRatio = Math.Max(sourceDimensions.Width, sourceDimensions.Height) / Math.Min(sourceDimensions.Width, sourceDimensions.Height);
+
+            mediumDimensions = new(
+                (int)(Math.Clamp(ImageDimensions.Medium.TARGET * aspectRatio, ImageDimensions.Medium.CLAMP_MINIMUM, ImageDimensions.Medium.CLAMP_MAXIMUM)),
+                (int)(Math.Clamp(ImageDimensions.Medium.TARGET * aspectRatio, ImageDimensions.Medium.CLAMP_MINIMUM, ImageDimensions.Medium.CLAMP_MAXIMUM))
+            );
+
+            if (sourceDimensions.Width > mediumDimensions.Width && sourceDimensions.Height > mediumDimensions.Height)
+            {
+                using Image medium = source.Clone(context => {
+                    context.Resize(new ResizeOptions()
+                    {
+                       	Size = mediumDimensions,
+                        Mode = ResizeMode.Max
+                    });
+                });
+
+          		alternatePath = Path.Combine(mediumPath, filename);
+
+                using (var mediumFile = File.Create(alternatePath)) {
+                    await medium.SaveAsync(mediumFile, imageEncoder);
+                    mediumFilesize = mediumFile.Length;
+                    Console.WriteLine($"mediumFilesize {mediumFilesize}");
+                }
+            }
+
+            thumbnailDimensions = new(
+                (int)(Math.Clamp(ImageDimensions.Thumbnail.TARGET * aspectRatio, ImageDimensions.Thumbnail.CLAMP_MINIMUM, ImageDimensions.Thumbnail.CLAMP_MAXIMUM)),
+                (int)(Math.Clamp(ImageDimensions.Thumbnail.TARGET * aspectRatio, ImageDimensions.Thumbnail.CLAMP_MINIMUM, ImageDimensions.Thumbnail.CLAMP_MAXIMUM))
+            );
+
+            if (sourceDimensions.Width > thumbnailDimensions.Width && sourceDimensions.Height > thumbnailDimensions.Height)
+            {
+                using Image thumbnail = source.Clone(context =>
+                {
+                    context.Resize(new ResizeOptions()
+                    {
+                        Size = thumbnailDimensions,
+                        Mode = ResizeMode.Max
+                    });
+                });
+
+                alternatePath = Path.Combine(thumbnailPath, filename);
+
+                using (var thumbnailFile = File.Create(alternatePath)) {
+                    await thumbnail.SaveAsync(thumbnailFile, imageEncoder);
+                    thumbnailFilesize = thumbnailFile.Length;
+                    Console.WriteLine($"thumbnailFilesize {thumbnailFilesize}");
+                }
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(options.Slug))
         {
 			// `filename` is only guaranteed unique *for a single date (24h)*.
-			options.Slug = $"{options.CreatedAt.Value.ToShortDateString().Replace('/', '-')}-{filename}";
+			options.Slug = $"{options.UploadedAt.Value.ToShortDateString().Replace('/', '-')}-{filename}";
 
 			extensionIndex = options.Slug.LastIndexOf('.');
 			if (extensionIndex != -1) {
@@ -812,10 +974,18 @@ public class PhotoService(
             12 => "December",
             _ => "Unknown"
         });
+
         formattedDescription.AppendFormat(" {0}", options.CreatedAt.Value.Year);
         formattedDescription.Append(", saved to ");
-        formattedDescription.AppendFormat("'{0}' ", sourcePath);
-        formattedDescription.AppendFormat("({0})", filesizeFormatted);
+        formattedDescription.AppendFormat("'{0}' (", sourcePath);
+
+        if (sourceDimensions.Width != default && sourceDimensions.Height != default)
+        {
+            formattedDescription.AppendFormat("{0}x", sourceDimensions.Width);
+            formattedDescription.AppendFormat("{0}, ", sourceDimensions.Height);
+        }
+
+        formattedDescription.AppendFormat("{0})", sourceFilesizeFormatted);
 
         if (conflicts > 0) {
         	formattedDescription.AppendFormat(". Potentially a copy of {0} other files.", conflicts);
@@ -829,17 +999,20 @@ public class PhotoService(
         PhotoEntity photo = new() {
             Slug = options.Slug,
             Title = options.Title,
-            Summary = options.Summary ?? $"{options.Title} - {filesizeFormatted}",
+            Summary = options.Summary ?? $"{options.Title} - {sourceFilesizeFormatted}",
             Description = formattedDescription.ToString(),
-            UpdatedAt = DateTime.UtcNow,
+            UploadedBy = options.UploadedBy,
+            UploadedAt = options.UploadedAt.Value,
             CreatedAt = options.CreatedAt.Value,
-            CreatedBy = options.CreatedBy,
+            UpdatedAt = DateTime.UtcNow,
             Filepaths = [
                 new() {
                     Filename = filename,
                     Path = sourcePath,
                     Dimension = Dimension.SOURCE,
                     Filesize = filesize,
+                    Height = sourceDimensions.Height,
+                    Width = sourceDimensions.Width
                 }
             ],
             Tags = [
@@ -850,8 +1023,32 @@ public class PhotoService(
             ]
         };
 
+        if (mediumFilesize > 0)
+        {
+            photo.Filepaths.Add(new() {
+                Filename = filename,
+                Path = mediumPath,
+                Dimension = Dimension.MEDIUM,
+                Filesize = mediumFilesize,
+                Height = mediumDimensions.Height,
+                Width = mediumDimensions.Width
+            });
+        }
+
+        if (thumbnailFilesize > 0)
+        {
+            photo.Filepaths.Add(new() {
+                Filename = filename,
+                Path = thumbnailPath,
+                Dimension = Dimension.THUMBNAIL,
+                Filesize = thumbnailFilesize,
+                Height = thumbnailDimensions.Height,
+                Width = thumbnailDimensions.Width
+            });
+        }
+
 		if (user is not null) {
-            photo.CreatedBy = user.Id;
+            photo.UploadedBy = user.Id;
         }
 
         if (filesize >= MultipartHelper.LARGE_FILE_THRESHOLD)

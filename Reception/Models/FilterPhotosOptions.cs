@@ -10,6 +10,7 @@ public class FilterPhotosOptions
     public string? Slug { get; set; }
     public string? Summary { get; set; }
     public string? Title { get; set; }
+    public int? UploadedBy { get; set; }
+    public DateTime? UploadedAt { get; set; }
     public DateTime? CreatedAt { get; set; }
-    public int? CreatedBy { get; set; }
 }
