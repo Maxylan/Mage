@@ -108,32 +108,34 @@ public interface IPhotoService
     #endregion
 
 
-    #region Create / Store a photo blob.
+    #region Create / Store photos.
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
-    /// An instance of <see cref="FilterPhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
-    /// <see cref="Reception.Models.Entities.Photo"/> database entity.
+    /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as options/details of the
+    /// generated database entitities.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public virtual Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(Action<FilterPhotosOptions> opts)
+    public virtual Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(Action<PhotosOptions> opts)
     {
-        FilterPhotosOptions filtering = new();
-        opts(filtering);
+        FilterPhotosOptions options = new();
+        opts(options);
 
-        return UploadPhoto(filtering);
+        return UploadPhotos(options);
     }
 
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
-    /// An instance of <see cref="FilterPhotosOptions"/> (<paramref name="details"/>) has been repurposed to serve as the details of the
-    /// <see cref="Reception.Models.Entities.Photo"/> database entity.
+    /// An instance of <see cref="PhotosOptions"/> (<paramref name="options"/>) has been repurposed to serve as options/details of the
+    /// generated database entitities.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(FilterPhotosOptions details);
+    public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(PhotosOptions options);
     #endregion
 
 

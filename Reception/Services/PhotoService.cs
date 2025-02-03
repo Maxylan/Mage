@@ -359,24 +359,34 @@ public class PhotoService(
                 .Where(photo => photo.UploadedBy == filter.UploadedBy);
         }
 
-        if (filter.UploadedAt is not null)
+        if (filter.UploadedBefore is not null)
         {
-            if (filter.UploadedAt > DateTime.UtcNow) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAt, $"Filter Parameter {nameof(filter.UploadedAt)} cannot exceed DateTime.UtcNow");
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedAt <= filter.UploadedBefore);
+        }
+        else if (filter.UploadedAfter is not null)
+        {
+            if (filter.UploadedAfter > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAfter, $"Filter Parameter {nameof(filter.UploadedAfter)} cannot exceed DateTime.UtcNow");
             }
 
             photoQuery = photoQuery
-                .Where(photo => photo.UploadedAt >= filter.UploadedAt);
+                .Where(photo => photo.UploadedAt >= filter.UploadedAfter);
         }
 
-        if (filter.CreatedAt is not null)
+        if (filter.CreatedBefore is not null)
         {
-            if (filter.CreatedAt > DateTime.UtcNow) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAt, $"Filter Parameter {nameof(filter.CreatedAt)} cannot exceed DateTime.UtcNow");
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedAt <= filter.CreatedBefore);
+        }
+        else if (filter.CreatedAfter is not null)
+        {
+            if (filter.CreatedAfter > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAfter, $"Filter Parameter {nameof(filter.CreatedAfter)} cannot exceed DateTime.UtcNow");
             }
 
             photoQuery = photoQuery
-                .Where(photo => photo.CreatedAt >= filter.CreatedAt);
+                .Where(photo => photo.CreatedAt >= filter.CreatedAfter);
         }
 
         // Pagination
@@ -458,24 +468,34 @@ public class PhotoService(
                 .Where(photo => photo.UploadedBy == filter.UploadedBy);
         }
 
-        if (filter.UploadedAt is not null)
+        if (filter.UploadedBefore is not null)
         {
-            if (filter.UploadedAt > DateTime.UtcNow) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAt, $"Filter Parameter {nameof(filter.UploadedAt)} cannot exceed DateTime.UtcNow");
+            photoQuery = photoQuery
+                .Where(photo => photo.UploadedAt <= filter.UploadedBefore);
+        }
+        else if (filter.UploadedAfter is not null)
+        {
+            if (filter.UploadedAfter > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.UploadedAfter, $"Filter Parameter {nameof(filter.UploadedAfter)} cannot exceed DateTime.UtcNow");
             }
 
             photoQuery = photoQuery
-                .Where(photo => photo.UploadedAt >= filter.UploadedAt);
+                .Where(photo => photo.UploadedAt >= filter.UploadedAfter);
         }
 
-        if (filter.CreatedAt is not null)
+        if (filter.CreatedBefore is not null)
         {
-            if (filter.CreatedAt > DateTime.UtcNow) {
-                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAt, $"Filter Parameter {nameof(filter.CreatedAt)} cannot exceed DateTime.UtcNow");
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedAt <= filter.CreatedBefore);
+        }
+        else if (filter.CreatedAfter is not null)
+        {
+            if (filter.CreatedAfter > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAfter, $"Filter Parameter {nameof(filter.CreatedAfter)} cannot exceed DateTime.UtcNow");
             }
 
             photoQuery = photoQuery
-                .Where(photo => photo.CreatedAt >= filter.CreatedAt);
+                .Where(photo => photo.CreatedAt >= filter.CreatedAfter);
         }
 
         // Pagination
@@ -506,39 +526,41 @@ public class PhotoService(
     #endregion
 
 
-    #region Create / Store a photo blob.
+    #region Create / Store photos.
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
-    /// An instance of <see cref="FilterPhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
-    /// <see cref="Reception.Models.Entities.Photo"/> database entity.
+    /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as options/details of the
+    /// generated database entitities.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(Action<FilterPhotosOptions> opts)
+    public Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(Action<PhotosOptions> opts)
     {
-        FilterPhotosOptions filtering = new();
-        opts(filtering);
+        FilterPhotosOptions options = new();
+        opts(options);
 
-        return UploadPhoto(filtering);
+        return UploadPhotos(options);
     }
 
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
-    /// An instance of <see cref="FilterPhotosOptions"/> (<paramref name="details"/>) has been repurposed to serve as the details of the
-    /// <see cref="Reception.Models.Entities.Photo"/> database entity.
+    /// An instance of <see cref="PhotosOptions"/> (<paramref name="options"/>) has been repurposed to serve as options/details of the
+    /// generated database entitities.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public async Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(FilterPhotosOptions details)
+    public async Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(PhotosOptions options)
     {
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
         {
-            string message = $"{nameof(UploadPhoto)} Failed: No {nameof(HttpContext)} found.";
+            string message = $"{nameof(UploadPhotos)} Failed: No {nameof(HttpContext)} found.";
             await logging
-                .Action(nameof(UploadPhoto))
+                .Action(nameof(UploadPhotos))
                 .InternalError(message)
                 .SaveAsync();
 
@@ -549,9 +571,9 @@ public class PhotoService(
 
         if (!MultipartHelper.IsMultipartContentType(httpContext.Request.ContentType))
         {
-            string message = $"{nameof(UploadPhoto)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
+            string message = $"{nameof(UploadPhotos)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
             await logging
-                .Action(nameof(UploadPhoto))
+                .Action(nameof(UploadPhotos))
                 .ExternalError(message)
                 .SaveAsync();
 
@@ -560,7 +582,6 @@ public class PhotoService(
             );
         }
 
-        details.CreatedAt ??= DateTime.UtcNow;
         Account? user = null;
 
         if (MageAuthentication.IsAuthenticated(contextAccessor))
@@ -570,10 +591,14 @@ public class PhotoService(
             }
             catch (Exception ex) {
                 await logging
-                    .Action(nameof(UploadPhoto))
+                    .Action(nameof(UploadPhotos))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
                     .SaveAsync();
             }
+        }
+
+        if (user is not null) {
+            options.UploadedBy = user.Id;
         }
 
         var mediaTypeHeader = MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!);
@@ -603,7 +628,7 @@ public class PhotoService(
                 PhotoEntity? newPhoto;
                 try {
 	                newPhoto = await UploadSinglePhoto(
-	                	details,
+	                	options,
 	                	contentDisposition,
 	               		section!,
 	                  	user
@@ -612,7 +637,7 @@ public class PhotoService(
 	                if (newPhoto is null)
 	                {
 	                    await logging
-							.Action(nameof(UploadPhoto))
+							.Action(nameof(UploadPhotos))
 							.InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo. {nameof(newPhoto)} was null.")
 							.SaveAsync();
 	                    continue;
@@ -621,7 +646,7 @@ public class PhotoService(
                 catch (Exception ex)
                 {
                 	await logging
-                 		.Action(nameof(UploadPhoto))
+                 		.Action(nameof(UploadPhotos))
                    		.InternalError($"Failed to upload a photo. ({ex.GetType().Name}) " + ex.Message, opts => {
                      		opts.Exception = ex;
                         })
@@ -638,7 +663,7 @@ public class PhotoService(
                     if (newPhoto is null || newPhoto.Id == default)
                     {
                         await logging
-	                        .Action(nameof(UploadPhoto))
+	                        .Action(nameof(UploadPhotos))
 	                        .InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).")
 	                        .SaveAsync();
                         continue;
@@ -648,7 +673,7 @@ public class PhotoService(
                 if (!newPhoto!.Filepaths.Any(path => path.IsSource))
                 {
 	                await logging
-                        .Action(nameof(UploadPhoto))
+                        .Action(nameof(UploadPhotos))
                         .InternalError($"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(PhotoEntity)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).")
                         .SaveAsync();
 	                continue;
@@ -658,11 +683,26 @@ public class PhotoService(
                 	new(newPhoto)
                 );
             }
-            // TODO! Maaaaaybe implement support for this in the future.
-            /* else if (MultipartHelper.HasFormDataContentDisposition(contentDisposition))
+            // TODO! Support for form data parameters
+            else if (MultipartHelper.HasFormDataContentDisposition(contentDisposition))
             {
-                ...
-            } */
+                // TODO! Alternative way to get created-date?
+                // if (string.IsNullOrWhiteSpace(contentDisposition.CreationDate))
+
+                var parameterList = contentDisposition.Parameters.ToList();
+
+                int titleIndex = parameterList.FindIndex(p => p.Name == "Title" || p.Name == "title");
+                if (titleIndex != -1) {
+                    options.Title = parameterList[titleIndex].Value.ToString();
+                    continue;
+                }
+
+                int slugIndex = parameterList.FindIndex(p => p.Name == "Slug" || p.Name == "slug");
+                if (slugIndex != -1) {
+                    options.Slug = parameterList[slugIndex].Value.ToString();
+                    continue;
+                }
+            }
         }
         while (section is not null && ++iteration < 4096u);
 
@@ -673,12 +713,12 @@ public class PhotoService(
     /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
     /// </summary>
     /// <remarks>
-    /// An instance of <see cref="FilterPhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
+    /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoEntity"/></returns>
     protected async Task<PhotoEntity> UploadSinglePhoto(
-    	FilterPhotosOptions options,
+    	PhotosOptions options,
     	ContentDispositionHeaderValue contentDisposition,
     	MultipartSection section,
     	Account? user = null
@@ -688,6 +728,8 @@ public class PhotoService(
 	    string thumbnailPath = string.Empty;
 	    string fileExtension = string.Empty;
 	    string trustedFilename = string.Empty;
+		DateTime createdAt = DateTime.UtcNow; // Fallback in case no EXIF data..
+		DateTime uploadedAt = DateTime.UtcNow;
 
 	    // Don't trust the file name sent by the client. To display the file name, HTML-encode the value.
 	    // https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming
@@ -734,9 +776,10 @@ public class PhotoService(
             throw new NotImplementedException($"{nameof(UploadSinglePhoto)} {nameof(format)} is null."); // TODO! Handle!!
         }
 
-	    sourcePath = GetCombinedPath(Dimension.SOURCE, options.CreatedAt);
-	    mediumPath = GetCombinedPath(Dimension.MEDIUM, options.CreatedAt);
-	    thumbnailPath = GetCombinedPath(Dimension.THUMBNAIL, options.CreatedAt);
+	    sourcePath = GetCombinedPath(Dimension.SOURCE, uploadedAt);
+	    mediumPath = GetCombinedPath(Dimension.MEDIUM, uploadedAt);
+	    thumbnailPath = GetCombinedPath(Dimension.THUMBNAIL, uploadedAt);
+		// TODO! Parse EXIF before combining paths to use the date the picture was taken/created as its path, instead of the upload date.
 
 	    try {
 	        Directory.CreateDirectory(sourcePath);
@@ -753,7 +796,7 @@ public class PhotoService(
 	        DirectoryNotFoundException
 	        NotSupportedException
 	        */
-	        throw new NotImplementedException($"Handle directory create errors {nameof(UploadPhoto)} ({sourcePath}) " + ex.Message); // TODO: HANDLE
+	        throw new NotImplementedException($"Handle directory create errors {nameof(UploadSinglePhoto)} ({sourcePath}) " + ex.Message); // TODO: HANDLE
 	    }
 
         // Handle potential name-conflicts on the path..
@@ -789,8 +832,6 @@ public class PhotoService(
         Size mediumDimensions;
         Size thumbnailDimensions;
         string dpi = string.Empty;
-        options.UploadedAt ??= DateTime.UtcNow;
-        options.CreatedAt ??= DateTime.UtcNow; // Fallback in case no EXIF data..
         string sourceFilesizeFormatted = filesize.ToString();
 
         if (filesize < 8388608) { // Kilobytes..
@@ -829,32 +870,26 @@ public class PhotoService(
             var exifProfile = source.Metadata.ExifProfile;
             if (exifProfile is not null && exifProfile.TryGetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.DateTimeOriginal, out var pictureTakenAt))
             {
-                // Weird, example: 2024:07:20 15:12:48
-                DateTime parsedCreatedAt = options.CreatedAt.Value;
-                if (Program.IsDevelopment) {
-                    Console.WriteLine($"(Debug) Uploading image '{trustedFilename}' from '{pictureTakenAt.Value}'.");
-                }
-
                 if (DateTime.TryParse(
                     pictureTakenAt.Value,
                     System.Globalization.CultureInfo.CurrentCulture,
                     DateTimeStyles.AdjustToUniversal,
-                    out parsedCreatedAt
+                    out createdAt
                 )) {
-                    options.CreatedAt = parsedCreatedAt;
-                    Console.WriteLine("ParseExact " + parsedCreatedAt.ToString());
-                    Console.WriteLine("Compare = " + options.UploadedAt.ToString());
+                    if (Program.IsDevelopment) {
+                        Console.WriteLine($"(Debug -> TryParse) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.");
+                    }
                 }
                 else if (DateTime.TryParseExact(
                     pictureTakenAt.Value,
-                    "yyyy:MM:dd HH:mm:ss",
+                    "yyyy:MM:dd HH:mm:ss", // Weird, example: 2024:07:20 15:12:48
                     System.Globalization.CultureInfo.CurrentCulture,
                     DateTimeStyles.AdjustToUniversal,
-                    out parsedCreatedAt
+                    out createdAt
                 )) {
-                    options.CreatedAt = parsedCreatedAt;
-                    Console.WriteLine("TryParseExact " + parsedCreatedAt.ToString());
-                    Console.WriteLine("Compare = " + options.UploadedAt.ToString());
+                    if (Program.IsDevelopment) {
+                        Console.WriteLine($"(Debug -> TryParseExact) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.");
+                    }
                 }
             }
 
@@ -933,7 +968,7 @@ public class PhotoService(
         if (string.IsNullOrWhiteSpace(options.Slug))
         {
 			// `filename` is only guaranteed unique *for a single date (24h)*.
-			options.Slug = $"{options.UploadedAt.Value.ToShortDateString().Replace('/', '-')}-{filename}";
+			options.Slug = $"{uploadedAt.ToShortDateString().Replace('/', '-')}-{filename}";
 
 			extensionIndex = options.Slug.LastIndexOf('.');
 			if (extensionIndex != -1) {
@@ -956,30 +991,52 @@ public class PhotoService(
             }
         }
 
-        logging
-	        .Action(nameof(UploadPhoto))
-	        .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}'");
-
         StringBuilder formattedDescription = new();
-        formattedDescription.Append("Uploaded ");
-        formattedDescription.Append(options.CreatedAt.Value.Month switch
+        if (createdAt != uploadedAt)
         {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => "Unknown"
-        });
+            formattedDescription.Append("Taken/Created ");
+            formattedDescription.Append(createdAt.Month switch
+            {
+                1 => "January",
+                2 => "February",
+                3 => "March",
+                4 => "April",
+                5 => "May",
+                6 => "June",
+                7 => "July",
+                8 => "August",
+                9 => "September",
+                10 => "October",
+                11 => "November",
+                12 => "December",
+                _ => "Unknown"
+            });
 
-        formattedDescription.AppendFormat(" {0}", options.CreatedAt.Value.Year);
+            formattedDescription.AppendFormat(" {0}", createdAt.Year);
+        }
+        else
+        {
+            formattedDescription.Append("Uploaded ");
+            formattedDescription.Append(uploadedAt.Month switch
+            {
+                1 => "January",
+                2 => "February",
+                3 => "March",
+                4 => "April",
+                5 => "May",
+                6 => "June",
+                7 => "July",
+                8 => "August",
+                9 => "September",
+                10 => "October",
+                11 => "November",
+                12 => "December",
+                _ => "Unknown"
+            });
+
+            formattedDescription.AppendFormat(" {0}", uploadedAt.Year);
+        }
+
         formattedDescription.Append(", saved to ");
         formattedDescription.AppendFormat("'{0}' (", sourcePath);
 
@@ -996,9 +1053,24 @@ public class PhotoService(
         }
 
         // TODO! Replace DB Call here with some tags service..
-        var year_tag = await db.Tags.FirstOrDefaultAsync(
-        	tag => tag.Name == options.CreatedAt.Value.Year.ToString()
-        );
+
+        List<Tag> tags = [];
+        if (options.Tags is not null && options.Tags.Length > 0)
+        {
+            foreach (string tagName in options.Tags.Distinct())
+            {
+                Tag? tag = await db.Tags.FirstOrDefaultAsync(_t => _t.Name == tagName);
+
+                if (tag is null)
+                {
+                    tag = new() {
+                        Name = tagName
+                    };
+                }
+
+                tags.Add(tag);
+            }
+        }
 
         PhotoEntity photo = new() {
             Slug = options.Slug,
@@ -1006,9 +1078,10 @@ public class PhotoService(
             Summary = options.Summary ?? $"{options.Title} - {sourceFilesizeFormatted}",
             Description = formattedDescription.ToString(),
             UploadedBy = options.UploadedBy,
-            UploadedAt = options.UploadedAt.Value,
-            CreatedAt = options.CreatedAt.Value,
+            UploadedAt = uploadedAt,
+            CreatedAt = createdAt,
             UpdatedAt = DateTime.UtcNow,
+            Tags = tags,
             Filepaths = [
                 new() {
                     Filename = filename,
@@ -1018,15 +1091,14 @@ public class PhotoService(
                     Height = sourceDimensions.Height,
                     Width = sourceDimensions.Width
                 }
-            ],
-            Tags = [
-                year_tag ?? new () {
-                    Name = options.CreatedAt.Value.Year.ToString(),
-                    Description = "Images uploaded during " + options.CreatedAt.Value.Year.ToString()
-                }
             ]
         };
 
+        if (user is not null) {
+            photo.UploadedBy = user.Id;
+        }
+
+        // Auto-generated Filepaths..
         if (mediumFilesize > 0)
         {
             photo.Filepaths.Add(new() {
@@ -1051,10 +1123,19 @@ public class PhotoService(
             });
         }
 
-		if (user is not null) {
-            photo.UploadedBy = user.Id;
-        }
+        // Auto-generated Tags..
+        if (createdAt != uploadedAt)
+        {
+            // TODO! Replace DB Call here with some tags service..
+            var year_tag = await db.Tags.FirstOrDefaultAsync(
+            	tag => tag.Name == createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture)
+            );
 
+            photo.Tags.Add(year_tag ?? new() {
+                Name = createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture),
+                Description = "Images taken/created during " + createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture)
+            });
+        }
         if (filesize >= MultipartHelper.LARGE_FILE_THRESHOLD)
         {
 	        // TODO! Replace DB Call here with some tags service..
@@ -1062,8 +1143,7 @@ public class PhotoService(
 	        	tag => tag.Name == MultipartHelper.LARGE_FILE_CATEGORY_SLUG
 	        );
 
-            photo.Tags.Add(new()
-            {
+            photo.Tags.Add(hd_tag ?? new() {
 	            Name = MultipartHelper.LARGE_FILE_CATEGORY_SLUG,
 	            Description = "Large or High-Definition Images."
             });
@@ -1075,8 +1155,7 @@ public class PhotoService(
             	tag => tag.Name == MultipartHelper.SMALL_FILE_CATEGORY_SLUG
             );
 
-            photo.Tags.Add(sd_tag ?? new()
-            {
+            photo.Tags.Add(sd_tag ?? new() {
 	            Name = MultipartHelper.SMALL_FILE_CATEGORY_SLUG,
 	            Description = "Small or Low-Definition Images and/or thumbnails."
             });
@@ -1084,16 +1163,22 @@ public class PhotoService(
         if (conflicts > 0)
         {
 	        // TODO! Replace DB Call here with some tags service..
-	        var sd_tag = await db.Tags.FirstOrDefaultAsync(
+	        var copy_tag = await db.Tags.FirstOrDefaultAsync(
 	        	tag => tag.Name == "Copy"
 	        );
 
-	        photo.Tags.Add(sd_tag ?? new()
-	        {
+	        photo.Tags.Add(copy_tag ?? new() {
 		            Name = "Copy",
 		            Description = "Image might be a copy of another, its filename conflicts with at least one other file uploaded around the same time."
 	        });
         }
+
+        logging
+	        .Action(nameof(UploadSinglePhoto))
+	        .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(PhotoCollection)} '{photo.Slug}'.");
+
+        options.Slug = null;
+        options.Title = null;
 
         return photo;
     }
