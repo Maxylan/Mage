@@ -1,11 +1,13 @@
 ﻿namespace Reception.Models.Entities;
 
-public enum Dimension {
+public enum Dimension
+{
     THUMBNAIL,
     MEDIUM,
     SOURCE
 }
-public enum Method {
+public enum Method
+{
     UNKNOWN,
     HEAD,
     GET,
@@ -14,7 +16,8 @@ public enum Method {
     PATCH,
     DELETE
 }
-public enum Severity {
+public enum Severity
+{
     TRACE,
     DEBUG,
     INFORMATION,
@@ -23,7 +26,8 @@ public enum Severity {
     ERROR,
     CRITICAL
 }
-public enum Source {
+public enum Source
+{
     INTERNAL,
     EXTERNAL
 }

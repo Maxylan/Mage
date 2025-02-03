@@ -46,7 +46,8 @@ public class Account
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
 
     public static Action<EntityTypeBuilder<Account>> Build => (
-        entity => {
+        entity =>
+        {
             entity.HasKey(e => e.Id).HasName("accounts_pkey");
 
             entity.ToTable("accounts", "magedb");

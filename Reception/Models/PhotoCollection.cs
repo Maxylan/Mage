@@ -11,10 +11,12 @@ public record PhotoCollection
     [SetsRequiredMembers]
     public PhotoCollection(
         PhotoEntity entity
-    ) {
-        foreach(var filepath in entity.Filepaths)
+    )
+    {
+        foreach (var filepath in entity.Filepaths)
         {
-            switch(filepath.Dimension) {
+            switch (filepath.Dimension)
+            {
                 case Dimension.SOURCE:
                     Source = new Photo(entity, filepath);
                     break;
@@ -27,7 +29,8 @@ public record PhotoCollection
             }
         }
 
-        if (Source is null) {
+        if (Source is null)
+        {
             throw new ArgumentException($"{nameof(PhotoEntity)} didn't have a '{Dimension.SOURCE}' {nameof(Dimension)}", nameof(entity));
         }
     }
@@ -37,14 +40,18 @@ public record PhotoCollection
         Photo source,
         Photo? medium = null,
         Photo? thumbnail = null
-    ) {
-        if (source.Dimension != Dimension.SOURCE) {
+    )
+    {
+        if (source.Dimension != Dimension.SOURCE)
+        {
             throw new ArgumentException($"Source Dimension {nameof(Reception.Models.Photo)} didn't match '{Dimension.SOURCE}' ({source.Dimension})", nameof(source));
         }
-        if (medium is not null && medium.Dimension != Dimension.MEDIUM) {
+        if (medium is not null && medium.Dimension != Dimension.MEDIUM)
+        {
             throw new ArgumentException($"Medium Dimension {nameof(Reception.Models.Photo)} didn't match '{Dimension.MEDIUM}' ({medium.Dimension})", nameof(medium));
         }
-        if (thumbnail is not null && thumbnail.Dimension != Dimension.THUMBNAIL) {
+        if (thumbnail is not null && thumbnail.Dimension != Dimension.THUMBNAIL)
+        {
             throw new ArgumentException($"Thumbnail Dimension {nameof(Reception.Models.Photo)} didn't match '{Dimension.THUMBNAIL}' ({thumbnail.Dimension})", nameof(thumbnail));
         }
 

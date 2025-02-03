@@ -8,7 +8,8 @@ namespace Reception.Authentication;
 /// </summary>
 public static class Messages
 {
-    public static string ByCode(int code) => code switch {
+    public static string ByCode(int code) => code switch
+    {
         UnknownErrorCode => UnknownError,
         UnauthorizedCode => Unathorized,
         MissingHeaderCode => MissingHeader,
@@ -17,9 +18,9 @@ public static class Messages
         ValidationFailedCode => ValidationFailed,
         _ => UnknownError,
     };
-    public static string ByCode(IAuthenticationException authException) => 
+    public static string ByCode(IAuthenticationException authException) =>
         ByCode(authException.Code);
-    
+
     private static string Prefix(int code) =>
         $"Code {code}: ";
 

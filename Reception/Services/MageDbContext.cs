@@ -42,7 +42,8 @@ public partial class MageDbContext : DbContext
             sb.AppendFormat("Host={0};", Environment.GetEnvironmentVariable("STORAGE_URL"));
             sb.AppendFormat("Username={0};", Environment.GetEnvironmentVariable("POSTGRES_USER"));
             sb.AppendFormat("Password={0}", Environment.GetEnvironmentVariable("POSTGRES_PASSWORD"));
-            optionsBuilder.UseNpgsql(sb.ToString(), opts => {
+            optionsBuilder.UseNpgsql(sb.ToString(), opts =>
+            {
                 INpgsqlNameTranslator nameTranslator = new NpgsqlNullNameTranslator();
                 opts.MapEnum<Dimension>("dimension", "magedb", nameTranslator);
                 opts.MapEnum<Method>("method", "magedb", nameTranslator);

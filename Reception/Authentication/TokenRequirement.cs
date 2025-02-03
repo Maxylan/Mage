@@ -28,7 +28,7 @@ public class HandleTokenRequirement(
             context.Fail(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message)
             );
-            
+
             return;
         }
 
@@ -44,7 +44,7 @@ public class HandleTokenRequirement(
             context.Fail(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : Messages.MissingHeader)
             );
-            
+
             return;
         }
 

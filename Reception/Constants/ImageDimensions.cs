@@ -5,10 +5,11 @@ namespace Reception.Constants;
 /// </summary>
 public static class ImageDimensions
 {
-	/// <summary>
+    /// <summary>
     /// Image size limits
     /// </summary>
-    public static class Limits {
+    public static class Limits
+    {
         public const int MIN_WIDTH = 4;
         public const int MIN_HEIGHT = 4;
         public const int MAX_WIDTH = 32768;
@@ -18,7 +19,8 @@ public static class ImageDimensions
     /// <summary>
     /// Medium Dimensions
     /// </summary>
-    public static class Medium {
+    public static class Medium
+    {
         public const int TARGET = 640;
         public const int CLAMP_MINIMUM = 480;
         public const int CLAMP_MAXIMUM = 800;
@@ -27,7 +29,8 @@ public static class ImageDimensions
     /// <summary>
     /// Thumbnail Dimensions
     /// </summary>
-    public static class Thumbnail {
+    public static class Thumbnail
+    {
         public const int TARGET = 128;
         public const int CLAMP_MINIMUM = 64;
         public const int CLAMP_MAXIMUM = 256;

@@ -11,20 +11,25 @@ public record Photo
     public Photo(
         PhotoEntity entity,
         Dimension dimension
-    ) {
-        if (entity.Id == default) {
+    )
+    {
+        if (entity.Id == default)
+        {
             throw new ArgumentException($"{nameof(PhotoEntity.Id)} can't be null", nameof(entity.Id));
         }
-        if (entity.Filepaths is null || entity.Filepaths.Count == 0) {
+        if (entity.Filepaths is null || entity.Filepaths.Count == 0)
+        {
             throw new ArgumentException($"Navigation {nameof(PhotoEntity.Filepaths)} can't be null/empty", nameof(entity));
         }
 
         var path = entity.Filepaths.FirstOrDefault(path => path.Dimension == dimension);
 
-        if (path is null) {
+        if (path is null)
+        {
             throw new ArgumentException($"{nameof(PhotoEntity)} did not have a {nameof(Filepath)} with Dimension {dimension.ToString()}", nameof(entity));
         }
-        if (path.PhotoId != entity.Id) {
+        if (path.PhotoId != entity.Id)
+        {
             throw new ArgumentException($"{nameof(Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(PhotoEntity.Id)} ({entity.Id})", nameof(entity.Id));
         }
 
@@ -35,11 +40,14 @@ public record Photo
     public Photo(
         PhotoEntity entity,
         Filepath path
-    ) {
-        if (entity.Id == default) {
+    )
+    {
+        if (entity.Id == default)
+        {
             throw new ArgumentException($"{nameof(PhotoEntity.Id)} can't be null", nameof(entity.Id));
         }
-        if (path.PhotoId != entity.Id) {
+        if (path.PhotoId != entity.Id)
+        {
             throw new ArgumentException($"{nameof(Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(PhotoEntity.Id)} ({entity.Id})", nameof(entity.Id));
         }
 
@@ -63,7 +71,8 @@ public record Photo
     public int? Width { get => _filepath.Width; }
     public string Filename { get => _filepath.Filename; }
     public string Path { get => _filepath.Path; }
-    public string[] Tags {
+    public string[] Tags
+    {
         get => _entity.Tags
             .Select(tag => tag.Name)
             .ToArray();

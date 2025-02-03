@@ -53,7 +53,8 @@ public class AccountsController(IAccountService handler) : ControllerBase
     {
         if (mut.Id == default)
         {
-            if (id == default) {
+            if (id == default)
+            {
                 return BadRequest($"Both parameters '{nameof(id)}' and '{nameof(mut.Id)}' are invalid!");
             }
 
@@ -64,7 +65,7 @@ public class AccountsController(IAccountService handler) : ControllerBase
     }
 
     // TODO! (2025-01-19)
-    
+
     /// <summary>
     /// Update the avatar of a single <see cref="Account"/> (user).
     /// </summary>
@@ -76,16 +77,19 @@ public class AccountsController(IAccountService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Account>> UpdateAvatar(int id, int photo_id)
     {
-        if (id == default) {
+        if (id == default)
+        {
             return BadRequest($"Parameter '{nameof(id)}' is invalid!");
         }
-        if (photo_id == default) {
+        if (photo_id == default)
+        {
             return BadRequest($"Parameter '{nameof(photo_id)}' is invalid!");
         }
 
         var getAccount = await handler.GetAccount(id);
         var user = getAccount.Value;
-        if (user is null) {
+        if (user is null)
+        {
             return NotFound();
         }
 

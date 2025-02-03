@@ -10,20 +10,22 @@ public readonly struct LogFormat(LogEntry entry)
     public string GetTime() => $"[{entry.CreatedAt.ToShortTimeString()}]";
     public string GetSeverity() => $"[{entry.LogLevel.ToString()}]";
     public string GetSource() => $"({entry.Source.ToString()}) {entry.Method.ToString()}";
-    public string GetUser() 
+    public string GetUser()
     {
         string? userName = (
-            entry.UserFullName ?? 
-            entry.UserEmail ?? 
+            entry.UserFullName ??
+            entry.UserEmail ??
             entry.UserUsername
         );
-        if (string.IsNullOrWhiteSpace(userName)) {
+        if (string.IsNullOrWhiteSpace(userName))
+        {
             return string.Empty;
         }
-        if (entry.UserId is not null) {
+        if (entry.UserId is not null)
+        {
             userName += $" (UID #{entry.UserId})";
         }
-        
+
         return "by " + userName;
     }
 
@@ -32,7 +34,8 @@ public readonly struct LogFormat(LogEntry entry)
         if (includeUser &&
             GetUser() is string user &&
             !string.IsNullOrWhiteSpace(user)
-        ) {
+        )
+        {
             return $"{entry.Action} {user} ->";
         }
 
@@ -42,7 +45,8 @@ public readonly struct LogFormat(LogEntry entry)
     public string Short(bool includeTime = true)
     {
         StringBuilder sb = new();
-        if (includeTime) {
+        if (includeTime)
+        {
             sb.Append(GetTime() + " ");
         }
 

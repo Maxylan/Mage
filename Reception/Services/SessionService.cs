@@ -26,7 +26,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSession))
                 .ExternalDebug(message);
-            
+
             return new BadRequestObjectResult(
                 Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
             );
@@ -42,7 +42,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSession))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -54,7 +54,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSession))
                 .ExternalDebug(message, m => m.Method = Method.GET);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -77,7 +77,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSessionById))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -107,7 +107,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSessionByUserId))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -119,7 +119,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSessionByUserId))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -129,10 +129,11 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             account.Sessions = account.Sessions
                 .OrderByDescending(session => session.CreatedAt)
                 .ToArray();
-        
+
             if (deleteDuplicates)
             {
-                for (int i = 1; i < account.Sessions.Count; i++) {
+                for (int i = 1; i < account.Sessions.Count; i++)
+                {
                     db.Remove(account.Sessions.ElementAt(i));
                 }
 
@@ -164,7 +165,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSessionByUsername))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -176,7 +177,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(GetSessionByUsername))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -186,10 +187,11 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             account.Sessions = account.Sessions
                 .OrderByDescending(session => session.CreatedAt)
                 .ToArray();
-        
+
             if (deleteDuplicates)
             {
-                for (int i = 1; i < account.Sessions.Count; i++) {
+                for (int i = 1; i < account.Sessions.Count; i++)
+                {
                     db.Remove(account.Sessions.ElementAt(i));
                 }
 
@@ -215,7 +217,8 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
         {
             logging.Logger.LogInformation($"[{nameof(SessionService)}] ({nameof(GetSessionByUser)}) Asynchronously loading missing navigation entries.");
 
-            foreach(var navigationEntry in db.Entry(account).Navigations) {
+            foreach (var navigationEntry in db.Entry(account).Navigations)
+            {
                 await navigationEntry.LoadAsync();
             }
         }
@@ -227,10 +230,11 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
                 account.Sessions = account.Sessions
                     .OrderByDescending(session => session.CreatedAt)
                     .ToArray();
-            
+
                 if (deleteDuplicates)
                 {
-                    for (int i = 1; i < account.Sessions.Count; i++) {
+                    for (int i = 1; i < account.Sessions.Count; i++)
+                    {
                         db.Remove(account.Sessions.ElementAt(i));
                     }
 
@@ -252,21 +256,22 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             .Where(session => session.UserId == account.Id)
             .OrderByDescending(session => session.CreatedAt)
             .ToListAsync();
-        
+
         if (sessions is null || sessions.Count == 0)
         {
             string message = $"{nameof(Account)} '{account.Username}' (UID #{account.Id}) have no active/stored {nameof(Session)} instances.";
             logging
                 .Action(nameof(GetSessionByUser))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
         }
         else if (sessions.Count > 1 && deleteDuplicates)
         {
-            for (int i = 1; i < sessions.Count; i++) {
+            for (int i = 1; i < sessions.Count; i++)
+            {
                 db.Remove(sessions.ElementAt(i));
             }
 
@@ -285,21 +290,22 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
         if (user is not null)
         {
             bool exists = await db.Accounts.ContainsAsync(user);
-            
-            if (exists) {
+
+            if (exists)
+            {
                 return user;
             }
         }
 
         user = await db.Accounts.FindAsync(session.UserId);
-        
+
         if (user is null)
         {
             string message = $"Failed to find an {nameof(Account)} matching the given {nameof(Session)}'s {nameof(Session.UserId)} #{session.UserId}.";
             logging
                 .Action(nameof(GetSession))
                 .ExternalDebug(message);
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -322,11 +328,13 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     public async Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request = null, Source source = Source.INTERNAL)
     {
         string? userAgentHeader = null;
-        if (request is not null) {
+        if (request is not null)
+        {
             userAgentHeader = request.Headers.UserAgent.ToString();
         }
 
-        Session newSession = new() {
+        Session newSession = new()
+        {
             UserId = account.Id,
             Code = Guid.NewGuid().ToString("D"),
             UserAgent = userAgentHeader,
@@ -345,12 +353,14 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
         if (source == Source.EXTERNAL)
         {
             logging
-                .LogTrace(message, m => {
+                .LogTrace(message, m =>
+                {
                     m.Action = nameof(CreateSession);
                     m.Source = source;
                 });
         }
-        else {
+        else
+        {
             logging.Logger.LogTrace(message);
         }
 
@@ -391,7 +401,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(DeleteExpired))
                 .InternalTrace($"Removing {sessions.Count} expired sessions..");
-            
+
             return sessions.Count;
         }
 
@@ -422,7 +432,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             logging
                 .Action(nameof(DeleteDuplicates))
                 .InternalTrace($"Removing {sessions.Count} duplicate user sessions..");
-            
+
             return sessions.Count;
         }
 

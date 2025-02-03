@@ -22,7 +22,7 @@ public class AuthenticationException : Exception, IAuthenticationException
     /// The exception that is the cause of the current exception, or a null reference if no inner exception
     /// is specified.
     /// </summary>
-    public static void Throw(int code, string? message = null, Exception? innerException = null) => 
+    public static void Throw(int code, string? message = null, Exception? innerException = null) =>
         throw new AuthenticationException(code, message, innerException);
 
     /// <summary>
@@ -31,7 +31,8 @@ public class AuthenticationException : Exception, IAuthenticationException
     /// <param name="code">
     /// A source for the error that can be used to determine how to handle this Authentication Failure.
     /// </summary>
-    public AuthenticationException(int code) : base(Messages.ByCode(code)) {
+    public AuthenticationException(int code) : base(Messages.ByCode(code))
+    {
         this.Code = code;
     }
     /// <summary>
@@ -43,7 +44,8 @@ public class AuthenticationException : Exception, IAuthenticationException
     /// <param name="message">
     /// The message that describes the error.
     /// </summary>
-    public AuthenticationException(int code, string? message) : base(message ?? Messages.ByCode(code)) {
+    public AuthenticationException(int code, string? message) : base(message ?? Messages.ByCode(code))
+    {
         this.Code = code;
     }
     /// <summary>
@@ -59,7 +61,8 @@ public class AuthenticationException : Exception, IAuthenticationException
     /// The exception that is the cause of the current exception, or a null reference if no inner exception
     /// is specified.
     /// </summary>
-    public AuthenticationException(int code, string? message, Exception? innerException) : base(message ?? Messages.ByCode(code), innerException) {
+    public AuthenticationException(int code, string? message, Exception? innerException) : base(message ?? Messages.ByCode(code), innerException)
+    {
         this.Code = code;
     }
 }

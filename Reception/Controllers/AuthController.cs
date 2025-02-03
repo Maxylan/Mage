@@ -42,11 +42,13 @@ public class AuthController(
         var sessionValidation = await authorization.ValidateSession(Source.EXTERNAL);
         var session = sessionValidation.Value;
 
-        if (session is null || string.IsNullOrWhiteSpace(session.Code)) {
+        if (session is null || string.IsNullOrWhiteSpace(session.Code))
+        {
             return sessionValidation.Result!;
         }
 
-        if (session.User is Account user) {
+        if (session.User is Account user)
+        {
             return user;
         }
 
@@ -94,6 +96,6 @@ public class AuthController(
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status408RequestTimeout)]
-    public async Task<ActionResult<Session>> Login([FromBody] Login body) => 
+    public async Task<ActionResult<Session>> Login([FromBody] Login body) =>
         await authorization.Login(body.Username, body.Hash);
 }

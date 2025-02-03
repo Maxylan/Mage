@@ -36,15 +36,16 @@ public class MageAuthentication(
             Parameters.SESSION_TOKEN_HEADER,
             out StringValues headerValue
         );
-        
-        if (!getSessionTokenHeader) {
+
+        if (!getSessionTokenHeader)
+        {
             return AuthenticateResult.Fail(Messages.MissingHeader);
         }
 
         var token = headerValue.ToString();
         var getSession = await service.ValidateSession(token, Source.EXTERNAL);
         Session? session = getSession.Value;
-        
+
         if (session is null || string.IsNullOrWhiteSpace(session.Code))
         {
             string message = $"{Messages.ValidationFailed} Token: '{token}', Result '{getSession.GetType().FullName}', Session: {(session?.GetType()?.Name ?? "null")}).";
@@ -52,14 +53,15 @@ public class MageAuthentication(
                 .Action(nameof(HandleAuthenticateAsync))
                 .ExternalWarning(message)
                 .SaveAsync();
-            
+
             return AuthenticateResult.Fail(
                 Program.IsProduction ? Messages.ValidationFailed : message
             );
         }
 
         AuthenticationTicket? ticket = null;
-        try {
+        try
+        {
             ticket = GenerateAuthenticationTicket(session!.User, session);
         }
         catch (AuthenticationException authException)
@@ -67,17 +69,19 @@ public class MageAuthentication(
             string message = Messages.ByCode(authException);
             await loggingService
                 .Action(nameof(HandleAuthenticateAsync))
-                .LogEvent(message, opts => {
+                .LogEvent(message, opts =>
+                {
                     opts.Exception = authException;
                     opts.Source = Source.EXTERNAL;
-                    opts.LogLevel = authException.Code switch {
+                    opts.LogLevel = authException.Code switch
+                    {
                         1 => Severity.ERROR,
                         2 => Severity.SUSPICIOUS,
                         _ => Severity.INFORMATION
                     };
                 })
                 .SaveAsync();
-            
+
             return AuthenticateResult.Fail(message);
         }
         catch (Exception ex)
@@ -85,16 +89,17 @@ public class MageAuthentication(
             string message = Messages.UnknownError + " " + ex.Message;
             await loggingService
                 .Action(nameof(HandleAuthenticateAsync))
-                .ExternalError(message, opts => {
+                .ExternalError(message, opts =>
+                {
                     opts.Exception = ex;
                 })
                 .SaveAsync();
-            
+
             return AuthenticateResult.Fail(
                 Program.IsProduction ? Messages.UnknownError : message
             );
         }
-        
+
         return AuthenticateResult.Success(ticket!);
     }
 
@@ -112,11 +117,13 @@ public class MageAuthentication(
         {
             Logger.LogInformation($"[{nameof(MageAuthentication)}] ({nameof(GenerateAuthenticationTicket)}) Loading missing navigation entries.");
 
-            foreach(var navigationEntry in db.Entry(user).Navigations) {
+            foreach (var navigationEntry in db.Entry(user).Navigations)
+            {
                 navigationEntry.Load();
             }
 
-            if (user.Sessions is null || user.Sessions.Count == 0) {
+            if (user.Sessions is null || user.Sessions.Count == 0)
+            {
                 AuthenticationException.Throw(Messages.UnknownErrorCode);
             }
         }
@@ -142,7 +149,7 @@ public class MageAuthentication(
         AuthenticationTicket ticket = new(principal, properties, Scheme.Name);
         return ticket;
     }
-    
+
 
     // Static Methods
 
@@ -168,9 +175,10 @@ public class MageAuthentication(
 
         IPAddress? remoteAddress = context.Connection.RemoteIpAddress;
 
-        if (remoteAddress is not null && 
+        if (remoteAddress is not null &&
             remoteAddress.AddressFamily == AddressFamily.InterNetwork
-        ) {
+        )
+        {
             return remoteAddress.ToString();
         }
 
@@ -185,7 +193,8 @@ public class MageAuthentication(
         {
             bool hasRemoteAddrHeader = context.Request.Headers.ContainsKey("Remote-Addr");
 
-            if (hasRemoteAddrHeader) { // REMOTE_ADDR
+            if (hasRemoteAddrHeader)
+            { // REMOTE_ADDR
                 remoteAddressValue = context.Request.Headers["Remote-Addr"].ToString();
             }
 
@@ -195,7 +204,8 @@ public class MageAuthentication(
             }
         }
 
-        if (Program.IsDevelopment) {
+        if (Program.IsDevelopment)
+        {
             Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a remote-address header. ({remoteAddressValue})");
         }
 
@@ -217,8 +227,9 @@ public class MageAuthentication(
 
         var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
         var authentication = getAuthenticationResult?.AuthenticateResult;
-        
-        if (authentication is null || !authentication.Succeeded) {
+
+        if (authentication is null || !authentication.Succeeded)
+        {
             return false;
         }
 
@@ -246,11 +257,13 @@ public class MageAuthentication(
 
         var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
         var authentication = getAuthenticationResult?.AuthenticateResult;
-        
-        if (authentication is null) {
+
+        if (authentication is null)
+        {
             AuthenticationException.Throw(Messages.MissingAuthorizationResultCode);
         }
-        else if (!authentication.Succeeded) {
+        else if (!authentication.Succeeded)
+        {
             AuthenticationException.Throw(Messages.UnauthorizedCode);
         }
 
@@ -278,8 +291,9 @@ public class MageAuthentication(
         properties = null;
         var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
         var authentication = getAuthenticationResult?.AuthenticateResult;
-        
-        if (authentication is null || !authentication.Succeeded) {
+
+        if (authentication is null || !authentication.Succeeded)
+        {
             return false;
         }
 

@@ -56,7 +56,8 @@ public class LogsController(ILoggingService handler) : ControllerBase
         var getLogEntry = await handler.GetEvent(id);
         var entry = getLogEntry.Value;
 
-        if (entry is null) {
+        if (entry is null)
+        {
             return NotFound();
         }
 
@@ -76,27 +77,32 @@ public class LogsController(ILoggingService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IStatusCodeActionResult> DeleteAll(
-        [Required] [FromQuery] int limit,
-        [Required] [FromQuery] int offset,
+        [Required][FromQuery] int limit,
+        [Required][FromQuery] int offset,
         [FromQuery] Source? source = null,
         [FromQuery] Severity? severity = null,
         [FromQuery] Method? method = null,
         [FromQuery] string? action = null
-    ) {
-        if (limit <= 0) {
+    )
+    {
+        if (limit <= 0)
+        {
             return BadRequest($"Parameter {nameof(limit)} cannot be null/omitted, and has to be a positive integer greater-than `0`.");
         }
-        if (offset < 0) {
+        if (offset < 0)
+        {
             return BadRequest($"Parameter {nameof(offset)} cannot be null/omitted, and has to either be `0`, or any positive integer greater-than `0`.");
         }
 
         var getMatchingEntries = await handler.GetEvents(limit, offset, source, severity, method, action);
         var entries = getMatchingEntries.Value;
 
-        if (entries is null) {
+        if (entries is null)
+        {
             return NotFound();
         }
-        if (!entries.Any()) {
+        if (!entries.Any())
+        {
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
