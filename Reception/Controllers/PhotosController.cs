@@ -145,7 +145,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(source.Path, source.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(source.Filename, fileStream);
 
             if (format is null)
@@ -160,6 +160,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -183,7 +184,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );
@@ -212,7 +213,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(source.Path, source.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(source.Filename, fileStream);
 
             if (format is null)
@@ -227,6 +228,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -250,7 +252,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );
@@ -269,7 +271,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
     public async Task<ActionResult/*FileContentResult*/> GetMediumBlobById(int photo_id)
     {
-        var getMediumPhoto = await handler.GetSinglePhoto(photo_id, Dimension.SOURCE);
+        var getMediumPhoto = await handler.GetSinglePhoto(photo_id, Dimension.MEDIUM);
         var medium = getMediumPhoto.Value;
         if (medium is null) {
             return getMediumPhoto.Result!;
@@ -278,7 +280,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(medium.Path, medium.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(medium.Filename, fileStream);
 
             if (format is null)
@@ -293,6 +295,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -316,7 +319,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );
@@ -336,7 +339,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
     public async Task<ActionResult/*FileContentResult*/> GetMediumBlobBySlug(string slug)
     {
-        var getMediumPhoto = await handler.GetSinglePhoto(slug, Dimension.SOURCE);
+        var getMediumPhoto = await handler.GetSinglePhoto(slug, Dimension.MEDIUM);
         var medium = getMediumPhoto.Value;
         if (medium is null) {
             return getMediumPhoto.Result!;
@@ -345,7 +348,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(medium.Path, medium.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(medium.Filename, fileStream);
 
             if (format is null)
@@ -360,6 +363,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -383,7 +387,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );
@@ -402,7 +406,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
     public async Task<ActionResult/*FileContentResult*/> GetThumbnailBlobById(int photo_id)
     {
-        var getThumbnailPhoto = await handler.GetSinglePhoto(photo_id, Dimension.SOURCE);
+        var getThumbnailPhoto = await handler.GetSinglePhoto(photo_id, Dimension.THUMBNAIL);
         var thumbnail = getThumbnailPhoto.Value;
         if (thumbnail is null) {
             return getThumbnailPhoto.Result!;
@@ -411,7 +415,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(thumbnail.Path, thumbnail.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(thumbnail.Filename, fileStream);
 
             if (format is null)
@@ -426,6 +430,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -449,7 +454,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );
@@ -478,7 +483,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         string path = Path.Combine(thumbnail.Path, thumbnail.Filename);
         try
         {
-            using FileStream fileStream = System.IO.File.OpenRead(path);
+            FileStream fileStream = System.IO.File.OpenRead(path);
             IImageFormat? format = MimeVerifyer.DetectImageFormat(thumbnail.Filename, fileStream);
 
             if (format is null)
@@ -493,6 +498,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 // ..could fallback to "application/octet-stream here" instead of throwing?
             }
 
+            fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
         catch(FileNotFoundException notFound)
@@ -516,7 +522,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error" + (
+                "Cought Internal Server Error " + (
                     Program.IsDevelopment ? ex.Message : ex.GetType().Name
                 )
             );

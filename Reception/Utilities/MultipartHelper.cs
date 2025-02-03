@@ -15,7 +15,7 @@ public static class MultipartHelper
     // Size thresholds.
     public const uint LARGE_FILE_THRESHOLD = 8388608 * 8; // 8MB
     public const string LARGE_FILE_CATEGORY_SLUG = "HD";
-    public const uint SMALL_FILE_THRESHOLD = 8192 * 64; // 64KB
+    public const uint SMALL_FILE_THRESHOLD = 8192 * 128; // 128KB
     public const string SMALL_FILE_CATEGORY_SLUG = "SD";
 
     // Content-Type: multipart/form-data; boundary="----WebKitFormBoundarymx2fSWqWSd0OxQqq"
