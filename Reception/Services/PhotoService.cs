@@ -125,6 +125,7 @@ public class PhotoService(
 
         PhotoEntity? photo = await db.Photos
             .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Links)
             .Include(photo => photo.Tags)
             .FirstOrDefaultAsync(photo => photo.Slug == slug);
 
@@ -268,6 +269,7 @@ public class PhotoService(
 
         PhotoEntity? photo = await db.Photos
             .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Links)
             .Include(photo => photo.Tags)
             .FirstOrDefaultAsync(photo => photo.Slug == slug);
 
@@ -338,6 +340,7 @@ public class PhotoService(
         IQueryable<PhotoEntity> photoQuery = db.Photos
             .OrderByDescending(photo => photo.CreatedAt)
             .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Links)
             .Include(photo => photo.Tags)
             .Where(photo => photo.Filepaths.Any(path => path.Dimension == filter.Dimension));
 
@@ -448,6 +451,7 @@ public class PhotoService(
         IQueryable<PhotoEntity> photoQuery = db.Photos
             .OrderByDescending(photo => photo.CreatedAt)
             .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Links)
             .Include(photo => photo.Tags);
 
         // Filtering

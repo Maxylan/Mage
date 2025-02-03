@@ -14,7 +14,7 @@ public class AccountService(
 ) : IAccountService
 {
     /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Account&gt;"/>) set of 
+    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Account&gt;"/>) set of
     /// <see cref="Account"/>-entries, you may use it to freely fetch some users.
     /// </summary>
     public DbSet<Account> GetAccounts() =>
@@ -159,7 +159,7 @@ public class AccountService(
                 })
                 .SaveAsync();
 
-            return new BadRequestObjectResult(message + (
+            return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
             ))
             {

@@ -21,6 +21,7 @@ public sealed class Program
     public static string? ApiVersion => System.Environment.GetEnvironmentVariable("RECEPTION_VERSION");
     public static string? ApiPathBase => System.Environment.GetEnvironmentVariable("RECEPTION_BASE_PATH");
     public static string? ApiInternalUrl => System.Environment.GetEnvironmentVariable("RECEPTION_URL");
+    public static string? ApiUrl => System.Environment.GetEnvironmentVariable("APP_URL") ?? ApiInternalUrl;
 
     public static string Environment => (
         System.Environment.GetEnvironmentVariable("RECEPTION_ENVIRONMENT") ??
@@ -125,6 +126,7 @@ public sealed class Program
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
         builder.Services.AddScoped<IPhotoService, PhotoService>();
+        builder.Services.AddScoped<ILinkService, LinkService>();
 
         var app = builder.Build();
 

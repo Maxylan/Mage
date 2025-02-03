@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Reception.Services;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
@@ -12,6 +13,7 @@ namespace Reception.Models.Entities;
 [Table("links", Schema = "magedb")]
 [Index("Code", Name = "idx_links_code")]
 [Index("Code", Name = "links_code_key", IsUnique = true)]
+[Index("PhotoId", Name = "idx_links_photo_id")]
 public class Link
 {
     [Key]
@@ -36,6 +38,17 @@ public class Link
     [Column("accessed")]
     public int Accessed { get; set; }
 
+    // Method
+    [SwaggerIgnore]
+    public string Uri => LinkService.GenerateLinkUri(this.Code).ToString();
+
+    [SwaggerIgnore]
+    public bool Active => (
+        this.ExpiresAt < DateTime.UtcNow && (
+            this.AccessLimit is null || this.Accessed < this.AccessLimit
+        )
+    );
+
     // Navigation Properties
 
     [JsonIgnore, SwaggerIgnore]
@@ -53,17 +66,35 @@ public class Link
         {
             entity.HasKey(e => e.Id).HasName("links_pkey");
 
-            entity.Property(e => e.Accessed).HasDefaultValue(0);
+            entity.HasIndex(e => e.Code, "idx_links_code").IsUnique();
+
+            entity.HasIndex(e => e.PhotoId, "idx_links_photo_id");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+
             entity.Property(e => e.Code)
+                .HasColumnName("code")
                 .HasMaxLength(32)
                 .IsFixedLength();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+
+            entity.Property(e => e.PhotoId).HasColumnName("photo_id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .HasDefaultValueSql("now()");
+            entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+            entity.Property(e => e.AccessLimit).HasColumnName("access_limit");
+            entity.Property(e => e.Accessed)
+                .HasColumnName("accessed")
+                .HasDefaultValue(0);
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Links)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_user");
 
-            entity.HasOne(d => d.Photo).WithMany(p => p.Links).HasConstraintName("fk_photo");
+            entity.HasOne(d => d.Photo).WithMany(p => p.Links)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_photo");
         }
     );
 }
