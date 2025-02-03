@@ -1,27 +1,43 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("sessions", Schema = "magedb")]
+[Index("UserId", Name = "idx_sessions_user_id")]
+[Index("Code", Name = "sessions_code_key", IsUnique = true)]
 public class Session
 {
+    [Key]
     public int Id { get; set; }
+
     public int UserId { get; set; }
+
+    [StringLength(36)]
     public string Code { get; set; } = null!;
+
     public string? UserAgent { get; set; }
+
     public DateTime CreatedAt { get; set; }
+
     public DateTime ExpiresAt { get; set; }
+
+    // Methods
+    [JsonIgnore, SwaggerIgnore]
+    public bool HasUserAgent => !string.IsNullOrWhiteSpace(UserAgent);
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("UserId")]
+    [InverseProperty("Sessions")]
     public virtual Account User { get; set; } = null!;
-
-    [JsonIgnore]
-    public bool HasUserAgent => !string.IsNullOrWhiteSpace(UserAgent);
 
     public static Action<EntityTypeBuilder<Session>> Build => (
         entity =>

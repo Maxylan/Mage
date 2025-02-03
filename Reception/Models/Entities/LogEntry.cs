@@ -1,14 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("logs", Schema = "magedb")]
+[Index("CreatedAt", Name = "idx_logs_created_at")]
 public class LogEntry
 {
+    [Key]
     public int Id { get; set; }
 
     public int? UserId { get; set; }
@@ -38,7 +44,7 @@ public class LogEntry
 
     public string? Log { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public LogFormat Format => new(this);
 
     /// <summary>

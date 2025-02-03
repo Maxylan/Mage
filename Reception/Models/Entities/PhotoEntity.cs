@@ -1,12 +1,19 @@
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("photos", Schema = "magedb")]
+[Index("Slug", Name = "idx_photos_slug")]
+[Index("UpdatedAt", Name = "idx_photos_updated_at")]
+[Index("Slug", Name = "photos_slug_key", IsUnique = true)]
 public class PhotoEntity
 {
+    [Key]
     public int Id { get; set; }
     public string Slug { get; set; } = null!;
     public string? Title { get; set; }
@@ -25,22 +32,35 @@ public class PhotoEntity
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("Avatar")]
     public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("Thumbnail")]
     public virtual ICollection<Album> ThumbnailForAlbums { get; set; } = new List<Album>();
 
-    [JsonIgnore]
-    public virtual Account? CreatedByNavigation { get; set; }
-
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("Photo")]
     public virtual ICollection<Filepath> Filepaths { get; set; } = new List<Filepath>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("Photo")]
+    public virtual ICollection<Link> Links { get; set; } = new List<Link>();
+
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("UploadedBy")]
+    [InverseProperty("UploadedPhotos")]
+    public virtual Account? UploadedByNavigation { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("PhotoId")]
+    [InverseProperty("Photos")]
     public virtual ICollection<Album> AlbumsNavigation { get; set; } = new List<Album>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("PhotoId")]
+    [InverseProperty("Photos")]
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public static Action<EntityTypeBuilder<PhotoEntity>> Build => (
@@ -80,7 +100,7 @@ public class PhotoEntity
                 .HasColumnName("updated_at")
                 .HasColumnType("TIMESTAMPTZ");
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Photos)
+            entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.UploadedPhotos)
                 .HasForeignKey(d => d.UploadedBy)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_user");

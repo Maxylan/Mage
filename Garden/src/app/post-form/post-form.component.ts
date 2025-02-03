@@ -55,7 +55,7 @@ export class PostFormComponent {
 			this.http
 				.post<FormData>('/reception/photos/upload', formData, {
 					headers: {
-						"x-mage-token": "c1f6cd42-db3f-4fef-a366-7fa1851a1916"
+						"x-mage-token": "53e0007a-80f1-4347-8dc5-52550134c148"
 					}
 				})
 				.subscribe((value) => {

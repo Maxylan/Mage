@@ -1,23 +1,37 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("tags", Schema = "magedb")]
+[Index("Name", Name = "idx_tags_name")]
+[Index("Name", Name = "tags_name_key", IsUnique = true)]
 public class Tag
 {
+    [Key]
     public int Id { get; set; }
+
+    [StringLength(127)]
     public string Name { get; set; } = null!;
+
     public string? Description { get; set; }
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("TagId")]
+    [InverseProperty("Tags")]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("TagId")]
+    [InverseProperty("Tags")]
     public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
 
     public static Action<EntityTypeBuilder<Tag>> Build => (

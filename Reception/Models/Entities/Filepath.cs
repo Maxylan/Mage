@@ -1,28 +1,48 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("filepaths", Schema = "magedb")]
+[Index("Filename", Name = "idx_filepaths_filename")]
+[Index("PhotoId", Name = "idx_filepaths_photo_id")]
+[Index("Path", "Filename", Name = "idx_path_filename", IsUnique = true)]
 public class Filepath
 {
+    [Key]
     public int Id { get; set; }
+
     public int PhotoId { get; set; }
+
+    [StringLength(127)]
     public string Filename { get; set; } = null!;
+
+    [StringLength(255)]
     public string Path { get; set; } = null!;
+
     public Dimension? Dimension { get; set; }
+
     public long? Filesize { get; set; }
+
     public int? Height { get; set; }
+
     public int? Width { get; set; }
 
     // Method
+    [SwaggerIgnore]
     public bool IsSource => this.Dimension == Reception.Models.Entities.Dimension.SOURCE;
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("PhotoId")]
+    [InverseProperty("Filepaths")]
     public virtual PhotoEntity Photo { get; set; } = null!;
 
     public static Action<EntityTypeBuilder<Filepath>> Build => (

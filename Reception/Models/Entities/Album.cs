@@ -1,13 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("albums", Schema = "magedb")]
+[Index("Title", Name = "albums_title_key", IsUnique = true)]
+[Index("Title", Name = "idx_albums_title")]
+[Index("UpdatedAt", Name = "idx_albums_updated_at")]
 public class Album
 {
+    [Key]
     public int Id { get; set; }
 
     public int? CategoryId { get; set; }
@@ -28,19 +36,29 @@ public class Album
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("CategoryId")]
+    [InverseProperty("Albums")]
     public virtual Category? Category { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("CreatedBy")]
+    [InverseProperty("Albums")]
     public virtual Account? CreatedByNavigation { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("ThumbnailId")]
+    [InverseProperty("ThumbnailForAlbums")]
     public virtual PhotoEntity? Thumbnail { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("AlbumId")]
+    [InverseProperty("AlbumsNavigation")]
     public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("AlbumId")]
+    [InverseProperty("Albums")]
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public static Action<EntityTypeBuilder<Album>> Build => (

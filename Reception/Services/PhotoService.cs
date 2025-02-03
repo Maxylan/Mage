@@ -715,21 +715,37 @@ public class PhotoService(
                 string sectionName = contentDisposition.Name.ToString().ToLower();
                 if (sectionName == "title")
                 {
-                    options.Title = await section!.ReadAsStringAsync();
+                    string extractedTitle = await section!.ReadAsStringAsync();
+                    if (!string.IsNullOrWhiteSpace(extractedTitle)) {
+                        options.Title = extractedTitle;
+                    }
+
                     continue;
                 }
 
                 if (sectionName == "slug")
                 {
-                    options.Slug = await section!.ReadAsStringAsync();
+                    string extractedSlug = await section!.ReadAsStringAsync();
+                    if (!string.IsNullOrWhiteSpace(extractedSlug)) {
+                        options.Slug = extractedSlug;
+                    }
+
                     continue;
                 }
 
                 if (sectionName == "tags")
                 {
                     string tagsString = await section!.ReadAsStringAsync();
-                    tagsString = tagsString.Replace(", ", ","); // Additional level of fault-tolerance..
-                    options.Tags = tagsString.Trim().Split(",");
+                    if (!string.IsNullOrWhiteSpace(tagsString))
+                    {
+                        tagsString = tagsString.Replace(", ", ","); // Additional level of fault-tolerance..
+                        options.Tags = tagsString
+                            .Trim()
+                            .Split(",")
+                            .Where(_t => !string.IsNullOrWhiteSpace(_t))
+                            .ToArray();
+                    }
+
                     continue;
                 }
             }
