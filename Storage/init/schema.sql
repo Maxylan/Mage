@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS photos (
 CREATE TABLE IF NOT EXISTS links (
     id SERIAL NOT NULL,
     photo_id INT NOT NULL,
-    code CHAR(36) UNIQUE NOT NULL,
+    code CHAR(32) UNIQUE NOT NULL,
     created_by INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL,
