@@ -56,8 +56,8 @@ public class LinkService(
         if (!includeInactive)
         {
             return await db.Links
-                .Where(link => link.ExpiresAt < DateTime.UtcNow)
-                .Where(link => link.AccessLimit == null || link.Accessed < link.AccessLimit)
+                .Where(link => link.ExpiresAt > DateTime.UtcNow)
+                .Where(link => link.AccessLimit == null || link.AccessLimit <= 0 || link.Accessed < link.AccessLimit)
                 .OrderBy(link => link.ExpiresAt)
                 .Skip(offset)
                 .Take(limit)

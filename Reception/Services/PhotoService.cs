@@ -1060,61 +1060,52 @@ public class PhotoService(
         if (string.IsNullOrWhiteSpace(options.Title))
         {
             options.Title = trustedFilename;
+        }
+        if (conflicts > 0)
+        {
+            options.Title += $" (#{conflicts})";
+        }
 
-            if (conflicts > 0)
+        if (string.IsNullOrWhiteSpace(options.Summary))
+        {
+            options.Summary = $"{options.Title} - ";
+            if (sourceDimensions.Width != default && sourceDimensions.Height != default)
             {
-                options.Title += $" (#{conflicts})";
+                options.Summary += $"{sourceDimensions.Width}x{sourceDimensions.Height}, {sourceFilesizeFormatted}.";
+            }
+            else {
+                options.Summary += $"{sourceFilesizeFormatted}.";
             }
         }
 
         StringBuilder formattedDescription = new();
-        if (createdAt != uploadedAt)
+        DateTime createdOrUploadedDate = createdAt != uploadedAt ? createdAt : uploadedAt;
+        string createdOrUploadedText = createdAt != uploadedAt
+            ? "Taken/Created "
+            : "Uploaded ";
+
+        formattedDescription.Append(createdOrUploadedText);
+
+        formattedDescription.Append(createdOrUploadedDate.Month switch
         {
-            formattedDescription.Append("Taken/Created ");
-            formattedDescription.Append(createdAt.Month switch
-            {
-                1 => "January",
-                2 => "February",
-                3 => "March",
-                4 => "April",
-                5 => "May",
-                6 => "June",
-                7 => "July",
-                8 => "August",
-                9 => "September",
-                10 => "October",
-                11 => "November",
-                12 => "December",
-                _ => "Unknown"
-            });
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => "Unknown"
+        });
 
-            formattedDescription.AppendFormat(" {0}", createdAt.Year);
-        }
-        else
-        {
-            formattedDescription.Append("Uploaded ");
-            formattedDescription.Append(uploadedAt.Month switch
-            {
-                1 => "January",
-                2 => "February",
-                3 => "March",
-                4 => "April",
-                5 => "May",
-                6 => "June",
-                7 => "July",
-                8 => "August",
-                9 => "September",
-                10 => "October",
-                11 => "November",
-                12 => "December",
-                _ => "Unknown"
-            });
+        formattedDescription.AppendFormat(" {0}", createdOrUploadedDate.Year);
 
-            formattedDescription.AppendFormat(" {0}", uploadedAt.Year);
-        }
-
-        formattedDescription.Append(", saved to ");
-        formattedDescription.AppendFormat("'{0}' (", sourcePath);
+        formattedDescription.AppendFormat(", saved to '{0}' (", sourcePath);
 
         if (sourceDimensions.Width != default && sourceDimensions.Height != default)
         {
@@ -1154,7 +1145,7 @@ public class PhotoService(
         {
             Slug = options.Slug,
             Title = options.Title,
-            Summary = options.Summary ?? $"{options.Title} - {sourceFilesizeFormatted}",
+            Summary = options.Summary,
             Description = formattedDescription.ToString(),
             UploadedBy = options.UploadedBy,
             UploadedAt = uploadedAt,
