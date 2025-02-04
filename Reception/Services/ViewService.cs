@@ -10,7 +10,6 @@ using Reception.Models.Entities;
 namespace Reception.Services;
 
 public class ViewService(
-    MageDbContext db,
     ILoggingService logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photoService,
