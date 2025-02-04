@@ -69,6 +69,7 @@ public class TagsController(ITagService handler) : ControllerBase
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]

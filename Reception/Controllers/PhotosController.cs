@@ -15,7 +15,11 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("photos")]
 [Produces("application/json")]
-public class PhotosController(IPhotoService handler, IBlobService blobs) : ControllerBase
+public class PhotosController(
+    IPhotoService handler,
+    ITagService tagService,
+    IBlobService blobs
+) : ControllerBase
 {
     #region Get single photos.
     /// <summary>
@@ -432,5 +436,21 @@ public class PhotosController(IPhotoService handler, IBlobService blobs) : Contr
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PhotoEntity>> UpdatePhoto(MutatePhoto mut) =>
         await handler.UpdatePhotoEntity(mut);
+    #endregion
+
+    #region Add / Remove tag(s)
+    /// <summary>
+    /// Edit tags associated with this <see cref="PhotoEntity"/>.
+    /// </summary>
+    [HttpPut("{photo_id:int}/tags")]
+    [Tags(ControllerTags.PHOTOS_ENTITIES, ControllerTags.TAGS)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<Tag>>> MutateTags(int photo_id, [FromBody] string[] tags) =>
+        await tagService.MutatePhotoTags(photo_id, tags);
     #endregion
 }

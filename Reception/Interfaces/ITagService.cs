@@ -42,6 +42,16 @@ public interface ITagService
     public abstract Task<ActionResult<Tag>> UpdateTag(string existingTagName, MutateTag mut);
 
     /// <summary>
+    /// Edit tags associated with a <see cref="Album"/> identified by PK <paramref name="albumId"/>.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(int albumId, string[] tagNames);
+
+    /// <summary>
+    /// Edit tags associated with a <see cref="PhotoEntity"/> identified by PK <paramref name="photoId"/>.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(int photoId, string[] tagNames);
+
+    /// <summary>
     /// Delete the <see cref="Tag"/> with '<paramref ref="name"/>' (string).
     /// </summary>
     public abstract Task<ActionResult> DeleteTag(string name);
