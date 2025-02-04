@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Reception.Models.Entities;
 using Reception.Authentication;
 using Reception.Interfaces;
+using Reception.Utilities;
 using Reception.Caching;
 using System.Net;
 using Reception.Models;
@@ -304,6 +305,16 @@ public class AuthorizationService(
 
         string? userAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
         string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
+
+        if (!string.IsNullOrWhiteSpace(userAgent))
+        {
+            userAgent = userAgent
+                .Normalize()
+                .Subsmart(0, 1023)
+                .Replace("\\", "\\\\")
+                .Replace("&&", "and")
+                .Trim();
+        }
 
         LoginAttempt attempt = new(account.Username)
         {

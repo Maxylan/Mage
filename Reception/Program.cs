@@ -126,7 +126,9 @@ public sealed class Program
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
         builder.Services.AddScoped<IPhotoService, PhotoService>();
+        builder.Services.AddScoped<IBlobService, BlobService>();
         builder.Services.AddScoped<ILinkService, LinkService>();
+        builder.Services.AddScoped<IViewService, ViewService>();
 
         var app = builder.Build();
 

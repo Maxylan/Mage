@@ -35,7 +35,7 @@ public class LinkService(
     /// Get the <see cref="Uri"/> of a <see cref="Link"/>
     /// </summary>
     public Uri LinkUri(string code, Dimension? dimension = null) =>
-        GenerateLinkUri(code, dimension);
+        GenerateLinkUri(code);
 
     /// <summary>
     /// Get all <see cref="Link"/> entries.
@@ -82,13 +82,7 @@ public class LinkService(
 
         Link? link = await db.Links.FindAsync(linkId);
 
-        if (link is null)
-        {
-            await logging
-                .Action(nameof(GetLink))
-                .InternalDebug($"Link with ID #{linkId} could not be found.")
-                .SaveAsync();
-
+        if (link is null) {
             return new NotFoundObjectResult($"{nameof(Link)} with ID #{linkId} not found!");
         }
 
@@ -101,22 +95,9 @@ public class LinkService(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code, $"Parameter {nameof(code)} cannot be null/empty!");
 
-        if (!code.IsNormalized())
-        {
-            code = code
-                .Normalize()
-                .Trim();
-        }
-
         Link? link = await db.Links.FirstOrDefaultAsync(link => link.Code == code);
 
-        if (link is null)
-        {
-            await logging
-                .Action(nameof(GetLinkByCode))
-                .InternalDebug($"Link with code '{code}' could not be found.")
-                .SaveAsync();
-
+        if (link is null) {
             return new NotFoundObjectResult($"{nameof(Link)} with unique code '{code}' could not be found!");
         }
 
@@ -159,9 +140,9 @@ public class LinkService(
                 .InternalError(message)
                 .SaveAsync();
 
-            return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
-                StatusCode = StatusCodes.Status500InternalServerError
-            };
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
         }
 
         if (MageAuthentication.IsAuthenticated(contextAccessor))
@@ -174,10 +155,7 @@ public class LinkService(
             {
                 await logging
                     .Action(nameof(CreateLink))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => {
-                        opts.Exception = ex;
-                        opts.SetUser(user);
-                    })
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
                     .SaveAsync();
             }
         }
@@ -224,7 +202,6 @@ public class LinkService(
                 .InternalError(message + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    opts.SetUser(user);
                 })
                 .SaveAsync();
 
@@ -243,7 +220,6 @@ public class LinkService(
                 .InternalError(message + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    opts.SetUser(user);
                 })
                 .SaveAsync();
 
@@ -303,7 +279,6 @@ public class LinkService(
                 .InternalError(message + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
                 })
                 .SaveAsync();
 
@@ -322,7 +297,6 @@ public class LinkService(
                 .InternalError(message + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
                 })
                 .SaveAsync();
 

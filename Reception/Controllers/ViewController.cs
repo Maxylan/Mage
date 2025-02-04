@@ -8,33 +8,62 @@ using Reception.Models.Entities;
 using Reception.Interfaces;
 using Reception.Utilities;
 using Reception.Constants;
+using System.Net;
+using Reception.Authentication;
+using Microsoft.EntityFrameworkCore;
 
 namespace Reception.Controllers;
 
 [ApiController]
 [Route("links/view")]
 [Produces("application/octet-stream")]
-public class ViewController(ILinkService handler, IPhotoService photos) : ControllerBase
+public class ViewController(IViewService handler) : ControllerBase
 {
     /// <summary>
     /// View the <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
+    /// <remarks>
+    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's and I don't want to encourage pen-testing or scraping.
+    /// <para>
+    ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
+    /// </para>
+    /// </remarks>
     [HttpGet("source/{code:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Link>> ViewSource(Guid code)
-    {
-        var getLink = await handler.GetLinkByCode(code);
-        var link = getLink.Value;
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
+    public async Task<ActionResult<Link>> ViewSource(Guid? code) =>
+        await handler.ViewSource(code);
 
-        if (link is null) {
-            return NotFound();
-        }
+    /// <summary>
+    /// View the Medium <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// </summary>
+    /// <remarks>
+    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's and I don't want to encourage pen-testing or scraping.
+    /// <para>
+    ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
+    /// </para>
+    /// </remarks>
+    [HttpGet("medium/{code:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
+    public async Task<ActionResult<Link>> ViewMedium(Guid? code) =>
+        await handler.ViewMedium(code);
 
-        try {
-
-        }
-    }
+    /// <summary>
+    /// View the Thumbnail <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// </summary>
+    /// <remarks>
+    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's and I don't want to encourage pen-testing or scraping.
+    /// <para>
+    ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
+    /// </para>
+    /// </remarks>
+    [HttpGet("thumbnail/{code:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
+    public async Task<ActionResult<Link>> ViewThumbnail(Guid? code) =>
+        await handler.ViewThumbnail(code);
 }
