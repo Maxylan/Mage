@@ -365,19 +365,19 @@ public class AlbumService(
             }
         }
 
-        Tag[]? validTags = null;
+        List<Tag>? validTags = null;
         if (mut.Tags?.Any() == true)
         {
             var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
-            validTags = sanitizeAndCreateTags.Value?.ToArray();
+            validTags = sanitizeAndCreateTags.Value?.ToList();
         }
 
-        PhotoEntity[]? validPhotos = null;
+        List<PhotoEntity>? validPhotos = null;
         if (mut.Photos?.Any() == true)
         {
             validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
-                .ToArrayAsync();
+                .ToListAsync();
         }
 
         Album newAlbum = new()
@@ -532,6 +532,13 @@ public class AlbumService(
             return new NotFoundObjectResult(message);
         }
 
+        foreach(var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
@@ -564,20 +571,23 @@ public class AlbumService(
             return new BadRequestObjectResult(message);
         }
 
-        bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
-        if (titleTaken)
+        if (mut.Title != existingAlbum.Title)
         {
-            string message = $"{nameof(Album.Title)} was already taken!";
-            await logging
-                .Action(nameof(UpdateAlbum))
-                .InternalDebug(message, opts => {
-                    opts.SetUser(user);
-                })
-                .SaveAsync();
+            bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
+            if (titleTaken)
+            {
+                string message = $"{nameof(Album.Title)} was already taken!";
+                await logging
+                    .Action(nameof(UpdateAlbum))
+                    .InternalDebug(message, opts => {
+                        opts.SetUser(user);
+                    })
+                    .SaveAsync();
 
-            return new ObjectResult(message) {
-                StatusCode = StatusCodes.Status409Conflict
-            };
+                return new ObjectResult(message) {
+                    StatusCode = StatusCodes.Status409Conflict
+                };
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(mut.Summary))
@@ -647,19 +657,19 @@ public class AlbumService(
             }
         }
 
-        Tag[]? validTags = null;
+        List<Tag>? validTags = null;
         if (mut.Tags?.Any() == true)
         {
             var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
-            validTags = sanitizeAndCreateTags.Value?.ToArray();
+            validTags = sanitizeAndCreateTags.Value?.ToList();
         }
 
-        PhotoEntity[]? validPhotos = null;
+        List<PhotoEntity>? validPhotos = null;
         if (mut.Photos?.Any() == true)
         {
             validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
-                .ToArrayAsync();
+                .ToListAsync();
         }
 
         existingAlbum.Title = mut.Title;
