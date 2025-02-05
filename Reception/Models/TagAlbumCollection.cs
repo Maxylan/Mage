@@ -6,7 +6,7 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Reception.Models;
 
 /// <summary>
-/// Collection of all photos (<see cref="Reception.Models.PhotoCollection"/>) tagged with the given <paramref name="tag"/>.
+/// Collection of all albums (<see cref="Reception.Models.Entities.Album"/>) tagged with the given <paramref name="tag"/>.
 /// </summary>
 public record TagAlbumCollection
 {

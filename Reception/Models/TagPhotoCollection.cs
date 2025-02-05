@@ -27,7 +27,9 @@ public record TagPhotoCollection
 
         _tag = tag;
         _collection = new(
-            () => _tag.Photos.Select(p => new PhotoCollection(p))
+            () => _tag.Photos
+                .Where(p => p.Filepaths is not null)
+                .Select(p => new PhotoCollection(p))
         );
     }
 

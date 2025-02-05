@@ -43,6 +43,9 @@ public class TagsController(ITagService handler) : ControllerBase
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Albums.
     /// </summary>
+    /// <returns>
+    /// <seealso cref="TagAlbumCollection"/>
+    /// </returns>
     [HttpGet("{name}/albums")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
@@ -55,6 +58,9 @@ public class TagsController(ITagService handler) : ControllerBase
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Photos.
     /// </summary>
+    /// <returns>
+    /// <seealso cref="TagPhotoCollection"/>
+    /// </returns>
     [HttpGet("{name}/photos")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
