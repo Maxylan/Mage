@@ -31,6 +31,7 @@ public record AlbumPhotoCollection
     public int? CreatedBy { get => _album.CreatedBy; }
     public DateTime CreatedAt { get => _album.CreatedAt; }
     public DateTime UpdatedAt { get => _album.UpdatedAt; }
+    public IEnumerable<PhotoCollection> Photos { get => _collection.Value; }
 
     [SetsRequiredMembers]
     public AlbumPhotoCollection(Album album)
