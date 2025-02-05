@@ -10,8 +10,7 @@ namespace Reception.Services;
 
 public class TagService(
     MageDbContext db,
-    ILoggingService logging,
-    IPhotoService photoService
+    ILoggingService logging
 ) : ITagService
 {
     /// <summary>
@@ -422,11 +421,32 @@ public class TagService(
     /// </summary>
     public async Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(int photoId, string[] tagNames)
     {
-        var getPhoto = await photoService.GetPhotoEntity(photoId);
-        var photo = getPhoto.Value;
+        if (photoId <= 0) {
+            throw new ArgumentException($"Parameter {nameof(photoId)} has to be a non-zero positive integer!", nameof(photoId));
+        }
 
-        if (photo is null) {
-            return getPhoto.Result!;
+        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+
+        if (photo is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(photoId)} #{photoId}.";
+            await logging
+                .Action(nameof(MutatePhotoTags))
+                .LogDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        // Load missing navigation entries.
+        foreach (var navigation in db.Entry(photo).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
         }
 
         var createAndSanitizeTags = await CreateTags(tagNames);
