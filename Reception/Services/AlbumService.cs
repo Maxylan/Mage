@@ -282,6 +282,22 @@ public class AlbumService(
             return new BadRequestObjectResult(message);
         }
 
+        bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
+        if (titleTaken)
+        {
+            string message = $"{nameof(Album.Title)} was already taken!";
+            await logging
+                .Action(nameof(CreateAlbum))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message) {
+                StatusCode = StatusCodes.Status409Conflict
+            };
+        }
+
         if (!string.IsNullOrWhiteSpace(mut.Summary))
         {
             if (!mut.Summary.IsNormalized())
@@ -546,6 +562,22 @@ public class AlbumService(
                 .SaveAsync();
 
             return new BadRequestObjectResult(message);
+        }
+
+        bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
+        if (titleTaken)
+        {
+            string message = $"{nameof(Album.Title)} was already taken!";
+            await logging
+                .Action(nameof(UpdateAlbum))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message) {
+                StatusCode = StatusCodes.Status409Conflict
+            };
         }
 
         if (!string.IsNullOrWhiteSpace(mut.Summary))

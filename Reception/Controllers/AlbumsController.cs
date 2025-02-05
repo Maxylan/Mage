@@ -92,6 +92,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Album>> CreateAlbum(MutateAlbum mut) =>
         await handler.CreateAlbum(mut);
 
@@ -105,6 +106,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<Album>> UpdateAlbum(MutateAlbum mut) =>
         await handler.UpdateAlbum(mut);
 
