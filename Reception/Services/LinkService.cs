@@ -288,22 +288,75 @@ public class LinkService(
     /// </summary>
     public async Task<ActionResult<Link>> UpdateLink(int linkId, MutateLink mut)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(mut);
+        ArgumentNullException.ThrowIfNull(linkId);
+
+        if (linkId <= 0)
+        {
+            string message = $"Parameter '{nameof(linkId)}' has to be a non-zero positive integer! (Link ID)";
+            await logging
+                .Action(nameof(UpdateLink))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Link? existingLink = await db.Links.FindAsync(linkId);
+
+        if (existingLink is null)
+        {
+            string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
+            await logging
+                .Action(nameof(UpdateLink))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        if (mut.AccessLimit is not null)
+        {
+            if (mut.AccessLimit <= 0) {
+                mut.AccessLimit = 0;
+            }
+        }
+
+        if (mut.ExpiresAt is null)
+        {
+            mut.ExpiresAt = existingLink.ExpiresAt;
+        }
+        else if (mut.ExpiresAt < DateTime.UtcNow)
+        {
+            string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
+            await logging
+                .Action(nameof(UpdateLink))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        existingLink.AccessLimit = mut.AccessLimit;
+        existingLink.ExpiresAt = mut.ExpiresAt.Value;
 
         try
         {
-            // db.Update(link);
+            db.Update(existingLink);
+            logging
+                .Action(nameof(UpdateLink))
+                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.");
+
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)}. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
             await logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
                 })
                 .SaveAsync();
 
@@ -316,13 +369,12 @@ public class LinkService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
             await logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
                 })
                 .SaveAsync();
 
@@ -333,6 +385,8 @@ public class LinkService(
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
+
+        return existingLink;
     }
 
     /// <summary>
@@ -350,7 +404,115 @@ public class LinkService(
     /// </summary>
     public async Task<ActionResult<Link>> UpdateLinkByCode(string code, MutateLink mut)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(mut);
+
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            string message = $"Parameter '{nameof(code)}' cannot be null/empty!";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+        if (code.Length != 32)
+        {
+            string message = $"Parameter '{nameof(code)}' invalid format!";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .ExternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Link? existingLink = await db.Links
+            .FirstOrDefaultAsync(link => link.Code == code);
+
+        if (existingLink is null)
+        {
+            string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        if (mut.AccessLimit is not null)
+        {
+            if (mut.AccessLimit <= 0) {
+                mut.AccessLimit = 0;
+            }
+        }
+
+        if (mut.ExpiresAt is null)
+        {
+            mut.ExpiresAt = existingLink.ExpiresAt;
+        }
+        else if (mut.ExpiresAt < DateTime.UtcNow)
+        {
+            string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        existingLink.AccessLimit = mut.AccessLimit;
+        existingLink.ExpiresAt = mut.ExpiresAt.Value;
+
+        try
+        {
+            db.Update(existingLink);
+            logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(UpdateLinkByCode))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return existingLink;
     }
 
     /// <summary>
@@ -358,13 +520,166 @@ public class LinkService(
     /// </summary>
     public async Task<ActionResult> DeleteLink(int linkId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(linkId);
+
+        if (linkId <= 0)
+        {
+            string message = $"Parameter '{nameof(linkId)}' has to be a non-zero positive integer! (Link ID)";
+            await logging
+                .Action(nameof(DeleteLink))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Link? existingLink = await db.Links.FindAsync(linkId);
+
+        if (existingLink is null)
+        {
+            string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
+            await logging
+                .Action(nameof(DeleteLink))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        try
+        {
+            db.Update(existingLink);
+            logging
+                .Action(nameof(DeleteLink))
+                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(DeleteLink))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(DeleteLink))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
     }
     /// <summary>
     /// Delete the <see cref="Link"/> with Unique '<paramref ref="code"/>'
     /// </summary>
     public async Task<ActionResult> DeleteLinkByCode(string code)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            string message = $"Parameter '{nameof(code)}' cannot be null/empty!";
+            await logging
+                .Action(nameof(DeleteLinkByCode))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+        if (code.Length != 32)
+        {
+            string message = $"Parameter '{nameof(code)}' invalid format!";
+            await logging
+                .Action(nameof(DeleteLinkByCode))
+                .ExternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Link? existingLink = await db.Links
+            .FirstOrDefaultAsync(link => link.Code == code);
+
+        if (existingLink is null)
+        {
+            string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
+            await logging
+                .Action(nameof(DeleteLinkByCode))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        try
+        {
+            db.Remove(existingLink);
+            logging
+                .Action(nameof(DeleteLinkByCode))
+                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(DeleteLinkByCode))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            await logging
+                .Action(nameof(DeleteLinkByCode))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
     }
 }
