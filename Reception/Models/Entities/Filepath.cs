@@ -80,7 +80,7 @@ public class Filepath
 
             entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths)
                 .HasForeignKey(d => d.PhotoId)
-                .OnDelete(DeleteBehavior.Restrict)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_photo");
         }
     );

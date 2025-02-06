@@ -240,7 +240,7 @@ public class LinkService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
             await logging
                 .Action(nameof(CreateLink))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
@@ -319,7 +319,7 @@ public class LinkService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
             await logging
                 .Action(nameof(UpdateLink))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);

@@ -154,7 +154,7 @@ public class AccountService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
             await loggingService
                 .Action(nameof(UpdateAccount))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })

@@ -280,7 +280,7 @@ public class TagService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add {validTags.Count} new tags. ";
             await logging
                 .Action(nameof(CreateTags))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
@@ -390,7 +390,7 @@ public class TagService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Tag)} '{existingTagName}'. ";
             await logging
                 .Action(nameof(UpdateTag))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
@@ -498,7 +498,7 @@ public class TagService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Photo)} with ID #{photoId}. ";
             await logging
                 .Action(nameof(MutatePhotoTags))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
@@ -584,7 +584,7 @@ public class TagService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Tag)} '{name}'. ";
             await logging
                 .Action(nameof(DeleteTag))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);

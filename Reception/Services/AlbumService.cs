@@ -438,7 +438,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to create new Album '{newAlbum.Title}'. ";
             await logging
                 .Action(nameof(CreateAlbum))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
@@ -743,7 +743,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(UpdateAlbum))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
@@ -858,7 +858,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the photos of the existing Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(MutateAlbumPhotos))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
@@ -963,7 +963,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a photo from Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(RemovePhoto))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
@@ -1067,7 +1067,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(RemoveTag))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
@@ -1148,7 +1148,7 @@ public class AlbumService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(DeleteAlbum))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
