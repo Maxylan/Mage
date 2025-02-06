@@ -221,7 +221,7 @@ public class LinkService(
             string message = $"Cought a {nameof(DbUpdateException)}. ";
             await logging
                 .Action(nameof(CreateLink))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
@@ -300,7 +300,7 @@ public class LinkService(
             string message = $"Cought a {nameof(DbUpdateException)}. ";
             await logging
                 .Action(nameof(UpdateLink))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);

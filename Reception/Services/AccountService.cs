@@ -136,7 +136,7 @@ public class AccountService(
             string message = $"Cought a {nameof(DbUpdateException)}. ";
             await loggingService
                 .Action(nameof(UpdateAccount))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
@@ -171,14 +171,83 @@ public class AccountService(
         return account;
     }
 
-    // TODO!
-
     /// <summary>
     /// Update the Avatar of an <see cref="Account"/> in the database.
     /// </summary>
-    public async Task<ActionResult<Account>> UpdateAccountAvatar(Account user, int photo_id)
+    public async Task<ActionResult<Account>> UpdateAccountAvatar(Account user, int photoId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(user, nameof(user));
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            await loggingService
+                .Action(nameof(UpdateAccountAvatar))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (user.AvatarId == photoId) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        try
+        {
+            user.AvatarId = photoId;
+            db.Update(user);
+
+            if (Program.IsDevelopment)
+            {
+                loggingService
+                    .Action(nameof(UpdateAccountAvatar))
+                    .InternalInformation($"{nameof(Account)} '{user.Username}' (#{user.Id}) just had its Avatar updated.");
+            }
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the Avatar of User '{user.Username}'. ";
+            await loggingService
+                .Action(nameof(UpdateAccountAvatar))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the Avatar of User '{user.Username}'. ";
+            await loggingService
+                .Action(nameof(UpdateAccountAvatar))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return user;
     }
 
     // TODO, maybe?

@@ -261,7 +261,7 @@ public class TagService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to add {validTags.Count} new tags. ";
             await logging
                 .Action(nameof(CreateTags))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
@@ -371,7 +371,7 @@ public class TagService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Tag)} '{existingTagName}'. ";
             await logging
                 .Action(nameof(UpdateTag))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
@@ -413,7 +413,107 @@ public class TagService(
     /// </summary>
     public async Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(int albumId, string[] tagNames)
     {
-        throw new NotImplementedException();
+        if (albumId <= 0) {
+            throw new ArgumentException($"Parameter {nameof(albumId)} has to be a non-zero positive integer!", nameof(albumId));
+        }
+
+        Album? album = await db.Albums.FindAsync(albumId);
+
+        if (album is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(albumId)} #{albumId}.";
+            await logging
+                .Action(nameof(MutateAlbumTags))
+                .LogDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        // Load missing navigation entries.
+        foreach (var navigation in db.Entry(album).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
+        }
+
+        var createAndSanitizeTags = await CreateTags(tagNames);
+        var validTags = createAndSanitizeTags.Value;
+
+        if (validTags is null /* || createAndSanitizeTags.Result is not OkObjectResult */) {
+            return createAndSanitizeTags.Result!;
+        }
+
+        foreach(var navigation in db.Entry(album).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        if (album.AlbumTags.Intersect(validTags).Count() == validTags.Count()) { // ..no change
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        album.AlbumTags = validTags.ToList();
+
+        try
+        {
+            db.Update(album);
+
+            if (Program.IsDevelopment)
+            {
+                logging
+                    .Action(nameof(MutateAlbumTags))
+                    .InternalDebug($"The tags associated with {nameof(Album)} '{album.Title}' (#{album.Id}) was just updated.");
+            }
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Album)} with ID #{albumId}. ";
+            await logging
+                .Action(nameof(MutateAlbumTags))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    // opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Album)} with ID #{albumId}. ";
+            await logging
+                .Action(nameof(MutateAlbumTags))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    // opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return album.AlbumTags.ToArray();
     }
 
     /// <summary>
@@ -472,14 +572,22 @@ public class TagService(
         try
         {
             db.Update(photo);
+
+            if (Program.IsDevelopment)
+            {
+                logging
+                    .Action(nameof(MutatePhotoTags))
+                    .InternalDebug($"The tags associated with {nameof(PhotoEntity)} '{photo.Title}' (#{photo.Id}) was just updated.");
+            }
+
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Photo)} with ID #{photoId}. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
             await logging
                 .Action(nameof(MutatePhotoTags))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
@@ -495,7 +603,7 @@ public class TagService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Photo)} with ID #{photoId}. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
             await logging
                 .Action(nameof(MutatePhotoTags))
                 .InternalError(message + " " + ex.Message, opts =>
@@ -565,7 +673,7 @@ public class TagService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Tag)} '{name}'. ";
             await logging
                 .Action(nameof(DeleteTag))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);

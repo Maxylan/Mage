@@ -1459,7 +1459,7 @@ public class PhotoService(
             string message = $"Cought a {updateException.GetType().Name} while attempting to save '{entity.Slug}' (#{entity.Id}) to database! ";
             await logging
                .Action(nameof(CreatePhotoEntity))
-               .InternalError(message + updateException.Message, opts =>
+               .InternalError(message + " " + updateException.Message, opts =>
                {
                    opts.Exception = updateException;
                })
@@ -1555,7 +1555,7 @@ public class PhotoService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
             await logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
@@ -1781,7 +1781,7 @@ public class PhotoService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
             await logging
                 .Action(nameof(DeletePhotoEntity))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
