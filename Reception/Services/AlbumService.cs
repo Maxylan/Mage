@@ -347,9 +347,9 @@ public class AlbumService(
         }
 
         Category? category = null;
-        if (!string.IsNullOrWhiteSpace(mut.Category))
+        if (mut.CategoryId is not null && mut.CategoryId > 0)
         {
-            category = await db.Categories.FirstOrDefaultAsync(c => c.Title == mut.Category);
+            category = await db.Categories.FindAsync(mut.CategoryId);
 
             if (category is null)
             {
@@ -375,6 +375,10 @@ public class AlbumService(
         List<PhotoEntity>? validPhotos = null;
         if (mut.Photos?.Any() == true)
         {
+            mut.Photos = mut.Photos
+                .Where(photoId => photoId > 0)
+                .ToArray();
+
             validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
                 .ToListAsync();
@@ -639,9 +643,9 @@ public class AlbumService(
         }
 
         Category? category = null;
-        if (!string.IsNullOrWhiteSpace(mut.Category))
+        if (mut.CategoryId is not null && mut.CategoryId > 0)
         {
-            category = await db.Categories.FirstOrDefaultAsync(c => c.Title == mut.Category);
+            category = await db.Categories.FindAsync(mut.CategoryId);
 
             if (category is null)
             {
@@ -667,6 +671,10 @@ public class AlbumService(
         List<PhotoEntity>? validPhotos = null;
         if (mut.Photos?.Any() == true)
         {
+            mut.Photos = mut.Photos
+                .Where(photoId => photoId > 0)
+                .ToArray();
+
             validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
                 .ToListAsync();
@@ -685,12 +693,12 @@ public class AlbumService(
             existingAlbum.Photos = validPhotos ?? [];
         }
 
-        if (mut.ThumbnailId is not null) {
+        if (mut.ThumbnailId is not null && mut.ThumbnailId > 0) {
             existingAlbum.Thumbnail = thumbnail;
             existingAlbum.ThumbnailId = thumbnail?.Id;
         }
 
-        if (mut.CategoryId is not null) {
+        if (mut.CategoryId is not null && mut.CategoryId > 0) {
             existingAlbum.Category = category;
             existingAlbum.CategoryId = category?.Id;
         }
@@ -758,7 +766,113 @@ public class AlbumService(
     /// </summary>
     public async Task<ActionResult<AlbumPhotoCollection>> MutateAlbumPhotos(int albumId, int[] photoIds)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
+
+        if (photoIds.Length > 9999)
+        {
+            photoIds = photoIds
+                .Take(9999)
+                .ToArray();
+        }
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
+            await logging
+                .Action(nameof(MutateAlbumPhotos))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            await logging
+                .Action(nameof(MutateAlbumPhotos))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        foreach(var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        photoIds = photoIds
+            .Where(photoId => photoId > 0)
+            .ToArray();
+
+        var existingIds = existingAlbum.Photos
+            .Select(photo => photo.Id)
+            .ToArray();
+
+        if (photoIds.Length <= 0 || photoIds == existingIds) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        existingAlbum.Photos = await db.Photos
+            .Where(photo => photoIds.Contains(photo.Id))
+            .ToListAsync();
+
+        try
+        {
+            db.Update(existingAlbum);
+
+            if (Program.IsDevelopment)
+            {
+                logging
+                    .Action(nameof(MutateAlbumPhotos))
+                    .InternalDebug($"The photos in an {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just updated.");
+            }
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the photos of an existing Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(MutateAlbumPhotos))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the photos of the existing Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(MutateAlbumPhotos))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new AlbumPhotoCollection(existingAlbum);
     }
 
     /// <summary>
@@ -767,7 +881,103 @@ public class AlbumService(
     /// </summary>
     public async Task<ActionResult> RemovePhoto(int albumId, int photoId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            await logging
+                .Action(nameof(RemovePhoto))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
+            await logging
+                .Action(nameof(RemovePhoto))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Album? existingAlbum = await db.Albums
+            .Include(album => album.Photos)
+            .FirstOrDefaultAsync(album => album.Id == albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            await logging
+                .Action(nameof(RemovePhoto))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        PhotoEntity? photoToRemove = existingAlbum.Photos
+            .FirstOrDefault(photo => photo.Id == photoId);
+
+        if (photoToRemove is null) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        existingAlbum.Photos.Remove(photoToRemove);
+
+        try
+        {
+            db.Update(existingAlbum);
+
+            logging
+                .Action(nameof(RemovePhoto))
+                .InternalTrace($"A photo was just removed from {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id})");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a photo from Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(RemovePhoto))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a photo from Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(RemovePhoto))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new OkResult();
     }
 
     /// <summary>
@@ -776,7 +986,102 @@ public class AlbumService(
     /// </summary>
     public async Task<ActionResult> RemoveTag(int albumId, string tag)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
+
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            string message = $"Parameter '{nameof(tag)}' was null/empty!";
+            await logging
+                .Action(nameof(RemoveTag))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
+            await logging
+                .Action(nameof(RemoveTag))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Album? existingAlbum = await db.Albums
+            .Include(album => album.AlbumTags)
+            .FirstOrDefaultAsync(album => album.Id == albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            await logging
+                .Action(nameof(RemoveTag))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        Tag? tagToRemove = existingAlbum.AlbumTags
+            .FirstOrDefault(t => t.Name == tag);
+
+        if (tagToRemove is null) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        existingAlbum.AlbumTags.Remove(tagToRemove);
+
+        try
+        {
+            db.Update(existingAlbum);
+
+            logging
+                .Action(nameof(RemoveTag))
+                .InternalTrace($"A tag was just removed from {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id})");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(RemoveTag))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Album '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(RemoveTag))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new OkResult();
     }
 
     /// <summary>
@@ -784,6 +1089,79 @@ public class AlbumService(
     /// </summary>
     public async Task<ActionResult> DeleteAlbum(int albumId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
+            await logging
+                .Action(nameof(DeleteAlbum))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            await logging
+                .Action(nameof(DeleteAlbum))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        try
+        {
+            db.Remove(existingAlbum);
+
+            logging
+                .Action(nameof(DeleteAlbum))
+                .InternalWarning($"The {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just deleted.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(DeleteAlbum))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
+            await logging
+                .Action(nameof(DeleteAlbum))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
     }
 }

@@ -1,3 +1,4 @@
+using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json.Serialization;
 using Reception.Models.Entities;
 
@@ -13,15 +14,15 @@ public class MutatePhoto : PhotoEntity
     public string? Description { get; set; }
     */
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public new int? UploadedBy { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public new DateTime? UploadedAt { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public new DateTime? UpdatedAt { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public new DateTime? CreatedAt { get; set; }
 }
