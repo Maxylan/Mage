@@ -20,11 +20,11 @@ public class MutateAlbum : Album
     */
 
     [JsonIgnore, SwaggerIgnore]
-    public int? CreatedBy { get; set; }
+    public new int? CreatedBy { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
-    public DateTime CreatedAt { get; set; }
+    public new DateTime? CreatedAt { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
-    public DateTime UpdatedAt { get; set; }
+    public new DateTime? UpdatedAt { get; set; }
 }

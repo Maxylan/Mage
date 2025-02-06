@@ -19,14 +19,19 @@ public class PhotoEntity
     public string Title { get; set; } = null!;
     public string? Summary { get; set; }
     public string? Description { get; set; }
+
+    [SwaggerIgnore]
     public int? UploadedBy { get; set; }
 
+    [SwaggerIgnore]
     [Column("uploaded_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UploadedAt { get; set; }
 
+    [SwaggerIgnore]
     [Column("updated_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UpdatedAt { get; set; }
 
+    [SwaggerIgnore]
     [Column("created_at", TypeName = "TIMESTAMP")]
     public DateTime CreatedAt { get; set; }
 
