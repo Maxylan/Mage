@@ -8,15 +8,19 @@ namespace Reception.Models;
 /// <summary>
 /// Collection of all albums (<see cref="Reception.Models.Entities.Album"/>) tagged with the given <paramref name="tag"/>.
 /// </summary>
-public record TagAlbumCollection
+public record CategoryAlbumCollection
 {
-    private Tag _tag;
+    private Category _category;
     private ICollection<Album> _collection;
 
     [SwaggerIgnore]
-    public int Id { get => _tag.Id; }
-    public string Name { get => _tag.Name; }
-    public string? Description { get => _tag.Description; }
+    public int Id { get => _category.Id; }
+    public string Title { get => _category.Title; }
+    public string? Summary { get => _category.Summary; }
+    public string? Description { get => _category.Description; }
+    public int? CreatedBy { get => _category.CreatedBy; }
+    public DateTime CreatedAt { get => _category.CreatedAt; }
+    public DateTime UpdatedAt { get => _category.UpdatedAt; }
 
     /// <summary>
     /// Returns the number of elements in a sequence. (See - <seealso cref="ICollection{Album}.Count"/>)
@@ -26,13 +30,13 @@ public record TagAlbumCollection
     public IEnumerable<Album> Albums { get => _collection; }
 
     [SetsRequiredMembers]
-    public TagAlbumCollection(Tag tag)
+    public CategoryAlbumCollection(Category category)
     {
-        ArgumentNullException.ThrowIfNull(tag, nameof(tag));
-        ArgumentNullException.ThrowIfNull(tag.Albums, nameof(tag.Albums));
+        ArgumentNullException.ThrowIfNull(category, nameof(category));
+        ArgumentNullException.ThrowIfNull(category.Albums, nameof(category.Albums));
 
-        _tag = tag;
-        _collection = tag.Albums;
+        _category = category;
+        _collection = category.Albums;
     }
 
     public Album this[int index] {

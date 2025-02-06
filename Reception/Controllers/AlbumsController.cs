@@ -87,6 +87,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     /// Create a new <see cref="Album"/>.
     /// </summary>
     [HttpPost]
+    [Tags(ControllerTags.ALBUMS)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]

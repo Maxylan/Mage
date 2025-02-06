@@ -18,7 +18,11 @@ public class TagService(
     /// </summary>
     public async Task<IEnumerable<Tag>> GetTags(bool trackEntities = false)
     {
-        var tags = await db.Tags
+        var tags = await (
+            trackEntities
+                ? db.Tags.AsTracking()
+                : db.Tags.AsNoTracking()
+        )
             .Include(tag => tag.Albums)
             .Include(tag => tag.Photos)
             .ToArrayAsync();
