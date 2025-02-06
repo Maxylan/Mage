@@ -214,13 +214,13 @@ public class BlobService(
         }
         catch (FileNotFoundException notFound)
         {
-            string message = $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
+            string message = $"Cought a '{nameof(FileNotFoundException)}' attempting to open file " + (
                 Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : photo.Filename
             );
 
             await logging
                 .Action(nameof(GetBlob) + $" ({dimension.ToString()})")
-                .InternalDebug(message, opts =>
+                .InternalWarning(message, opts =>
                 {
                     opts.Exception = notFound;
                 })
