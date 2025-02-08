@@ -64,7 +64,7 @@ public class LoggingService(
     }
 
     /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of 
+    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
     /// </summary>
     public DbSet<LogEntry> GetEvents() => db.Logs;
@@ -513,7 +513,7 @@ public class LoggingService(
             }
         }
 
-        return new(() => db);
+        return new(db);
     }
     #endregion
 

@@ -7,6 +7,7 @@ using Reception.Services;
 using Reception.Caching;
 using SixLabors.ImageSharp;
 using Reception.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Reception;
 

@@ -1,0 +1,19 @@
+<div>
+    @if (!isLoading() && (!photos || photos.length == 0)) {
+        <p>
+          photos works but no photos was fetched!
+        </p>
+    }
+
+    @for (photo of photos; track photo.source.photoId) {
+        <shared-photo-card
+            [photo]=photo.thumbnail!>
+          Photo {{ photo.source.slug }} #{{ photo.source.photoId }}
+        </shared-photo-card>
+    }
+</div>
+<shared-paginator
+    [disabled]=isLoading()
+    [length]=photos.length
+    [pageSize]=pageSize
+    [pageIndex]=page />
