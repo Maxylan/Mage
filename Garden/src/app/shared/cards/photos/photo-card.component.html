@@ -1,9 +1,16 @@
-<mat-card>
+<mat-card appearance="raised"
+    [style]=cardInlineStyling() >
     @if(imageIsLoading()) {
         <mat-progress-bar [mode]="'buffer'" />
     }
     @else {
-        <img mat-card-image [src]=imageEncoded [alt]=photo.slug >
+        <img mat-card-image
+            [style]=imageInlineStyling()
+            [src]=imageEncoded
+            [alt]=photo.slug >
     }
+    <mat-card-subtitle>{{ photo.title }}</mat-card-subtitle>
     <ng-content/>
+    <mat-card-content>
+    </mat-card-content>
 </mat-card>
