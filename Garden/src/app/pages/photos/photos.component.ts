@@ -5,7 +5,6 @@ import { PhotoCardComponent } from '../../shared/cards/photos/photo-card.compone
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map, Observable, shareReplay } from 'rxjs';
-import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'page-list-photos',

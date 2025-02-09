@@ -1,4 +1,63 @@
-.mat-mdc-card {
+.photo-card-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    overflow: hidden;
+    padding: 0.16rem;
+    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
+    border-color: rgba(0,0,0,0.0);
+    border-style: solid;
+    border-width: 1px
+}
+.photo-card-container div p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    padding: 0.24rem;
+    margin: unset;
+}
+.photo-card-container:hover {
+    border-color: rgba(127,127,127,0.16);
+}
+.photo-card-container:hover .mat-mdc-card {
+    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+}
+
+.handset-photo-card-container {
+    height: 8.8rem;
+    max-width: 8.8rem;
     font-size: 10px;
+}
+.desktop-photo-card-container {
+    height: 11.2rem;
+    max-width: 11.2rem;
+    font-size: 11px;
+}
+
+.mat-mdc-card {
     overflow: clip;
+    margin: auto;
+} 
+.photo-card {
+    object-fit: contain;
+}
+
+.handset-photo-card-image {
+    max-width: 4.8rem;
+    max-height: 6.4rem;
+}
+.desktop-photo-card-image {
+    max-width: 6.4rem;
+    max-height: 8rem;
+}
+
+p.desktop-photo-card-title {
+    font-size: 12px;
+    font-weight: bold;
+}
+p.handset-photo-card-title {
+    font-size: 11px;
+    font-weight: bold;
 }

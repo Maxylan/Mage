@@ -1,16 +1,24 @@
-<mat-card appearance="raised"
-    [style]=cardInlineStyling() >
-    @if(imageIsLoading()) {
-        <mat-progress-bar [mode]="'buffer'" />
-    }
-    @else {
-        <img mat-card-image
-            [style]=imageInlineStyling()
-            [src]=imageEncoded
-            [alt]=photo.slug >
-    }
-    <mat-card-subtitle>{{ photo.title }}</mat-card-subtitle>
-    <ng-content/>
-    <mat-card-content>
-    </mat-card-content>
-</mat-card>
+<div [ngClass]="'photo-card-container ' + (!!(isHandset | async) ? 'handset-photo-card-container' : 'desktop-photo-card-container')">
+    <mat-card
+        [ngClass]="!!(isHandset | async) ? 'handset-photo-card-image' : 'desktop-photo-card-image'"
+        appearance="raised" 
+        role="listitem">
+        @if(imageIsLoading()) {
+            <mat-progress-bar [mode]="'buffer'" />
+        }
+        @else {
+            <img mat-card-sm-image 
+                ngClass="photo-card"
+                [src]=imageEncoded
+                [alt]=photo.slug >
+        }
+    </mat-card>
+    <div>
+        <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
+            {{ photo.title }}
+        </p>
+        <p>
+            <ng-content/>
+        </p>
+    </div>
+</div>
