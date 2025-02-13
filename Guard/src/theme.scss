@@ -1,0 +1,48 @@
+@use '@angular/material' as mat;
+
+$guard-primary: mat.m2-define-palette(mat.$m2-blue-gray-palette);
+$guard-accent: mat.m2-define-palette(mat.$m2-blue-palette);
+
+// WIP
+$custom-typography: (
+  plain-family: hack-nerd-font,
+  brand-family: Open Sans,
+  bold-weight: 900,
+  medium-weight: 500,
+  regular-weight: 300,
+);
+
+$guard-dark: mat.m2-define-dark-theme((
+  color: (
+    primary: $guard-primary,
+    tertiary: $guard-accent,
+    accent: $guard-accent,
+    theme-type: dark,
+  ),
+  typography: $custom-typography,
+  density: 0,
+));
+
+html {
+  // Emit theme-dependent styles for common features used across multiple components.
+  @include mat.core();
+  @include mat.core-theme($guard-dark);
+  @include mat.core-color($guard-dark);
+  @include mat.button-theme($guard-dark);
+
+  // Emit an unecessary amount of CSS
+  // https://material.angular.io/guide/material-2-theming
+  @include mat.all-component-themes($guard-dark);
+
+  .mat-app-background {
+    background-color: var(--mat-app-background-color, #303030);
+    color: var(--mat-body-text-color, white);
+  }
+}
+
+// Customize the entire app. Change :root to your selector if you want to scope the styles.
+:root {
+  @include mat.form-field-overrides((
+    filled-focus-label-text-color: mat.get-theme-color($guard-dark, foreground, text)
+  ));
+}

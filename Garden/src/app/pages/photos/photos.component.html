@@ -1,3 +1,4 @@
+<mat-divider inset='true'></mat-divider>
 <div [className]="'photos-container'">
     @if (!isLoading() && (!photos || photos.length == 0)) {
         <p>
@@ -13,6 +14,7 @@
         </shared-photo-card>
     }
 </div>
+<mat-divider></mat-divider>
 <shared-paginator
     [disabled]=isLoading()
     [length]=photos.length

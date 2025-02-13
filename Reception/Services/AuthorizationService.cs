@@ -14,7 +14,7 @@ namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
-    LoginTracker loginTracker,
+    /* LoginTracker loginTracker, */
     ILoggingService logging,
     ISessionService sessions,
     MageDbContext db
@@ -322,7 +322,7 @@ public class AuthorizationService(
             Address = userAddress
         };
 
-        if (loginTracker.Attempts(attempt) >= 3)
+        /* if (loginTracker.Attempts(attempt) >= 3)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout due to repeatedly failed attempts.";
             await logging
@@ -336,11 +336,11 @@ public class AuthorizationService(
             {
                 StatusCode = StatusCodes.Status408RequestTimeout
             };
-        }
+        } */
 
         if (account.Password != hash)
         {
-            loginTracker.Set(attempt);
+            // loginTracker.Set(attempt);
 
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
             logging

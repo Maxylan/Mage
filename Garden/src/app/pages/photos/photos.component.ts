@@ -5,12 +5,14 @@ import { PhotoCardComponent } from '../../shared/cards/photos/photo-card.compone
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map, Observable, shareReplay } from 'rxjs';
+import { MatDivider } from '@angular/material/divider';
 
 @Component({
     selector: 'page-list-photos',
     imports: [
         PhotoCardComponent,
-        PaginationComponent
+        PaginationComponent,
+        MatDivider
     ],
     providers: [
         PhotosService,
