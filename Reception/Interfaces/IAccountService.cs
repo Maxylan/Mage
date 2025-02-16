@@ -9,7 +9,7 @@ namespace Reception.Interfaces;
 public interface IAccountService
 {
     /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Account&gt;"/>) set of 
+    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Account&gt;"/>) set of
     /// <see cref="Account"/>-entries, you may use it to freely fetch some users.
     /// </summary>
     public abstract DbSet<Account> GetAccounts();
@@ -18,6 +18,11 @@ public interface IAccountService
     /// Get the <see cref="Account"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
     public abstract Task<ActionResult<Account>> GetAccount(int id);
+
+    /// <summary>
+    /// Get the <see cref="Account"/> with unique '<paramref ref="username"/>'
+    /// </summary>
+    public abstract Task<ActionResult<Account>> GetAccountByUsername(string username);
 
     /// <summary>
     /// Get all <see cref="Account"/>-entries matching a few optional filtering / pagination parameters.

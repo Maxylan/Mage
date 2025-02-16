@@ -46,6 +46,31 @@ public class AccountService(
     }
 
     /// <summary>
+    /// Get the <see cref="Account"/> with unique '<paramref ref="username"/>'
+    /// </summary>
+    public async Task<ActionResult<Account>> GetAccountByUsername(string username)
+    {
+        Account? user = await db.Accounts
+            .Include(account => account.Sessions)
+            .FirstOrDefaultAsync(account => account.Username == username);
+
+        if (user is null)
+        {
+            string message = $"Failed to find an {nameof(Account)} with Username '{username}'.";
+            await loggingService
+                .Action(nameof(GetAccountByUsername))
+                .ExternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return user;
+    }
+
+    /// <summary>
     /// Get all <see cref="Account"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
     public async Task<ActionResult<IEnumerable<Account>>> GetAccounts(int? limit, int? offset, DateTime? lastVisit, string? fullName)

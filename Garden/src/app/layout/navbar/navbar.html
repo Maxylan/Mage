@@ -8,7 +8,10 @@
 		[opened]="(isHandset$ | async) === false"
 	>
 		<mat-toolbar>
-            <mat-icon fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
+            <a href="/garden">
+                <img src="/garden/Homie-png-96.png" />
+                <h2>Garden</h2>
+            </a>
         </mat-toolbar>
 		<mat-nav-list>
         @for (link of navigationLinks; track $index)
@@ -19,11 +22,9 @@
 	</mat-sidenav>
 	<mat-sidenav-content>
 		<mat-toolbar color="primary">
-			@if (isHandset$ | async) {
 			<button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
 				<mat-icon style="font-family: 'hack-nerd-regular'" hack-nerd-regularfontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
 			</button>
-			}
 		</mat-toolbar>
         <ng-content />
 	</mat-sidenav-content>

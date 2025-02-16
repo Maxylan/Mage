@@ -1,0 +1,32 @@
+@use '@angular/material' as mat;
+
+$garden-dark: (
+  primary: mat.$cyan-palette,
+  tertiary: mat.$blue-palette,
+  theme-type: dark
+);
+
+// WIP
+$custom-typography: (
+  plain-family: hack-nerd-font,
+  brand-family: Open Sans,
+  bold-weight: 900,
+  medium-weight: 500,
+  regular-weight: 300,
+);
+
+html {
+  color-scheme: dark;
+  @include mat.theme((
+    color: $garden-dark
+    typography: $custom-typography,
+    density: 0
+  ));
+}
+
+// Customize the entire app. Change :root to your selector if you want to scope the styles.
+/* :root {
+  @include mat.form-field-overrides((
+    filled-focus-label-text-color: mat.get-theme-color($garden-dark, foreground, text)
+  ));
+} */

@@ -1,26 +1,26 @@
 <div [ngClass]="'photo-card-container ' + (!!(isHandset | async) ? 'handset-photo-card-container' : 'desktop-photo-card-container')">
-    <mat-card
-        [ngClass]="!!(isHandset | async) ? 'handset-photo-card-image' : 'desktop-photo-card-image'"
-        appearance="raised" 
-        role="listitem">
-        @if(imageIsLoading()) {
-            <mat-progress-bar [mode]="'buffer'" />
-        }
-        @else {
-            <a [href]='link()'>
+    <a [href]="link()">
+        <mat-card
+            [ngClass]="!!(isHandset | async) ? 'handset-photo-card-image' : 'desktop-photo-card-image'"
+            appearance="raised" 
+            role="listitem">
+            @if(imageIsLoading()) {
+                <mat-progress-bar [mode]="'buffer'" />
+            }
+            @else {
                 <img mat-card-sm-image 
                     ngClass="photo-card"
                     [src]=imageEncoded
                     [alt]=photo.slug >
-            </a>
-        }
-    </mat-card>
-    <div>
-        <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
-            {{ photo.title }}
-        </p>
-        <p>
-            <ng-content/>
-        </p>
-    </div>
+            }
+        </mat-card>
+        <div>
+            <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
+                {{ photo.title }}
+            </p>
+            <p>
+                <ng-content/>
+            </p>
+        </div>
+    </a>
 </div>

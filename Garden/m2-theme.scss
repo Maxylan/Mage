@@ -33,13 +33,6 @@ html {
   // Emit an unecessary amount of CSS
   // https://material.angular.io/guide/material-2-theming
   @include mat.all-component-themes($garden-dark);
-
-  .mat-app-background {
-    background-color: var(--mat-app-background-color, #303030);
-    color: var(--mat-body-text-color, white);
-  }
-
-  // #121212
 }
 
 // Customize the entire app. Change :root to your selector if you want to scope the styles.

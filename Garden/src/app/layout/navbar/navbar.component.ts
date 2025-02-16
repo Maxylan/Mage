@@ -33,6 +33,8 @@ export class LayoutNavbarComponent {
         this.matIconsRegistry.registerFontClassAlias('hack', 'hack-nerd-font .hack-icons');
     }
 
+    isOpened: boolean = false;
+
     isHandset$: Observable<boolean> = this.breakpointObserver
         .observe(Breakpoints.Handset)
         .pipe(

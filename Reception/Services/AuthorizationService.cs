@@ -14,10 +14,10 @@ namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
-    /* LoginTracker loginTracker, */
-    ILoggingService logging,
+    LoginTracker loginTracker,
     ISessionService sessions,
-    MageDbContext db
+    IAccountService accounts,
+    ILoggingService logging
 ) : IAuthorizationService
 {
     /// <summary>
@@ -257,24 +257,17 @@ public class AuthorizationService(
     /// <param name="hash">SHA-256</param>
     public async Task<ActionResult<Session>> Login(string userName, string hash)
     {
-        Account? account = await db.Accounts
+        /* Account? account = await db.Accounts
             .Include(acc => acc.Sessions)
-            .FirstOrDefaultAsync(acc => acc.Username == userName);
+            .FirstOrDefaultAsync(acc => acc.Username == userName); */
+        var getAccount = await accounts.GetAccountByUsername(userName);
+        Account? account = getAccount.Value;
 
         if (account is null)
         {
             // To rate-limit password attempts, even in this early fail-fast check..
             Thread.Sleep(512);
-
-            string message = $"Failed to find an {nameof(Account)} with Username '{userName}'.";
-            await logging
-                .Action(nameof(Login))
-                .ExternalDebug(message)
-                .SaveAsync();
-
-            return new NotFoundObjectResult(
-                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
-            );
+            return getAccount.Result!;
         }
 
         return await Login(account, hash);
@@ -322,7 +315,7 @@ public class AuthorizationService(
             Address = userAddress
         };
 
-        /* if (loginTracker.Attempts(attempt) >= 3)
+        if (loginTracker.Attempts(attempt) >= 3)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout due to repeatedly failed attempts.";
             await logging
@@ -336,11 +329,11 @@ public class AuthorizationService(
             {
                 StatusCode = StatusCodes.Status408RequestTimeout
             };
-        } */
+        }
 
         if (account.Password != hash)
         {
-            // loginTracker.Set(attempt);
+            loginTracker.Set(attempt);
 
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
             logging
@@ -359,13 +352,12 @@ public class AuthorizationService(
 
         if (createSession.Result is NoContentResult)
         {
-            logging
+            await logging
                 .Action(nameof(Login))
-                .ExternalTrace($"No new session created ({nameof(NoContentResult)})");
+                .ExternalTrace($"No new session created ({nameof(NoContentResult)})")
+                .SaveAsync();
 
             var getSession = await sessions.GetSessionByUser(account);
-            await db.SaveChangesAsync();
-
             return getSession;
         }
         else if (session is null)
