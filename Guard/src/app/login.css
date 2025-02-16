@@ -16,14 +16,40 @@ div.login-container-handset {
     width: 100%;
 }
 
-form {
-    display: grid;
+h2 {
+    display: inline-block;
 }
 
+img {
+    margin-right: 1rem;
+    display: inline-block;
+    vertical-align: top;
+}
+
+mat-form-field {
+    width: 100%;
+}
+
+/* form {
+    display: grid;
+} */
+
 button {
-    justify-self: end;
-    width: fit-content;
     float: right;
+}
+
+pre {
+    padding: 0.48rem;
+    margin-bottom: unset;
+    border-style: dotted;
+    border-color: darkred;
+    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
+    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level1));
+    background-color: #333333;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    max-height: 16rem;
+    text-wrap: auto;
 }
 
 /* div.login-form {
