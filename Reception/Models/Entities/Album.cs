@@ -52,7 +52,7 @@ public class Album
 
     // Navigation Properties
 
-    [SwaggerIgnore]
+    [JsonIgnore, SwaggerIgnore]
     [ForeignKey("CategoryId")]
     [InverseProperty("Albums")]
     public virtual Category? Category { get; set; }

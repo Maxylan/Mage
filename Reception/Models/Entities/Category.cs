@@ -24,11 +24,21 @@ public partial class Category
 
     public string? Description { get; set; }
 
+    [SwaggerIgnore]
     public int? CreatedBy { get; set; }
 
+    [SwaggerIgnore]
+    [Column("created_at", TypeName = "TIMESTAMPZ")]
     public DateTime CreatedAt { get; set; }
 
+    [SwaggerIgnore]
+    [Column("updated_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UpdatedAt { get; set; }
+
+    // Methods
+
+    [SwaggerIgnore]
+    public int Items => Albums?.Count() ?? 0;
 
     // Navigation Properties
 
