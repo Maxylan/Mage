@@ -50,7 +50,7 @@ public sealed class Program
             .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(Parameters.SCHEME, opts => { });
 
         builder.Services.AddAuthorizationBuilder()
-            .AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
+            .AddPolicy(Parameters.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {

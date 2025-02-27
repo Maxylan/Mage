@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
 using Reception.Interfaces;
 using Reception.Models;
 using Reception.Models.Entities;
@@ -8,26 +10,18 @@ namespace Reception.Controllers;
 
 [ApiController]
 [Route("auth")]
-public class AuthController : ControllerBase
+public class AuthController(ReceptionAuthorizationService handler, ISessionService sessions) : ControllerBase
 {
-    IAuthorizationService _handler;
-    ISessionService _sessions;
-
-    public AuthController(IAuthorizationService authorization, ISessionService sessions)
-    {
-        _handler = authorization;
-        _sessions = sessions;
-    }
-
     /// <summary>
     /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
     /// </summary>
     [HttpHead("session/validate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [Authorize(Policy = "AuthenticatedUserPolicy")]
     public async Task<IStatusCodeActionResult> ValidateSession()
     {
-        var sessionValidation = await _handler.ValidateSession();
+        var sessionValidation = await handler.ValidateSession();
         if (sessionValidation is null) {
             return StatusCode(StatusCodes.Status401Unauthorized);
         }
@@ -42,8 +36,9 @@ public class AuthController : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "AuthenticatedUserPolicy")]
     public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id) => 
-        await _sessions.GetSessionById(id);
+        await sessions.GetSessionById(id);
 
     /// <summary>
     /// Attempt to grab a full `<see cref="Session"/>` instance, identified by unique <paramref name="session"/> code (string).
@@ -53,8 +48,9 @@ public class AuthController : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "AuthenticatedUserPolicy")]
     public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session) => 
-        await _sessions.GetSession(session);
+        await sessions.GetSession(session);
 
     /// <summary>
     /// Attempt to login a user, creating a new `<see cref="Session"/>` instance.
@@ -65,5 +61,5 @@ public class AuthController : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Session>> Login([FromBody] Login body) => 
-        await _handler.Login(body.Username, body.Hash);
+        await handler.Login(body.Username, body.Hash);
 }

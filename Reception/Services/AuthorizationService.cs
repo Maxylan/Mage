@@ -1,38 +1,133 @@
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Reception.Models.Entities;
+using Reception.Authentication;
 using Reception.Interfaces;
 using System.Net;
-using Microsoft.EntityFrameworkCore;
-using Reception.Authentication;
-using Microsoft.AspNetCore.Authentication;
 
 namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
+    ILoggerFactory loggerFactory,
     ILoggingService logging,
     ISessionService sessions,
     MageDbContext db
 ) : IAuthorizationService
 {
-    /// <summary>
-    /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
-    /// </summary>
-    /// <remarks>
-    /// Catches most errors thrown, logs them, and finally returns `null`.
-    /// </remarks>
-    /* private Account? GetAccount()
+    private record class LoginAttempt
     {
-        try {
-            return MageAuthentication.GetAccount(contextAccessor);
+        public LoginAttempt(string username) {
+            Username = username;
         }
-        catch (Exception ex) {
-            logging.Logger.LogError(ex, $"Cought an '{ex.GetType().FullName}' invoking {nameof(LoggingService.GetAccount)}!", ex.StackTrace);
-            return null;
+
+        public readonly string? UserAgent;
+        public readonly string? Address;
+        public readonly string Username;
+        public readonly uint Attempts = 0;
+
+        public string Key {
+            get {
+                string? deviceIdentifier = Address ?? UserAgent;
+                ArgumentException.ThrowIfNullOrWhiteSpace(deviceIdentifier, nameof(deviceIdentifier));
+
+                return LoginAttempt.KeyFormat(this.Username, deviceIdentifier);
+            }
         }
-    } */
+
+        public static string KeyFormat(string username, string deviceIdentifier) => 
+            $"{username}_{deviceIdentifier}";
+    }
+
+    private class LoginTracker : MemoryCache
+    {
+        private readonly ILoggingService _logging;
+
+        public LoginTracker(ILoggingService logging) : base(new MemoryCacheOptions() {
+            ExpirationScanFrequency = TimeSpan.FromSeconds(6)
+        }) {
+            _logging = logging;
+        }
+        public LoginTracker(ILoggingService logging, ILoggerFactory loggerFactory) : base(new MemoryCacheOptions() {
+            ExpirationScanFrequency = TimeSpan.FromSeconds(6)
+        }, loggerFactory) {
+            _logging = logging;
+        }
+
+        public LoginAttempt? GetByAddress(string username, string remoteAddress) => 
+            this.Get<LoginAttempt>(LoginAttempt.KeyFormat(username, remoteAddress));
+        public LoginAttempt? GetByAddress(LoginAttempt login)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(login.Username, nameof(LoginAttempt.Username));
+            // ArgumentException.ThrowIfNullOrWhiteSpace(login.Address, nameof(LoginAttempt.Address));
+            if (string.IsNullOrWhiteSpace(login.Address)) {
+                return null;
+            }
+
+            return this.Get<LoginAttempt>(LoginAttempt.KeyFormat(login.Username, login.Address));
+        }
+
+        public LoginAttempt? GetByUserAgent(string username, string userAgent) => 
+            this.Get<LoginAttempt>(LoginAttempt.KeyFormat(username, userAgent));
+        public LoginAttempt? GetByUserAgent(LoginAttempt login)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(login.Username, nameof(LoginAttempt.Username));
+            // ArgumentException.ThrowIfNullOrWhiteSpace(login.UserAgent, nameof(LoginAttempt.UserAgent));
+            if (string.IsNullOrWhiteSpace(login.UserAgent)) {
+                return null;
+            }
+
+            return this.Get<LoginAttempt>(LoginAttempt.KeyFormat(login.Username, login.UserAgent));
+        }
+
+        public async ICacheEntry Set(LoginAttempt login)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(login.Username, nameof(LoginAttempt.Username));
+
+            if (string.IsNullOrWhiteSpace(login.Address) && string.IsNullOrWhiteSpace(login.UserAgent))
+            {
+                string message = $"'{nameof(LoginTracker.Set)}' Requires either {nameof(LoginAttempt.Address)} or {nameof(LoginAttempt.UserAgent)} to have a non-empty value.";
+                await _logging
+                    .Action(nameof(LoginTracker.Set))
+                    .LogError($"[{nameof(AuthorizationService.LoginTracker)}] {message}")
+                    .SaveAsync();
+                
+                throw new InvalidOperationException(message);
+            }
+
+            if (!string.IsNullOrWhiteSpace(login.Address))
+            {
+                var attemptWithAddressExists = this.TryGetValue<LoginAttempt>(LoginAttempt.KeyFormat(login.Username, login.Address), out LoginAttempt? loginAttemptWithAddress);
+
+                if (!attemptWithAddressExists)
+                {
+                    loginAttemptWithAddress ??= login;
+                }
+
+                var loginAttemptWithAddressCacheEntry = base.CreateEntry(LoginAttempt.KeyFormat(login.Username, login.Address));
+                loginAttemptWithAddressCacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+                loginAttemptWithAddressCacheEntry.Value = loginAttemptWithAddress with {
+                    Attempts = ++Attempts
+                };
+            }
+            var attemptWithUserAgentExists = !string.IsNullOrWhiteSpace(login.UserAgent) && this.TryGetValue<LoginAttempt>(LoginAttempt.KeyFormat(login.Username, login.UserAgent), out LoginAttempt? loginAttemptWithUserAgent);
+
+
+            var cacheEntry = base.CreateEntry(login.Key);
+            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+            cacheEntry.Value = login;
+            return cacheEntry;
+        }
+
+    }
+
+    private readonly LoginTracker logins = new(opts, loggingFactory) {
+
+    };
 
     /// <summary>
     /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
@@ -295,6 +390,8 @@ public class AuthorizationService(
     /// <param name="hash">SHA-256</param>
     public async Task<ActionResult<Session>> Login(Account account, string hash)
     {
+        Thread.Sleep(512); // To rate-limit password attempts..
+        contextAccessor.HttpContext?.Request.Headers.UserAgent;
         if (account.Password != hash)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
