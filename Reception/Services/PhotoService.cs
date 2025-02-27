@@ -1,6 +1,4 @@
 
-using Photo = Reception.Models.Photo;
-using PhotoEntity = Reception.Models.Entities.Photo;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -74,7 +72,7 @@ public class PhotoService(
 
     #region Get single photos.
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Primary Key '<paramref ref="photoId"/>'
+    /// Get the <see cref="PhotoEntity"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntity(int photoId)
     {
@@ -112,7 +110,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Slug '<paramref ref="slug"/>' (string)
+    /// Get the <see cref="PhotoEntity"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntity(string slug)
     {

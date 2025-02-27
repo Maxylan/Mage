@@ -1,8 +1,6 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Reception.Models.Entities;
-using PhotoEntity = Reception.Models.Entities.Photo;
-using Photo = Reception.Models.Photo;
 using Reception.Models;
 
 namespace Reception.Interfaces;
@@ -39,12 +37,12 @@ public interface IPhotoService
 
     #region Get single photos.
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Primary Key '<paramref ref="photoId"/>'
+    /// Get the <see cref="PhotoEntity"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
     public abstract Task<ActionResult<PhotoEntity>> GetPhotoEntity(int photoId);
 
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Slug '<paramref ref="slug"/>' (string)
+    /// Get the <see cref="PhotoEntity"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
     public abstract Task<ActionResult<PhotoEntity>> GetPhotoEntity(string slug);
 

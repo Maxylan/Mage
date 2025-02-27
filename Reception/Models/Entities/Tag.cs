@@ -18,7 +18,7 @@ public class Tag
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
     [JsonIgnore]
-    public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
+    public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
 
     public static Action<EntityTypeBuilder<Tag>> Build => (
         entity =>

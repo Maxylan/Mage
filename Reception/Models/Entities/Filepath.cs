@@ -18,7 +18,7 @@ public class Filepath
     // Navigation Properties
 
     [JsonIgnore]
-    public virtual Photo Photo { get; set; } = null!;
+    public virtual PhotoEntity Photo { get; set; } = null!;
 
     public static Action<EntityTypeBuilder<Filepath>> Build => (
         entity =>

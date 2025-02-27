@@ -1,6 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using PhotoEntity = Reception.Models.Entities.Photo;
-using Photo = Reception.Models.Photo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;

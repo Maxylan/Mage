@@ -1,33 +1,31 @@
-﻿using Dimension = Reception.Models.Entities.Dimension;
-using Filepath = Reception.Models.Entities.Filepath;
-using PhotoEntity = Reception.Models.Entities.Photo;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Reception.Models.Entities;
 
 namespace Reception.Models;
 
 /// <summary>
-/// <see cref="Reception.Models.Entities.Photo"/> and <see cref="Reception.Models.Entities.Filepath"/> combined, for massive convenience and performance gains.
+/// <see cref="PhotoEntity"/> and <see cref="Filepath"/> combined, for massive convenience and performance gains.
 /// </summary>
 public record Photo
 {
     public Photo(
-        Reception.Models.Entities.Photo entity,
+        PhotoEntity entity,
         Dimension dimension
     ) {
         if (entity.Id == default) {
-            throw new ArgumentException($"{nameof(Reception.Models.Entities.Photo.Id)} can't be null", nameof(entity.Id));
+            throw new ArgumentException($"{nameof(PhotoEntity.Id)} can't be null", nameof(entity.Id));
         }
         if (entity.Filepaths is null || entity.Filepaths.Count == 0) {
-            throw new ArgumentException($"Navigation {nameof(Reception.Models.Entities.Photo.Filepaths)} can't be null/empty", nameof(entity));
+            throw new ArgumentException($"Navigation {nameof(PhotoEntity.Filepaths)} can't be null/empty", nameof(entity));
         }
 
         var path = entity.Filepaths.FirstOrDefault(path => path.Dimension == dimension);
 
         if (path is null) {
-            throw new ArgumentException($"{nameof(Reception.Models.Entities.Photo)} did not have a {nameof(Reception.Models.Entities.Filepath)} with Dimension {dimension.ToString()}", nameof(entity));
+            throw new ArgumentException($"{nameof(PhotoEntity)} did not have a {nameof(Filepath)} with Dimension {dimension.ToString()}", nameof(entity));
         }
         if (path.PhotoId != entity.Id) {
-            throw new ArgumentException($"{nameof(Reception.Models.Entities.Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(Reception.Models.Entities.Photo.Id)} ({entity.Id})", nameof(entity.Id));
+            throw new ArgumentException($"{nameof(Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(PhotoEntity.Id)} ({entity.Id})", nameof(entity.Id));
         }
 
         _filepath = path;
@@ -35,14 +33,14 @@ public record Photo
     }
     
     public Photo(
-        Reception.Models.Entities.Photo entity,
-        Reception.Models.Entities.Filepath path
+        PhotoEntity entity,
+        Filepath path
     ) {
         if (entity.Id == default) {
-            throw new ArgumentException($"{nameof(Reception.Models.Entities.Photo.Id)} can't be null", nameof(entity.Id));
+            throw new ArgumentException($"{nameof(PhotoEntity.Id)} can't be null", nameof(entity.Id));
         }
         if (path.PhotoId != entity.Id) {
-            throw new ArgumentException($"{nameof(Reception.Models.Entities.Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(Reception.Models.Entities.Photo.Id)} ({entity.Id})", nameof(entity.Id));
+            throw new ArgumentException($"{nameof(Filepath.PhotoId)} ({path.PhotoId}) does not equal {nameof(PhotoEntity.Id)} ({entity.Id})", nameof(entity.Id));
         }
 
         _entity = entity;
