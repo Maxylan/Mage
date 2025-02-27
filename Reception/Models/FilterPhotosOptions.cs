@@ -4,12 +4,11 @@ namespace Reception.Models;
 
 public class FilterPhotosOptions
 {
-    int? Limit { get; set; }
-    int? Offset { get; set; }
-    Dimension? Dimension { get; set; }
-    string? Slug { get; set; }
-    string? Title { get; set; }
-    string? FileName { get; set; }
-    DateTime? CreatedAt { get; set; }
-    int? CreatedBy { get; set; }
+    public int? Limit { get; set; }
+    public int? Offset { get; set; }
+    public Dimension? Dimension { get; set; }
+    public string? Slug { get; set; }
+    public string? Title { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public int? CreatedBy { get; set; }
 }

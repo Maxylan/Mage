@@ -5,10 +5,12 @@ using PhotoEntity = Reception.Models.Entities.Photo;
 using Photo = Reception.Models.Photo;
 using Reception.Models;
 using Reception.Interfaces;
+using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace Reception.Services;
 
-public class PhotoService : IPhotoService
+public class PhotoService(MageDbContext db, ILoggingService logging) : IPhotoService
 {
     #region Get single photos.
     /// <summary>
@@ -16,7 +18,37 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntity(int photoId)
     {
-        throw new NotImplementedException();
+        if (photoId <= 0) {
+            throw new ArgumentException($"Parameter {nameof(photoId)} has to be a non-zero positive integer!", nameof(photoId));
+        }
+
+        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+        
+        if (photo is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(photoId)} #{photoId}.";
+            await logging
+                .Action(nameof(GetPhotoEntity))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        if (photo.Filepaths is null || photo.Filepaths.Count == 0)
+        {
+            // Load missing navigation entries.
+            foreach(var navigation in db.Entry(photo).Navigations)
+            {
+                if (!navigation.IsLoaded) {
+                    await navigation.LoadAsync();
+                }
+            }
+        }
+
+        return photo;
     }
 
     /// <summary>
@@ -24,24 +56,86 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntity(string slug)
     {
-        throw new NotImplementedException();
+        ArgumentException.ThrowIfNullOrWhiteSpace(slug);
+
+        PhotoEntity? photo = await db.Photos
+            .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Tags)
+            .FirstOrDefaultAsync(photo => photo.Slug == slug);
+        
+        if (photo is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(slug)} '{slug}'.";
+            await logging
+                .Action(nameof(GetPhotoEntity))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return photo;
     }
 
 
     /// <summary>
     /// Get the <see cref="Reception.Models.Photo"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
-    public async Task<ActionResult<Photo>> GetSinglePhoto(int photoId)
+    public async Task<ActionResult<Photo>> GetSinglePhoto(int photoId, Dimension dimension = Dimension.SOURCE)
     {
-        throw new NotImplementedException();
+        var getEntity = await this.GetPhotoEntity(photoId);
+        PhotoEntity? entity = getEntity.Value;
+
+        if (entity is null || getEntity.Result is NotFoundObjectResult)
+        {
+            return getEntity.Result!;
+        }
+
+        if (!entity.Filepaths.Any(path => path.Dimension == dimension))
+        {
+            string message = $"Photo {nameof(PhotoEntity)} (#{photoId}) did not have a {dimension} {nameof(Dimension)}.";
+            await logging
+                .Action(nameof(GetSinglePhoto))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return new Photo(entity, dimension);
     }
 
     /// <summary>
     /// Get the <see cref="Reception.Models.Photo"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
-    public async Task<ActionResult<Photo>> GetSinglePhoto(string slug)
+    public async Task<ActionResult<Photo>> GetSinglePhoto(string slug, Dimension dimension = Dimension.SOURCE)
     {
-        throw new NotImplementedException();
+        var getEntity = await this.GetPhotoEntity(slug);
+        PhotoEntity? entity = getEntity.Value;
+
+        if (entity is null || getEntity.Result is NotFoundObjectResult)
+        {
+            return getEntity.Result!;
+        }
+
+        if (!entity.Filepaths.Any(path => path.Dimension == dimension))
+        {
+            string message = $"Photo {nameof(PhotoEntity)} ('{slug}') did not have a {dimension} {nameof(Dimension)}.";
+            await logging
+                .Action(nameof(GetSinglePhoto))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return new Photo(entity, dimension);
     }
 
 
@@ -50,7 +144,52 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<PhotoCollection>> GetPhoto(int photoId)
     {
-        throw new NotImplementedException();
+        if (photoId <= 0) {
+            throw new ArgumentException($"Parameter {nameof(photoId)} has to be a non-zero positive integer!", nameof(photoId));
+        }
+
+        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+        
+        if (photo is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(photoId)} #{photoId}.";
+            await logging
+                .Action(nameof(GetPhoto))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        if (photo.Filepaths is null || photo.Filepaths.Count == 0)
+        {
+            // Load missing navigation entries.
+            foreach(var navigation in db.Entry(photo).Navigations)
+            {
+                if (!navigation.IsLoaded) {
+                    await navigation.LoadAsync();
+                }
+            }
+        }
+
+        if (!photo.Filepaths!.Any(path => path.Dimension == Dimension.SOURCE))
+        {
+            string message = $"{nameof(PhotoEntity)} '{photo.Slug}' didn't have a {Dimension.SOURCE} {nameof(Dimension)}";
+            // throw new Exception(message);
+
+            await logging
+                .Action(nameof(GetPhoto))
+                .InternalWarning(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return new PhotoCollection(photo);
     }
 
     /// <summary>
@@ -58,7 +197,53 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<PhotoCollection>> GetPhoto(string slug)
     {
-        throw new NotImplementedException();
+        ArgumentException.ThrowIfNullOrWhiteSpace(slug);
+
+        PhotoEntity? photo = await db.Photos
+            .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Tags)
+            .FirstOrDefaultAsync(photo => photo.Slug == slug);
+        
+        if (photo is null)
+        {
+            string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(slug)} '{slug}'.";
+            await logging
+                .Action(nameof(GetPhoto))
+                .LogDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        if (photo.Filepaths is null || photo.Filepaths.Count == 0)
+        {
+            // Load missing navigation entries.
+            foreach(var navigation in db.Entry(photo).Navigations)
+            {
+                if (!navigation.IsLoaded) {
+                    await navigation.LoadAsync();
+                }
+            }
+        }
+
+        if (!photo.Filepaths!.Any(path => path.Dimension == Dimension.SOURCE))
+        {
+            string message = $"{nameof(PhotoEntity)} '{photo.Slug}' didn't have a {Dimension.SOURCE} {nameof(Dimension)}";
+            // throw new Exception(message);
+
+            await logging
+                .Action(nameof(GetPhoto))
+                .InternalWarning(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return new PhotoCollection(photo);
     }
     #endregion
 
@@ -80,7 +265,72 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<IEnumerable<Photo>>> GetSingles(FilterPhotosOptions filter)
     {
-        throw new NotImplementedException();
+        filter.Dimension ??= Dimension.SOURCE;
+
+        IQueryable<PhotoEntity> photoQuery = db.Photos
+            .OrderByDescending(photo => photo.CreatedAt)
+            .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Tags)
+            .Where(photo => photo.Filepaths.Any(path => path.Dimension == filter.Dimension));
+
+        // Filtering
+        if (!string.IsNullOrWhiteSpace(filter.Slug))
+        {
+            photoQuery = photoQuery
+                .Where(photo => photo.Slug.StartsWith(filter.Slug) || photo.Slug.EndsWith(filter.Slug));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Title))
+        {
+            photoQuery = photoQuery
+                .Where(photo => !string.IsNullOrWhiteSpace(photo.Title))
+                .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
+        }
+
+        if (filter.CreatedAt is not null)
+        {
+            if (filter.CreatedAt > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAt, $"Filter Parameter {nameof(filter.CreatedAt)} cannot exceed DateTime.UtcNow");
+            }
+            
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedAt >= filter.CreatedAt);
+        }
+
+        if (filter.CreatedBy is not null)
+        {
+            if (filter.CreatedBy <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedBy, $"Filter Parameter {nameof(filter.CreatedBy)} has to be a non-zero positive integer (User ID)!");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedBy == filter.CreatedBy);
+        }
+
+        // Pagination
+        if (filter.Offset is not null)
+        {
+            if (filter.Offset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.Offset, $"Pagination Parameter {nameof(filter.Offset)} has to be a positive integer!");
+            }
+
+            photoQuery = photoQuery.Skip(filter.Offset.Value);
+        }
+        if (filter.Limit is not null)
+        {
+            if (filter.Limit <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.Limit, $"Pagination Parameter {nameof(filter.Limit)} has to be a non-zero positive integer!");
+            }
+
+            photoQuery = photoQuery.Take(filter.Limit.Value);
+        }
+        
+        var getPhotos = await photoQuery.ToListAsync();
+        var photos = getPhotos
+            .Select(photo => new Photo(photo, filter.Dimension!.Value))
+            .ToList();
+
+        return photos;
     }
 
 
@@ -102,7 +352,74 @@ public class PhotoService : IPhotoService
     /// </summary>
     public async Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(FilterPhotosOptions filter)
     {
-        throw new NotImplementedException();
+        IQueryable<PhotoEntity> photoQuery = db.Photos
+            .OrderByDescending(photo => photo.CreatedAt)
+            .Include(photo => photo.Filepaths)
+            .Include(photo => photo.Tags);
+
+        // Filtering
+        if (filter.Dimension is not null) {
+            photoQuery = photoQuery
+                .Where(photo => photo.Filepaths.Any(path => path.Dimension == filter.Dimension));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Slug))
+        {
+            photoQuery = photoQuery
+                .Where(photo => photo.Slug.StartsWith(filter.Slug) || photo.Slug.EndsWith(filter.Slug));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Title))
+        {
+            photoQuery = photoQuery
+                .Where(photo => !string.IsNullOrWhiteSpace(photo.Title))
+                .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
+        }
+
+        if (filter.CreatedAt is not null)
+        {
+            if (filter.CreatedAt > DateTime.UtcNow) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedAt, $"Filter Parameter {nameof(filter.CreatedAt)} cannot exceed DateTime.UtcNow");
+            }
+            
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedAt >= filter.CreatedAt);
+        }
+
+        if (filter.CreatedBy is not null)
+        {
+            if (filter.CreatedBy <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.CreatedBy, $"Filter Parameter {nameof(filter.CreatedBy)} has to be a non-zero positive integer (User ID)!");
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => photo.CreatedBy == filter.CreatedBy);
+        }
+
+        // Pagination
+        if (filter.Offset is not null)
+        {
+            if (filter.Offset < 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.Offset, $"Pagination Parameter {nameof(filter.Offset)} has to be a positive integer!");
+            }
+
+            photoQuery = photoQuery.Skip(filter.Offset.Value);
+        }
+        if (filter.Limit is not null)
+        {
+            if (filter.Limit <= 0) {
+                throw new ArgumentOutOfRangeException(nameof(filter), filter.Limit, $"Pagination Parameter {nameof(filter.Limit)} has to be a non-zero positive integer!");
+            }
+
+            photoQuery = photoQuery.Take(filter.Limit.Value);
+        }
+        
+        var getPhotos = await photoQuery.ToListAsync();
+        var photos = getPhotos
+            .Select(entity => new PhotoCollection(entity))
+            .ToList();
+
+        return photos;
     }
     #endregion
 

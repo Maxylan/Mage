@@ -24,12 +24,12 @@ public interface IPhotoService
     /// <summary>
     /// Get the <see cref="Reception.Models.Photo"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
-    public abstract Task<ActionResult<Photo>> GetSinglePhoto(int photoId);
+    public abstract Task<ActionResult<Photo>> GetSinglePhoto(int photoId, Dimension dimension = Dimension.SOURCE);
 
     /// <summary>
     /// Get the <see cref="Reception.Models.Photo"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
-    public abstract Task<ActionResult<Photo>> GetSinglePhoto(string slug);
+    public abstract Task<ActionResult<Photo>> GetSinglePhoto(string slug, Dimension dimension = Dimension.SOURCE);
 
 
     /// <summary>
