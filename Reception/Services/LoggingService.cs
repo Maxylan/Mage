@@ -49,7 +49,7 @@ public class LoggingService(
     /// <summary>
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
-    public async Task<ActionResult<LogEntry?>> GetEvent(int id)
+    public async Task<ActionResult<LogEntry>> GetEvent(int id)
     {
         LogEntry? result = await db.Logs.FindAsync(id);
         if (result is null) {
@@ -64,6 +64,55 @@ public class LoggingService(
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
     /// </summary>
     public DbSet<LogEntry> GetEvents() => db.Logs;
+
+    /// <summary>
+    /// Get all <see cref="LogEntry"/>-entries matching a wide range of optional filtering parameters.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<LogEntry>>> GetEvents(int? limit, int? offset, Source? source, Severity? severity, Method? method, string? action)
+    {
+        IQueryable<LogEntry> query = db.Logs.OrderByDescending(log => log.CreatedAt);
+        string message;
+
+        if (source is not null) {
+            query = query.Where(log => log.Source == source);
+        }
+        if (severity is not null) {
+            query = query.Where(log => log.LogLevel == severity);
+        }
+        if (method is not null) {
+            query = query.Where(log => log.Method == method);
+        }
+        if (!string.IsNullOrWhiteSpace(action)) {
+            query = query.Where(log => log.Action == action);
+        }
+
+        if (offset is not null)
+        {
+            if (offset < 0) {
+                message = $"Parameter {nameof(offset)} has to either be `0`, or any positive integer greater-than `0`.";
+                logger.LogWarning($"[{nameof(LoggingService)}] ({nameof(GetEvents)}) {message}");
+                
+                return new BadRequestObjectResult(message);
+            }
+
+            query = query.Skip(offset.Value);
+        }
+
+        if (limit is not null)
+        {
+            if (limit <= 0) {
+                message = $"Parameter {nameof(limit)} has to be a positive integer greater-than `0`.";
+                logger.LogWarning($"[{nameof(LoggingService)}] ({nameof(GetEvents)}) {message}");
+
+                return new BadRequestObjectResult(message);
+            }
+
+            query = query.Take(limit.Value);
+        }
+
+        var getLogs = await query.ToArrayAsync();
+        return getLogs;
+    }
 
 #region Create Logs (w/ many shortcuts)
     /// <summary>
@@ -414,7 +463,9 @@ public class LoggingService(
     /// </summary>
     public async Task<int> DeleteEvents(params LogEntry[] entries)
     {
-        foreach(var entry in entries)
+        db.RemoveRange(entries);
+
+        /* foreach(var entry in entries)
         {
             bool exists = await db.Logs.ContainsAsync(entry);
 
@@ -423,10 +474,10 @@ public class LoggingService(
                 db.Remove(entry);
             }
             else {
-                // Stop tracking the entity, this should result in nothing being added on next save, effectively deleting the entity, without a database call.
+                // Stop tracking the entity, this should result in nothing being added on next save, effectively "deleting" the entity, without a database call.
                 db.Entry(entry).State = EntityState.Detached;
             }
-        }
+        } */
 
         return await db.SaveChangesAsync();
     }
