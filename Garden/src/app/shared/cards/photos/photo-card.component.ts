@@ -13,9 +13,6 @@ import { Observable } from 'rxjs';
     imports: [
         NgClass,
         MatCard,
-        MatCardTitleGroup,
-        MatCardTitle,
-        MatCardSubtitle,
         /* MatRipple, */
         MatProgressBar,
         AsyncPipe
@@ -36,6 +33,8 @@ export class PhotoCardComponent {
 
     @Input({ required: true })
     isHandset!: Observable<boolean>;
+
+    link = computed(() => this.photo ? `/garden/photos/single/${this.photo.photoId}` : '#');
 
     ngOnInit() {
         this.imageIsLoading.set(true);

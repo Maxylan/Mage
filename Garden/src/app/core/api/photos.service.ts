@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Dimension, IPhotoQueryParameters, Photo, PhotoCollection } from '../types/photos.types';
 import { BlobResponse, Methods } from '../types/generic.types';
+import { AuthService } from './auth.service';
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root' /* ,
+    imports: [AuthService] */
 })
 export class PhotosService {
+    private authService!: AuthService;
     private apiUrl: string = '/reception';
     private generateRequestInit = (method: Methods): RequestInit => ({
         method: method,
@@ -15,14 +18,25 @@ export class PhotosService {
         }
     });
 
+    constructor(auth: AuthService) {
+        this.authService = auth;
+    }
+
     /**
      * Get a single `Photo` (source) by its `photoId` (PK, uint)
      */
     public getSourcePhoto(photoId: number): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/source/' + photoId, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
-            ).catch(
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
+            )
+            .catch(
                 err => {
                     console.error('[getSourcePhoto] Error!', err);
                     return err;
@@ -36,7 +50,13 @@ export class PhotosService {
     public getSourcePhotoBySlug(slug: string): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/source/slug/' + slug, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getSourcePhotoBySlug] Error!', err);
@@ -51,7 +71,13 @@ export class PhotosService {
     public getMediumPhoto(photoId: number): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/medium/' + photoId, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getMediumPhoto] Error!', err);
@@ -66,7 +92,13 @@ export class PhotosService {
     public getMediumPhotoBySlug(slug: string): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/medium/slug/' + slug, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getMediumPhotoBySlug] Error!', err);
@@ -81,7 +113,13 @@ export class PhotosService {
     public getThumbnailPhoto(photoId: number): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/thumbnail/' + photoId, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getThumbnailPhoto] Error!', err);
@@ -96,7 +134,13 @@ export class PhotosService {
     public getThumbnailPhotoBySlug(slug: string): Promise<Photo> {
         return fetch(this.apiUrl + '/photos/thumbnail/slug/' + slug, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getThumbnailPhotoBySlug] Error!', err);
@@ -111,7 +155,13 @@ export class PhotosService {
     public getPhoto(photoId: number): Promise<PhotoCollection> {
         return fetch(this.apiUrl + '/photos/' + photoId, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getPhoto] Error!', err);
@@ -126,7 +176,13 @@ export class PhotosService {
     public getPhotoBySlug(slug: string): Promise<PhotoCollection> {
         return fetch(this.apiUrl + '/photos/slug/' + slug, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getPhotoBySlug] Error!', err);
@@ -158,7 +214,13 @@ export class PhotosService {
 
         return fetch(this.apiUrl + '/photos' + queryParameters, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[getThumbnailPhotoBySlug] Error!', err);
@@ -206,7 +268,13 @@ export class PhotosService {
 
         return fetch(this.apiUrl + '/photos/' + dimension + queryParameters, this.generateRequestInit('GET'))
             .then(
-                res => res.json()
+                res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
+                    return res.json();
+                }
             ).catch(
                 err => {
                     console.error('[_queryForSingleDimensionPhotos] Error!', err);
@@ -249,6 +317,10 @@ export class PhotosService {
         return fetch(`${url}/${photoId}/blob`, this.generateRequestInit('GET'))
             .then(
                 res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
                     blobResponse.contentType = 
                         res.headers.get('Content-Type') || res.headers.get('content-type');
                     blobResponse.contentLength =
@@ -302,6 +374,10 @@ export class PhotosService {
         return fetch(url + '/slug/' + slug + '/blob', requestInit)
             .then(
                 res => {
+                    if (res?.status === 401) {
+                        this.authService.fallbackToAuth(res);
+                    }
+
                     blobResponse.contentType = 
                         res.headers.get('Content-Type') || res.headers.get('content-type');
                     blobResponse.contentLength =

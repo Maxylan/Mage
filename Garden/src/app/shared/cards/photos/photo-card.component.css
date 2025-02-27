@@ -5,6 +5,7 @@
     text-align: center;
     overflow: hidden;
     padding: 0.16rem;
+    margin: 0.32rem 0;
     border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
     border-color: rgba(0,0,0,0.0);
     border-style: solid;
@@ -17,6 +18,10 @@
     text-wrap: nowrap;
     padding: 0.24rem;
     margin: unset;
+    user-select: none;
+    -ms-user-select: none;      
+    -moz-user-select: none;    
+    -webkit-user-select: none;  
 }
 .photo-card-container:hover {
     border-color: rgba(127,127,127,0.16);

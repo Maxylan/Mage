@@ -1,0 +1,32 @@
+h2 {
+    margin-bottom: 1rem;
+}
+div {
+    display: inline-block;
+    background-color: #2a2a2a;
+    padding: 1rem;
+}
+div.login-container {
+    margin: auto;
+    width: 16rem;
+    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
+    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+}
+div.login-container-handset {
+    width: 100%;
+}
+
+form {
+    display: grid;
+}
+
+button {
+    justify-self: end;
+    width: fit-content;
+    float: right;
+}
+
+/* div.login-form {
+}
+div.login-form-handset {
+} */

@@ -7,10 +7,12 @@
             <mat-progress-bar [mode]="'buffer'" />
         }
         @else {
-            <img mat-card-sm-image 
-                ngClass="photo-card"
-                [src]=imageEncoded
-                [alt]=photo.slug >
+            <a [href]='link()'>
+                <img mat-card-sm-image 
+                    ngClass="photo-card"
+                    [src]=imageEncoded
+                    [alt]=photo.slug >
+            </a>
         }
     </mat-card>
     <div>

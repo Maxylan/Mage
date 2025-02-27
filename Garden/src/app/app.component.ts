@@ -13,8 +13,8 @@ import { LayoutNavbarComponent } from './layout/navbar/navbar.component';
   template: `
     <layout-navbar>
         <router-outlet />
+        <upload-form />
     </layout-navbar>
-    <upload-form />
   `,
   styles: [],
 })

@@ -1,16 +1,19 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { AppLoginComponent } from "./login.component";
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  template: `
-    <h1>Welcome to {{title}}!</h1>
-
-    <router-outlet />
-  `,
-  styles: [],
+    selector: 'app-root',
+    imports: [AppLoginComponent],
+    template: `
+        <app-login/>
+    `,
+    styles: `
+        app-login {
+            display: flex;
+            height: 100%;
+        }
+    `
 })
 export class AppComponent {
-  title = 'Guard';
+    title = 'Guard';
 }
