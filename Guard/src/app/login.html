@@ -5,12 +5,13 @@
         </h2>
         <mat-form-field>
             <mat-label>Username</mat-label>
-            <input matInput type="text" name="username" [formControl]="usernameControl">
+            <input matInput type="text" name="username" [formControl]="usernameControl" minlength="3" maxlength="127">
         </mat-form-field>
         <mat-form-field>
             <mat-label>Password</mat-label>
-            <input matInput type=password name="password" [formControl]="passwordControl">
+            <input matInput type=password name="password" [formControl]="passwordControl" minlength="4" maxlength="127">
         </mat-form-field>
+        <mat-checkbox [formControl]="rememberMeControl">Remember me!</mat-checkbox>
         <button mat-raised-button type=submit>
             Login
         </button>
