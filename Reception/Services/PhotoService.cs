@@ -1573,7 +1573,7 @@ public class PhotoService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
             await logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
@@ -1662,7 +1662,60 @@ public class PhotoService(
     /// </summary>
     public async Task<ActionResult> DeletePhotoBlob(Filepath entity)
     {
-        throw new NotImplementedException();
+        string fullPath = Path.Combine(entity.Path, entity.Filename);
+        if (!File.Exists(fullPath))
+        {
+            string message = $"Suspicious! Attempt was made to delete File '{fullPath}', which does not exists! Is there a dangling database entry, or did someone manage to escape a path string?";
+
+            await logging
+                .Action(nameof(DeletePhotoBlob))
+                .InternalSuspicious(message)
+                .SaveAsync();
+
+            if (Program.IsProduction) {
+                return new NotFoundResult();
+            }
+
+            return new NotFoundObjectResult(message);
+        }
+
+        try
+        {
+            File.Delete(fullPath);
+
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalInformation($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.");
+        }
+        /* // TODO! Handle a gazillion different possible errors.
+            ArgumentException
+            ArgumentNullException
+            DirectoryNotFoundException
+            IOException
+            NotSupportedException
+            PathTooLongException
+            UnauthorizedAccessException
+        */
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete the blob on filepath '{fullPath}' (#{entity.Id}). ";
+            await logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
     }
     #endregion
 
@@ -1746,7 +1799,7 @@ public class PhotoService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
             await logging
                 .Action(nameof(DeletePhotoEntity))
-                .InternalError(message + ex.Message, opts =>
+                .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })

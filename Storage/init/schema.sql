@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS filepaths (
     CONSTRAINT fk_photo
         FOREIGN KEY(photo_id)
         REFERENCES photos(id)
-        ON DELETE RESTRICT
+        ON DELETE CASCADE
 );
 
 -- Table tracking many-2-many (N:N) relationships between the `photos` & `tags` tables.

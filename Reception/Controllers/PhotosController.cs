@@ -475,7 +475,7 @@ public class PhotosController(
     /// Delete the <see cref="PhotoEntity"/> with '<paramref ref="photo_id"/>' (int).
     /// </summary>
     [HttpDelete("{photo_id:int}")]
-    [Tags(ControllerTags.ALBUMS)]
+    [Tags(ControllerTags.PHOTOS_ENTITIES)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
