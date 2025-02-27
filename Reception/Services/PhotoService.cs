@@ -827,7 +827,31 @@ public class PhotoService(
             throw new NotImplementedException("Handle case of no filename"); // TODO: HANDLE
         }
 
+        if (!untrustedFilename.IsNormalized())
+        {
+            untrustedFilename = untrustedFilename
+                .Normalize()
+                .Trim();
+        }
+
         trustedFilename = WebUtility.HtmlEncode(untrustedFilename);
+        var filenameParts = trustedFilename.Split('.');
+        string sanitizedName = string.Join("_", filenameParts[..^1])
+            .Trim()
+            .Replace(Path.DirectorySeparatorChar.ToString(), "\\" + Path.DirectorySeparatorChar)
+            .Subsmart(0, 123);
+
+        // Should be normalized, encoded, trimmed and clamped! The four avengers of trust
+        trustedFilename = sanitizedName + "." + filenameParts[^1];
+
+        if (trustedFilename.Contains("&&")
+            || trustedFilename.Contains("..")
+            || trustedFilename.Contains(Path.DirectorySeparatorChar)
+            || trustedFilename.Length > 127
+        ) {
+            throw new NotImplementedException("Suspicious upload? " + trustedFilename); // TODO! Handle!!
+        }
+
         fileExtension = Path.GetExtension(trustedFilename).ToLowerInvariant();
         if (fileExtension.StartsWith('.') && fileExtension.Length > 1)
         {
@@ -1945,13 +1969,34 @@ public class PhotoService(
     public async Task<ActionResult> DeletePhotoBlob(Filepath entity)
     {
         string fullPath = Path.Combine(entity.Path, entity.Filename);
-        if (!File.Exists(fullPath))
+        if (fullPath.Contains("&&") || fullPath.Contains("..") || fullPath.Length > 511)
         {
-            string message = $"Suspicious! Attempt was made to delete File '{fullPath}', which does not exists! Is there a dangling database entry, or did someone manage to escape a path string?";
-
             await logging
                 .Action(nameof(DeletePhotoBlob))
-                .InternalSuspicious(message)
+                .ExternalSuspicious($"Sussy filpath '{fullPath}' (TODO! HANDLE)")
+                .SaveAsync();
+
+            throw new NotImplementedException("Suspicious?"); // TODO! Handle!!
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            string message = string.Empty;
+
+            if (!fullPath.StartsWith(FILE_STORAGE_NAME) || !fullPath.EndsWith(entity.Filename))
+            {
+                message = $"Suspicious! Attempt was made to delete missing File '{fullPath}'! Is there a broken database entry, or did someone manage to escape a path string?";
+                logging.Action(nameof(DeletePhotoBlob));
+            }
+            else {
+                message = $"Attempt to delete File '{fullPath}' failed (file missing)! Assuming there's a dangling database entry..";
+                logging.Action("Dangle -" + nameof(DeletePhotoBlob));
+                // TODO! Automatically delete dangling entity?
+                // Would need access to `PhotoEntity.Id` or slug here..
+            }
+
+            await logging
+                .ExternalSuspicious(message)
                 .SaveAsync();
 
             if (Program.IsProduction) {
