@@ -89,7 +89,7 @@ public interface IPhotoService
 
 
     /// <summary>
-    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional 
+    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public virtual Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(Action<FilterPhotosOptions> opts)
@@ -101,7 +101,7 @@ public interface IPhotoService
     }
 
     /// <summary>
-    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional 
+    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(FilterPhotosOptions filter);
@@ -117,7 +117,7 @@ public interface IPhotoService
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public virtual Task<ActionResult<PhotoCollection>> UploadPhoto(Action<FilterPhotosOptions> opts)
+    public virtual Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
@@ -133,7 +133,7 @@ public interface IPhotoService
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public abstract Task<ActionResult<PhotoCollection>> UploadPhoto(FilterPhotosOptions details);
+    public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhoto(FilterPhotosOptions details);
     #endregion
 
 
@@ -162,7 +162,7 @@ public interface IPhotoService
             PhotoId = photoId
         });
     }
-        
+
     /// <summary>
     /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
     /// </summary>

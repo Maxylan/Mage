@@ -25,7 +25,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntity(int id) =>
         await handler.GetPhotoEntity(id);
-    
+
     /// <summary>
     /// Get a single <see cref="PhotoEntity"/> (entity) by its <paramref name="slug"/> (string).
     /// </summary>
@@ -37,7 +37,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PhotoEntity>> GetPhotoEntityBySlug(string slug) =>
         await handler.GetPhotoEntity(slug);
-    
+
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single) by its <paramref name="photo_id"/> (PK, uint).
@@ -49,7 +49,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Photo>> GetSinglePhoto(int photo_id) =>
         await handler.GetSinglePhoto(photo_id);
-    
+
     /// <summary>
     /// Get a single <see cref="Photo"/> (single) by its <paramref name="slug"/> (string).
     /// </summary>
@@ -61,7 +61,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Photo>> GetSinglePhotoBySlug(string slug) =>
         await handler.GetSinglePhoto(slug);
-    
+
 
     /// <summary>
     /// Get a single <see cref="PhotoCollection"/> by its <paramref name="photo_id"/> (PK, uint).
@@ -73,7 +73,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PhotoCollection>> GetPhoto(int photo_id) =>
         await handler.GetPhoto(photo_id);
-    
+
     /// <summary>
     /// Get a single <see cref="PhotoCollection"/> by its <paramref name="slug"/> (string).
     /// </summary>
@@ -98,7 +98,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PhotoCollection>> StreamPhoto() =>
+    public async Task<ActionResult<IEnumerable<PhotoCollection>>> StreamPhoto() =>
         await handler.UploadPhoto(opts => {
             // opts.Dimension = Dimension.SOURCE;
             // opts.Slug = ???;

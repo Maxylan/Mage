@@ -10,7 +10,13 @@ namespace Reception.Utilities;
 /// </summary>
 public static class MultipartHelper
 {
-    public const uint FILE_SIZE_LIMIT = 8388608; // 8MB in Bytes
+    public const uint FILE_SIZE_LIMIT = 8388608 * 16; // 32MB
+
+    // Size thresholds.
+    public const uint LARGE_FILE_THRESHOLD = 8388608 * 8; // 8MB
+    public const string LARGE_FILE_CATEGORY_SLUG = "HD";
+    public const uint SMALL_FILE_THRESHOLD = 8192 * 512; // 512KB
+    public const string SMALL_FILE_CATEGORY_SLUG = "SD";
 
     // Content-Type: multipart/form-data; boundary="----WebKitFormBoundarymx2fSWqWSd0OxQqq"
     // The spec at https://tools.ietf.org/html/rfc2046#section-5.1 states that 70 characters is a reasonable limit.
@@ -38,17 +44,17 @@ public static class MultipartHelper
 
     public static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition) => (
         // Content-Disposition: form-data; name="key";
-        contentDisposition != null && 
-        contentDisposition.DispositionType.Equals("form-data") && 
-        string.IsNullOrEmpty(contentDisposition.FileName.Value) && 
+        contentDisposition != null &&
+        contentDisposition.DispositionType.Equals("form-data") &&
+        string.IsNullOrEmpty(contentDisposition.FileName.Value) &&
         string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)
     );
 
     public static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition) => (
         // Content-Disposition: form-data; name="myfile1"; filename="Misc 002.jpg"
-        contentDisposition != null && 
+        contentDisposition != null &&
         contentDisposition.DispositionType.Equals("form-data") && (
-            !string.IsNullOrEmpty(contentDisposition.FileName.Value) || 
+            !string.IsNullOrEmpty(contentDisposition.FileName.Value) ||
             !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)
         )
     );
