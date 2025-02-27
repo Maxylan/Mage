@@ -44,8 +44,8 @@ public class Link
 
     [SwaggerIgnore]
     public bool Active => (
-        this.ExpiresAt < DateTime.UtcNow && (
-            this.AccessLimit is null || this.Accessed < this.AccessLimit
+        this.ExpiresAt > DateTime.UtcNow && (
+            this.AccessLimit is null || this.AccessLimit <= 0 || this.Accessed < this.AccessLimit
         )
     );
 
