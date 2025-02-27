@@ -1,14 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject, Signal, viewChild } from '@angular/core';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { AsyncPipe } from '@angular/common';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
-import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
-import { Observable } from 'rxjs';
+import { MatIconRegistry } from '@angular/material/icon';
 import { map, shareReplay } from 'rxjs/operators';
 import { navigation } from '../../app.routes';
+import { Observable } from 'rxjs';
+import { NavbarControllerService } from './navbar-controller.service';
+import { MatToolbar } from '@angular/material/toolbar';
 
 @Component({
   selector: 'layout-navbar',
@@ -16,17 +17,23 @@ import { navigation } from '../../app.routes';
   styleUrl: 'navbar.css',
   standalone: true,
   imports: [
-    MatToolbarModule,
     MatButtonModule,
     MatSidenavModule,
     MatListModule,
-    MatIconModule,
+    MatToolbar,
     AsyncPipe,
   ]
 })
 export class LayoutNavbarComponent {
+    private navbarController = inject(NavbarControllerService);
     private breakpointObserver = inject(BreakpointObserver);
     private matIconsRegistry = inject(MatIconRegistry);
+
+    private navbarRef: Signal<MatSidenav> = viewChild.required(MatSidenav);
+    private navbarEffect = effect(
+        () => this.navbarController.initialize(this.navbarRef())
+    );
+
     navigationLinks = navigation;
 
     constructor() {

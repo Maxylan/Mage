@@ -4,3 +4,17 @@
     flex-direction: row;
     justify-content: space-evenly;
 }
+
+.mat-toolbar.mat-primary {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    margin-bottom: 0.64rem;
+}
+
+mat-icon.mat-icon {
+    width: unset;
+    height: unset;
+    max-width: 24px;
+    max-height: 24px;
+}

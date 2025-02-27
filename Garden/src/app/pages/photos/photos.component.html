@@ -1,4 +1,11 @@
-<mat-divider inset='true'></mat-divider>
+<mat-toolbar color="primary">
+    <button mat-icon-button type="button" aria-label="Toggle sidenav" (click)="getNavbar()?.toggle()">
+        <mat-icon style="font-family: 'hack-nerd-regular'" fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
+    </button>
+    <shared-search-bar
+        searchFormName="photos"
+        [callback]="searchForPhotos"/>
+</mat-toolbar>
 <div [className]="'photos-container'">
     @if (!isLoading() && (!photos || photos.length == 0)) {
         <p>
@@ -14,7 +21,6 @@
         </shared-photo-card>
     }
 </div>
-<mat-divider></mat-divider>
 <shared-paginator
     [disabled]=isLoading()
     [length]=photos.length

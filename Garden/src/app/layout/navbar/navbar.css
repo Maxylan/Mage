@@ -1,6 +1,6 @@
 img {
-    max-height: 48px;
-    max-width: 48px;
+    max-height:  2rem;
+    max-width: 2rem;
     display: inline-block;
     vertical-align: bottom;
     margin-right: 0.64rem;
@@ -18,9 +18,6 @@ h2 {
     width: 16rem;
 }
 
-.mat-drawer-inner-container {
-    padding: 0.48rem;
-}
 .mat-mdc-nav-list {
     padding: 0.48rem;
 }
@@ -29,15 +26,3 @@ h2 {
     background: inherit;
 }
 
-.mat-toolbar.mat-primary {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-mat-icon.mat-icon {
-    width: unset;
-    height: unset;
-    max-width: 24px;
-    max-height: 24px;
-}

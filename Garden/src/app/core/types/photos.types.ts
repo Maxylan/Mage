@@ -84,6 +84,12 @@ export enum Dimension {
     THUMBNAIL = 'THUMBNAIL'
 };
 
+export interface IPhotoSearchParameters {
+    slug?: string,
+    title?: string,
+    summary?: string,
+};
+
 export interface IPhotoQueryParameters {
     limit: number,
     offset: number,

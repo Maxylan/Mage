@@ -42,12 +42,12 @@ export class AuthService {
 
         if (location.hash.startsWith('#@') && location.hash.length === 38) {
             this.code = location.hash.substring(2);
-            location.hash = '';
-            /* window.history.replaceState(
+            // location.hash = '';
+            window.history.replaceState(
                 {},
                 document.title,
                 location.href.split('#')[0]
-            ); */
+            );
         }
     }
 

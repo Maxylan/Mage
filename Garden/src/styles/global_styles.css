@@ -1,0 +1,22 @@
+/* You can add global styles to this file, and also import other style files */
+@import 'theme.scss';
+
+.mat-app-background {
+    background-color: var(--mat-app-background-color, #303030);
+    color: var(--mat-body-text-color, white);
+}
+
+body {
+    background: var(--mat-app-background-color, #303030);
+    color: var(--mat-body-text-color, white);
+    height: 100vh;
+    margin: 0;
+}
+
+body.dark {
+    color-scheme: dark;
+}
+
+a {
+    color: unset;
+}

@@ -40,8 +40,8 @@
     font-size: 10px;
 }
 .desktop-photo-card-container {
-    height: 11.2rem;
-    max-width: 11.2rem;
+    height: 10.4rem;
+    max-width: 10.4rem;
     font-size: 11px;
 }
 
@@ -58,7 +58,7 @@
     max-height: 6.4rem;
 }
 .desktop-photo-card-image {
-    max-width: 6.4rem;
+    max-width: 6rem;
     max-height: 8rem;
 }
 
