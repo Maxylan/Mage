@@ -230,6 +230,9 @@ CREATE INDEX idx_categories_title ON categories (title);
 -- Index for filepath lookups by photo_id
 CREATE INDEX idx_filepaths_photo_id ON filepaths (photo_id);
 
+-- Index for link lookups by photo_id
+CREATE INDEX idx_links_photo_id ON links (photo_id);
+
 -- Indicies for many-to-many relationships (photo-tags, photo-albums, album-categories)
 CREATE INDEX idx_photo_tags_photo_id ON photo_tags (photo_id);
 CREATE INDEX idx_photo_tags_tag_id ON photo_tags (tag_id);

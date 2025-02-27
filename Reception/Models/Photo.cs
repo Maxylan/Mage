@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Reception.Models.Entities;
+using Reception.Services;
 
 namespace Reception.Models;
 
@@ -75,6 +76,12 @@ public record Photo
     {
         get => _entity.Tags
             .Select(tag => tag.Name)
+            .ToArray();
+    }
+    public string[] Links
+    {
+        get => _entity.Links
+            .Select(link => LinkService.GenerateLinkUri(link.Code, this.Dimension).ToString())
             .ToArray();
     }
 
