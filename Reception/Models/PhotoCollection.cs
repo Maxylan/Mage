@@ -19,10 +19,10 @@ public record PhotoCollection
                     Source = new Photo(entity, filepath);
                     break;
                 case Dimension.MEDIUM:
-                    Source = new Photo(entity, filepath);
+                    Medium = new Photo(entity, filepath);
                     break;
                 case Dimension.THUMBNAIL:
-                    Source = new Photo(entity, filepath);
+                    Thumbnail = new Photo(entity, filepath);
                     break;
             }
         }
@@ -52,7 +52,7 @@ public record PhotoCollection
         Medium = medium;
         Thumbnail = thumbnail;
     }
-    
+
     public required Photo Source { get; init; }
     public Photo? Medium { get; init; }
     public Photo? Thumbnail { get; init; }

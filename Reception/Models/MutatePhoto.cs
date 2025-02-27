@@ -1,14 +1,13 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Reception.Models.Entities;
 
 namespace Reception.Models;
 
 public class MutatePhoto : PhotoEntity
 {
-    public new int? Id { get; set; }
-
     /*
-    public string Name { get; set; } = null!;
+    public int Id { get; set; }
+    public string Slug { get; set; } = null!;
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Description { get; set; }
@@ -18,11 +17,11 @@ public class MutatePhoto : PhotoEntity
     public new int? UploadedBy { get; set; }
 
     [JsonIgnore]
-    public new DateTime UploadedAt { get; set; }
+    public new DateTime? UploadedAt { get; set; }
 
     [JsonIgnore]
-    public new DateTime CreatedAt { get; set; }
+    public new DateTime? UpdatedAt { get; set; }
 
     [JsonIgnore]
-    public new DateTime UpdatedAt { get; set; }
+    public new DateTime? CreatedAt { get; set; }
 }
