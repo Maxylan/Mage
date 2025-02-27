@@ -1,4 +1,6 @@
-<div [ngClass]="'photo-card-container ' + (!!(isHandset | async) ? 'handset-photo-card-container' : 'desktop-photo-card-container')">
+<div 
+    matRipple
+    [ngClass]="'photo-card-container ' + (!!(isHandset | async) ? 'handset-photo-card-container' : 'desktop-photo-card-container')">
     <a [href]="link()">
         <mat-card
             [ngClass]="!!(isHandset | async) ? 'handset-photo-card-image' : 'desktop-photo-card-image'"

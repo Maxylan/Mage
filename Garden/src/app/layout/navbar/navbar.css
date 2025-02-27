@@ -2,7 +2,8 @@ img {
     max-height: 48px;
     max-width: 48px;
     display: inline-block;
-    vertical-align: middle;
+    vertical-align: bottom;
+    margin-right: 0.64rem;
 }
 
 h2 {
@@ -18,10 +19,10 @@ h2 {
 }
 
 .mat-drawer-inner-container {
-    padding: 0 0.48rem;
+    padding: 0.48rem;
 }
 .mat-mdc-nav-list {
-    padding: 0 0.48rem;
+    padding: 0.48rem;
 }
 
 .sidenav .mat-toolbar {

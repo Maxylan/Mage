@@ -4,7 +4,6 @@ import { PhotosComponent } from './pages/photos/photos.component';
 import { SinglePhotoComponent } from './pages/photos/single-photo.component';
 
 export const navigation: (Route & { headline: string })[] = [
-    { path: '', component: HomeComponent, headline: 'Home' },
     { path: 'photos', component: PhotosComponent, headline: 'Photos' },
     { path: 'tags', component: PhotosComponent, headline: 'Tags' },
     { path: 'albums', component: PhotosComponent, headline: 'Albums' },
@@ -14,5 +13,6 @@ export const navigation: (Route & { headline: string })[] = [
 
 export const routes: Routes = [
     { path: 'photos/single/:id', component: SinglePhotoComponent },
-    ...navigation
+    ...navigation,
+    { path: '', component: HomeComponent, headline: 'Home' }
 ];

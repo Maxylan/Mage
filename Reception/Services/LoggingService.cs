@@ -9,8 +9,7 @@ namespace Reception.Services;
 
 public class LoggingService(
     IHttpContextAccessor contextAccessor,
-    ILogger<LoggingService> logger,
-    MageDbContext db
+    ILogger<LoggingService> logger
 ) : ILoggingService
 {
     private string nextAction = string.Empty;
@@ -54,27 +53,32 @@ public class LoggingService(
     /// </summary>
     public async Task<ActionResult<LogEntry>> GetEvent(int id)
     {
-        LogEntry? result = await db.Logs.FindAsync(id);
+        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
+        /* LogEntry? result = await db.Logs.FindAsync(id);
         if (result is null)
         {
             return new NotFoundObjectResult($"Failed to find {nameof(LogEntry)} with ID {id}");
         }
 
-        return result;
+        return result; */
     }
 
     /// <summary>
     /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
     /// </summary>
-    public DbSet<LogEntry> GetEvents() => db.Logs;
+    public DbSet<LogEntry> GetEvents() {
+        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
+        /* return db.Logs; */
+    }
 
     /// <summary>
     /// Get all <see cref="LogEntry"/>-entries matching a wide range of optional filtering parameters.
     /// </summary>
     public async Task<ActionResult<IEnumerable<LogEntry>>> GetEvents(int? limit, int? offset, Source? source, Severity? severity, Method? method, string? action)
     {
-        IQueryable<LogEntry> query = db.Logs.OrderByDescending(log => log.CreatedAt);
+        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
+        /* IQueryable<LogEntry> query = db.Logs.OrderByDescending(log => log.CreatedAt);
         string message;
 
         if (source is not null)
@@ -121,7 +125,7 @@ public class LoggingService(
         }
 
         var getLogs = await query.ToArrayAsync();
-        return getLogs;
+        return getLogs; */
     }
 
     #region Create Logs (w/ many shortcuts)
@@ -457,7 +461,12 @@ public class LoggingService(
     {
         foreach (var entry in entries)
         {
-            bool isNew = db.Entry(entry).State == EntityState.Detached;
+            /* TODO - 
+             * Seems this is not as straight forward as I first thought.
+             * Possible solution would be a seperate DbContext for logging that's a singleton, perhaps?
+             * @see https://go.microsoft.com/fwlink/?linkid=869049
+             */
+            /* bool isNew = db.Entry(entry).State == EntityState.Detached;
             bool shouldStore = (
                 entry.LogLevel != Severity.DEBUG ||
                 Program.IsDevelopment
@@ -474,7 +483,7 @@ public class LoggingService(
                         db.Add(entry);
                         break;
                 }
-            }
+            } */ 
 
             bool isUserAuthenticated = (
                 contextAccessor.HttpContext is not null &&
@@ -513,16 +522,17 @@ public class LoggingService(
             }
         }
 
-        return new(db);
+        return new(/*db*/);
     }
     #endregion
 
     /// <summary>
     /// Deletes all provided <see cref="LogEntry"/>-entries.
     /// </summary>
-    public async Task<int> DeleteEvents(params LogEntry[] entries)
+    public Task<int> DeleteEvents(params LogEntry[] entries)
     {
-        db.RemoveRange(entries);
+        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
+        // db.RemoveRange(entries);
 
         /* foreach(var entry in entries)
         {
@@ -538,6 +548,6 @@ public class LoggingService(
             }
         } */
 
-        return await db.SaveChangesAsync();
+        // return await db.SaveChangesAsync();
     }
 }

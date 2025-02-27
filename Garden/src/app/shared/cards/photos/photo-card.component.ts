@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
     imports: [
         NgClass,
         MatCard,
-        /* MatRipple, */
+        MatRipple,
         MatProgressBar,
         AsyncPipe
     ],

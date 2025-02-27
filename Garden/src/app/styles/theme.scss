@@ -6,9 +6,6 @@
 // Neutral: md.sys.color.inverse-surface (#322F35)
 @use 'theme-colors.scss' as colors;
 
-// Include base Material styles.
-@include mat.core();
-
 // WIP
 $custom-typography: (
   plain-family: hack-nerd-font,
@@ -28,16 +25,34 @@ $custom-typography: (
   density: 0,
 ); */
 
-html {
+:root {
   color-scheme: dark;
   /* @include mat.theme($garden-dark); */
   @include mat.theme((
-    colors: colors,
+    /* colors: (
+      primary: colors.$primary-palette,
+      tertiary: colors.$tertiary-palette,
+      theme-type: dark
+    ) */,
+    colors: (
+      primary:  colors.$primary-palette,
+      tertiary: colors.$tertiary-palette,
+      theme-type: dark
+    )
     typography: $custom-typography,
     density: 0,
   ));
+
+  // Include base Material styles.
+  @include mat.core();
+  // @include mat.system-level-colors();
+  // @include mat.system-level-typography();
 }
 
+body {
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
 // Customize the entire app. Change :root to your selector if you want to scope the styles.
 /* :root {
   @include mat.form-field-overrides((

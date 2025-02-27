@@ -5,6 +5,7 @@ using Npgsql.NameTranslation;
 using Microsoft.EntityFrameworkCore;
 using Reception.Models.Entities;
 using Npgsql;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Reception.Services;
 
@@ -44,6 +45,11 @@ public partial class MageDbContext : DbContext
                 opts.MapEnum<Method>("method", "magedb", nameTranslator);
                 opts.MapEnum<Severity>("severity", "magedb", nameTranslator);
                 opts.MapEnum<Source>("source", "magedb", nameTranslator);
+            });
+
+            // I give up..
+            optionsBuilder.ConfigureWarnings(opts => {
+                opts.Log(CoreEventId.ManyServiceProvidersCreatedWarning);
             });
         }
     }
