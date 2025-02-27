@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Reception.Models.Entities;
 using Reception.Interfaces;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
     ILoggingService logging,
-    ISessionService sessions
+    ISessionService sessions,
+    MageDbContext db
 ) : IAuthorizationService
 {
     public const string SESSION_CONTEXT_KEY = "session";
@@ -23,8 +25,25 @@ public class AuthorizationService(
     /// Argument <paramref name="source"/> Assumes <see cref="Source.EXTERNAL"/> by-default
     /// </remarks>
     /// <param name="source">Assumes <see cref="Source.EXTERNAL"/> by-default</param>
-    public async Task<IStatusCodeActionResult> ValidateSession(HttpContext httpContext, Source source = Source.EXTERNAL)
+    public async Task<IStatusCodeActionResult> ValidateSession(Source source = Source.EXTERNAL)
     {
+        string message = string.Empty;
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
+            await logging
+                .LogError(message, m => {
+                    m.Action = nameof(ValidateSession);
+                    m.Source = source;
+                })
+                .SaveAsync();
+
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
         bool accountExists = httpContext.Items.TryGetValue(ACCOUNT_CONTEXT_KEY, out object? accountObj);
         if (accountExists)
         {
@@ -50,7 +69,7 @@ public class AuthorizationService(
             return await ValidateSession(sessionCode, source);
         }
 
-        string message = $"Failed to infer a {nameof(Session)} from an {nameof(Account)} or Code in the {nameof(HttpContext)}";
+        message = $"Failed to infer a {nameof(Session)} from an {nameof(Account)} or Code in the {nameof(HttpContext)}";
         await logging
             .LogInformation(message, m => {
                 m.Action = nameof(ValidateSession);
@@ -217,16 +236,71 @@ public class AuthorizationService(
     /// </summary>
     /// <param name="userName">Unique Username of an <see cref="Account"/></param>
     /// <param name="hash">SHA-256</param>
-    public async Task<ActionResult<Session?>> Login(string userName, string hash)
+    public async Task<ActionResult<Session>> Login(string userName, string hash)
     {
-        throw new NotImplementedException();
+        Account? account = await db.Accounts
+            .Include(acc => acc.Sessions)
+            .FirstOrDefaultAsync(acc => acc.Username == userName);
+
+        if (account is null)
+        {
+            string message = $"Failed to find an {nameof(Account)} with Username '{userName}'.";
+            await logging
+                .Action(nameof(Login))
+                .ExternalDebug(message)
+                .SaveAsync();
+            
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return await Login(account, hash);
     }
     /// <summary>
     /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.
     /// </summary>
     /// <param name="hash">SHA-256</param>
-    public async Task<ActionResult<Session?>> Login(Account account, string hash)
+    public async Task<ActionResult<Session>> Login(Account account, string hash)
     {
-        throw new NotImplementedException();
+        if (account.Password != hash)
+        {
+            string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
+            await logging
+                .Action(nameof(Login))
+                .ExternalSuspicious(message)
+                .SaveAsync();
+            
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        var createSession = await sessions.CreateSession(account, contextAccessor.HttpContext?.Request, Source.EXTERNAL);
+        var session = createSession.Value;
+
+        if (createSession.Result is NoContentResult)
+        {
+            logging
+                .Action(nameof(Login))
+                .ExternalTrace($"No new session created ({nameof(NoContentResult)})");
+
+            var getSession = await sessions.GetSessionByUser(account);
+            await db.SaveChangesAsync();
+
+            return getSession;
+        }
+        else if (session is null)
+        {
+            string message = $"Failed to login user '{account.Username}' (#{account.Id}). Could not create a new {nameof(Session)} ({nameof(createSession.Result)}).";
+            await logging
+                .Action(nameof(Login))
+                .ExternalDebug(message)
+                .SaveAsync();
+            
+            return createSession.Result!;
+        }
+
+        return session;
     }
 }

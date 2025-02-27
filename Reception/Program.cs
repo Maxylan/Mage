@@ -13,11 +13,13 @@ public sealed class Program
     public static string? AppVersion => System.Environment.GetEnvironmentVariable("APP_VERSION");
     public static string? ApiName => System.Environment.GetEnvironmentVariable("RECEPTION_NAME");
     public static string? ApiVersion => System.Environment.GetEnvironmentVariable("RECEPTION_VERSION");
+    public static string? ApiPathBase => System.Environment.GetEnvironmentVariable("RECEPTION_BASE_PATH");
+    public static string? ApiInternalUrl => System.Environment.GetEnvironmentVariable("RECEPTION_URL");
 
     public static string Environment => (
         System.Environment.GetEnvironmentVariable("RECEPTION_ENVIRONMENT") ?? 
         System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? 
-        "Development"
+        DEVELOPMENT_FLAG
     );
 
     public static bool IsProduction => !IsDevelopment;
@@ -42,21 +44,25 @@ public sealed class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {
+            conf.AddServer(new Microsoft.OpenApi.Models.OpenApiServer() {
+                Description = $"{AppName} Backend Server (ASP.NET 8.0, '{ApiPathBase}'). {VERSION}",
+                Url = ApiPathBase + "/swagger"
+            });
+
             conf.SwaggerDoc(VERSION, new() {
                 Title = $"{AppName} '{ApiName}' ({ApiVersion}) {VERSION}",
                 Version = VERSION
             });
 
-            if (IsDevelopment) {
+            /* if (IsDevelopment) {
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
-            }
+            } */
         });
         builder.Services.AddDbContext<MageDbContext>(opts => {
-            opts.EnableDetailedErrors();
-            if (Environment == "Development") {
-
+            if (IsDevelopment) {
+                opts.EnableSensitiveDataLogging();
             }
-            opts.EnableSensitiveDataLogging();
+            opts.EnableDetailedErrors();
         });
 
         builder.Services.AddScoped<ILoggingService, LoggingService>();
@@ -65,11 +71,23 @@ public sealed class Program
 
         var app = builder.Build();
 
+        app.UsePathBase(ApiPathBase);
+
         // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || IsDevelopment)
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwagger(/* opts => {
+                opts.RouteTemplate = "{documentName}" + ApiPathBase + "/swagger/v1/swagger.json";
+            } */);
+            
+            app.UseSwaggerUI(opts => {
+                opts.EnableFilter();
+                opts.EnablePersistAuthorization();
+                opts.EnableTryItOutByDefault();
+                opts.DisplayRequestDuration();
+
+                // opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
+            });
         }
 
         app.UseAuthorization();
