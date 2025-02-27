@@ -1478,25 +1478,116 @@ public class PhotoService(
 
     #region Update a photo entity.
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..in the database.
+    /// Updates a <see cref="Reception.Models.Entities.PhotoEntity"/> in the database.
     /// </summary>
-    public async Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(int photoId)
+    public async Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut)
     {
         throw new NotImplementedException();
     }
 
-    /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> in the database.
-    /// </summary>
-    public Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut) =>
-        UpdatePhotoEntity((PhotoEntity)mut);
 
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// Removes a <see cref="Reception.Models.Entities.Tag"/> (..identified by <paramref name="tag"/>) from the
+    /// <see cref="Reception.Models.Entities.PhotoEntity"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public async Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(PhotoEntity entity)
+    public async Task<ActionResult> RemoveTag(int photoId, string tag)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            string message = $"Parameter '{nameof(tag)}' was null/empty!";
+            await logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            await logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        PhotoEntity? existingPhoto = await db.Photos
+            .Include(photo => photo.Tags)
+            .FirstOrDefaultAsync(photo => photo.Id == photoId);
+
+        if (existingPhoto is null)
+        {
+            string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
+            await logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        Tag? tagToRemove = existingPhoto.Tags
+            .FirstOrDefault(t => t.Name == tag);
+
+        if (tagToRemove is null) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        existingPhoto.Tags.Remove(tagToRemove);
+
+        try
+        {
+            db.Update(existingPhoto);
+
+            logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalTrace($"A tag was just removed from {nameof(PhotoEntity)} ('{existingPhoto.Title}', #{existingPhoto.Id})");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
+            await logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
+            await logging
+                .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new OkResult();
     }
     #endregion
 
@@ -1506,17 +1597,61 @@ public class PhotoService(
     /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public async Task<ActionResult<PhotoEntity>> DeletePhoto(int photoId)
+    public async Task<ActionResult> DeletePhoto(int photoId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            await logging
+                .Action(nameof(DeletePhoto))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+
+        if (photo is null)
+        {
+            string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
+            await logging
+                .Action(nameof(DeletePhoto))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        return await DeletePhoto(photo);
     }
     /// <summary>
     /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public async Task<ActionResult<PhotoEntity>> DeletePhoto(PhotoEntity entity)
+    public async Task<ActionResult> DeletePhoto(PhotoEntity entity)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+
+        foreach(var navigation in db.Entry(entity).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        foreach(var path in entity.Filepaths)
+        {
+            var deleteBlobResult = await DeletePhotoBlob(path);
+
+            if (deleteBlobResult is not NoContentResult) {
+                return deleteBlobResult;
+            }
+        }
+
+        return await DeletePhotoEntity(entity);
     }
     #endregion
 
@@ -1525,32 +1660,107 @@ public class PhotoService(
     /// <summary>
     /// Deletes the blob of a <see cref="Reception.Models.Entities.Photo"/> from disk.
     /// </summary>
-    public async Task<ActionResult<PhotoEntity>> DeletePhotoBlob(Filepath entity)
+    public async Task<ActionResult> DeletePhotoBlob(Filepath entity)
     {
         throw new NotImplementedException();
     }
     #endregion
 
 
-    #region Delete a photo entities from the database
+    #region Delete photo entities from the database
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
+    /// Deletes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
     /// </summary>
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    public Task<ActionResult<PhotoEntity>> DeletePhotoEntity(MutatePhoto mut) =>
-        UpdatePhotoEntity((PhotoEntity)mut);
+    public async Task<ActionResult> DeletePhotoEntity(int photoId)
+    {
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            await logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+
+        if (photo is null)
+        {
+            string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
+            await logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalDebug(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        return await DeletePhotoEntity(photo);
+    }
 
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
+    /// Deletes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
     /// </summary>
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    public async Task<ActionResult<PhotoEntity>> DeletePhotoEntity(PhotoEntity entity)
+    public async Task<ActionResult> DeletePhotoEntity(PhotoEntity entity)
     {
-        throw new NotImplementedException();
+        try
+        {
+            db.Remove(entity);
+
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalInformation($"The {nameof(PhotoEntity)} ('{entity.Title}', #{entity.Id}) was just deleted.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
+            await logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
+            await logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
     }
     #endregion
 }

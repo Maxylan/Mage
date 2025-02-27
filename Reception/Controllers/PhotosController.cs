@@ -456,4 +456,31 @@ public class PhotosController(
     public async Task<ActionResult<IEnumerable<Tag>>> MutateTags(int photo_id, [FromBody] string[] tags) =>
         await tagService.MutatePhotoTags(photo_id, tags);
     #endregion
+
+    /// <summary>
+    /// Remove a single <see cref="Tag"/> (<paramref name="tag"/>, string) ..from a single <see cref="PhotoEntity"/> identified by PK '<paramref ref="photo_id"/>' (int)
+    /// </summary>
+    [HttpPatch("{photo_id:int}/remove/tag/{tag}")]
+    [Tags(ControllerTags.PHOTOS_ENTITIES, ControllerTags.TAGS)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> RemoveTag(int photo_id, string tag) =>
+        await handler.RemoveTag(photo_id, tag);
+
+    /// <summary>
+    /// Delete the <see cref="PhotoEntity"/> with '<paramref ref="photo_id"/>' (int).
+    /// </summary>
+    [HttpDelete("{photo_id:int}")]
+    [Tags(ControllerTags.ALBUMS)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeletePhoto(int photo_id) =>
+        await handler.DeletePhoto(photo_id);
 }

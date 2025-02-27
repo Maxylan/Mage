@@ -154,20 +154,16 @@ public interface IPhotoService
 
     #region Update a photo entity.
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..in the database.
+    /// Updates a <see cref="Reception.Models.Entities.PhotoEntity"/> in the database.
     /// </summary>
-    public abstract Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(int photoId);
+    public abstract Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut);
+
 
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// Removes a <see cref="Reception.Models.Entities.Tag"/> (..identified by <paramref name="tag"/>) from the
+    /// <see cref="Reception.Models.Entities.PhotoEntity"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public virtual Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut) =>
-        UpdatePhotoEntity((PhotoEntity)mut);
-
-    /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Photo"/> in the database.
-    /// </summary>
-    public abstract Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(PhotoEntity entity);
+    public abstract Task<ActionResult> RemoveTag(int photoId, string tag);
     #endregion
 
 
@@ -176,12 +172,12 @@ public interface IPhotoService
     /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public abstract Task<ActionResult<PhotoEntity>> DeletePhoto(int photoId);
+    public abstract Task<ActionResult> DeletePhoto(int photoId);
     /// <summary>
     /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public abstract Task<ActionResult<PhotoEntity>> DeletePhoto(PhotoEntity entity);
+    public abstract Task<ActionResult> DeletePhoto(PhotoEntity entity);
     #endregion
 
 
@@ -189,7 +185,7 @@ public interface IPhotoService
     /// <summary>
     /// Deletes the blob of a <see cref="Reception.Models.Entities.Photo"/> from disk.
     /// </summary>
-    public abstract Task<ActionResult<PhotoEntity>> DeletePhotoBlob(Filepath entity);
+    public abstract Task<ActionResult> DeletePhotoBlob(Filepath entity);
     #endregion
 
 
@@ -200,8 +196,7 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    public virtual Task<ActionResult<PhotoEntity>> DeletePhotoEntity(MutatePhoto mut) =>
-        UpdatePhotoEntity((PhotoEntity)mut);
+    public abstract Task<ActionResult> DeletePhotoEntity(int photoId);
 
     /// <summary>
     /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
@@ -209,6 +204,15 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    public abstract Task<ActionResult<PhotoEntity>> DeletePhotoEntity(PhotoEntity entity);
+    public virtual Task<ActionResult> DeletePhotoEntity(MutatePhoto mut) =>
+        DeletePhotoEntity((PhotoEntity)mut);
+
+    /// <summary>
+    /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
+    /// </summary>
+    /// <remarks>
+    /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
+    /// </remarks>
+    public abstract Task<ActionResult> DeletePhotoEntity(PhotoEntity entity);
     #endregion
 }

@@ -8,4 +8,10 @@ public class MutateAccount : Account
 {
     [JsonIgnore, SwaggerIgnore]
     public new string? Password { get; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new DateTime? CreatedAt { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new DateTime? LastVisit { get; set; }
 }

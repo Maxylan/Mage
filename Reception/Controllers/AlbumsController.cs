@@ -130,6 +130,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [HttpPatch("{album_id:int}/remove/photo/{photo_id:int}")]
     [Tags(ControllerTags.ALBUMS, ControllerTags.PHOTOS_ENTITIES)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
@@ -157,6 +158,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [HttpPatch("{album_id:int}/remove/tag/{tag}")]
     [Tags(ControllerTags.ALBUMS, ControllerTags.TAGS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
@@ -169,11 +171,11 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     /// </summary>
     [HttpDelete("{album_id:int}")]
     [Tags(ControllerTags.ALBUMS)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeleteTag(int album_id) =>
+    public async Task<ActionResult> DeleteAlbum(int album_id) =>
         await handler.DeleteAlbum(album_id);
 }

@@ -30,8 +30,10 @@ public class Album
 
     public int? CreatedBy { get; set; }
 
+    [Column("created_at", TypeName = "TIMESTAMPZ")]
     public DateTime CreatedAt { get; set; }
 
+    [Column("updated_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UpdatedAt { get; set; }
 
     // Methods

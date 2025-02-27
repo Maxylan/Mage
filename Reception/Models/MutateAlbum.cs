@@ -1,3 +1,4 @@
+using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json.Serialization;
 using Reception.Models.Entities;
 
@@ -6,7 +7,6 @@ namespace Reception.Models;
 public class MutateAlbum : Album
 {
     public new int? Id { get; set; }
-    public new string? Category { get; set; }
     public new string[]? Tags { get; set; }
     public new int[]? Photos { get; set; }
 
@@ -19,12 +19,12 @@ public class MutateAlbum : Album
     public string? Description { get; set; }
     */
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public int? CreatedBy { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public DateTime CreatedAt { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
     public DateTime UpdatedAt { get; set; }
 }
