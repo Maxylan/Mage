@@ -11,8 +11,7 @@ namespace Reception.Services;
 public class TagService(
     MageDbContext db,
     ILoggingService logging,
-    IHttpContextAccessor contextAccessor,
-    IPhotoService photos
+    IPhotoService photoService
 ) : ITagService
 {
     /// <summary>
@@ -223,29 +222,35 @@ public class TagService(
                 .ToArray();
         }
 
-        List<Tag> newTags = [];
+        List<Tag> validTags = [];
+        int successfullyAddedTags = 0;
         string[] validTagNames = tagNames
             .Where(t => !string.IsNullOrWhiteSpace(t))
             .Where(t => t.Length < 128)
             .Select(t => t.Normalize().Trim())
             .ToArray();
 
-        foreach(string name in tagNames)
+        if (validTagNames.Length == 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        foreach(string name in validTagNames)
         {
-            bool exists = await db.Tags.AnyAsync(t => t.Name == name);
-            if (exists) {
+            Tag? existingTag = await db.Tags.FirstOrDefaultAsync(t => t.Name == name);
+
+            if (existingTag is not null)
+            {
+                validTags.Add(existingTag);
                 continue;
             }
 
-            newTags.Add(new Tag() {
-                Name = name
-            });
-
-            db.Tags.Add(newTags[^1]);
+            validTags.Add(new Tag() { Name = name });
+            db.Tags.Add(validTags[^1]);
+            successfullyAddedTags++;
         }
 
-        if (newTags.Count == 0) {
-            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        if (successfullyAddedTags <= 0) {
+            return validTags;
         }
 
         try
@@ -254,7 +259,7 @@ public class TagService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to add {newTags.Count} new tags. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to add {validTags.Count} new tags. ";
             await logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + updateException.Message, opts =>
@@ -273,7 +278,7 @@ public class TagService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add {newTags.Count} new tags. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add {validTags.Count} new tags. ";
             await logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + ex.Message, opts =>
@@ -291,7 +296,7 @@ public class TagService(
             };
         }
 
-        return newTags;
+        return validTags;
     }
 
     /// <summary>
@@ -348,7 +353,7 @@ public class TagService(
                         .Action(nameof(UpdateTag))
                         .InternalDebug(message)
                         .SaveAsync();
-                        } */
+                } */
 
                 return getTag.Result!;
             }
@@ -402,6 +407,93 @@ public class TagService(
         }
 
         return tag;
+    }
+
+    /// <summary>
+    /// Edit tags associated with a <see cref="Album"/> identified by PK <paramref name="albumId"/>.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(int albumId, string[] tagNames)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Edit tags associated with a <see cref="PhotoEntity"/> identified by PK <paramref name="photoId"/>.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(int photoId, string[] tagNames)
+    {
+        var getPhoto = await photoService.GetPhotoEntity(photoId);
+        var photo = getPhoto.Value;
+
+        if (photo is null) {
+            return getPhoto.Result!;
+        }
+
+        var createAndSanitizeTags = await CreateTags(tagNames);
+        var validTags = createAndSanitizeTags.Value;
+
+        if (validTags is null /* || createAndSanitizeTags.Result is not OkObjectResult */) {
+            return createAndSanitizeTags.Result!;
+        }
+
+        foreach(var navigation in db.Entry(photo).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        if (photo.Tags.Intersect(validTags).Count() == validTags.Count()) { // ..no change
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        photo.Tags = validTags.ToList();
+
+        try
+        {
+            db.Update(photo);
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Photo)} with ID #{photoId}. ";
+            await logging
+                .Action(nameof(MutatePhotoTags))
+                .InternalError(message + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    // opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Photo)} with ID #{photoId}. ";
+            await logging
+                .Action(nameof(MutatePhotoTags))
+                .InternalError(message + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    // opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return photo.Tags.ToArray();
     }
 
     /// <summary>
