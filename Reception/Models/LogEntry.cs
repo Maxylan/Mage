@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -17,8 +18,11 @@ public class LogEntry
     public DataTypes.Severity? LogLevel { get; set; }
     public DataTypes.Source? Source { get; set; }
     public DataTypes.Method? Method { get; set; }
-    public string? Action { get; set; }
+    public string Action { get; set; } = null!;
     public string? Log { get; set; }
+
+    [JsonIgnore]
+    public LogFormat Format => new(this);
 
     public static Action<EntityTypeBuilder<LogEntry>> Build => (
         entity =>

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Reception.Interfaces;
+using Reception.Models;
 
 namespace Reception.Controllers;
 
@@ -7,8 +9,14 @@ namespace Reception.Controllers;
 [Route("[controller]")]
 public class AuthController : ControllerBase
 {
-    public AuthController()
-    { }
+    IAuthorizationService _handler;
+    ISessionService _sessions;
+
+    public AuthController(IAuthorizationService authorization, ISessionService sessions)
+    {
+        _handler = authorization;
+        _sessions = sessions;
+    }
 
     /// <summary>
     /// 
@@ -16,14 +24,10 @@ public class AuthController : ControllerBase
     [HttpHead("session")]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)] // TODO!
-    public IStatusCodeActionResult ValidateSession()
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<IStatusCodeActionResult> ValidateSession() => 
+        await _handler.ValidateSession(HttpContext);
 
     [HttpGet("session/{session}")]
-    public IStatusCodeActionResult ValidateSession([FromRoute] string session)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<ActionResult<Session?>> GetSession([FromRoute] string session) => 
+        await _sessions.GetSession(session);
 }
