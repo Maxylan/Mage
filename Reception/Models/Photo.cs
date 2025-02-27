@@ -59,7 +59,7 @@ public record Photo
     public DateTime CreatedAt { get => _entity.CreatedAt; }
     public DateTime UpdatedAt { get => _entity.UpdatedAt; }
     public Dimension? Dimension { get => _filepath.Dimension; }
-    public int Filesize { get => _filepath.Filesize; }
+    public long? Filesize { get => _filepath.Filesize; }
     public string Filename { get => _filepath.Filename; }
     public string Path { get => _filepath.Path; }
     public string[] Tags {

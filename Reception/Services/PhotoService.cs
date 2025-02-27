@@ -11,6 +11,9 @@ using Reception.Utilities;
 using Reception.Interfaces;
 using System.Net;
 using Reception.Controllers;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Globalization;
+using Reception.Authentication;
 
 namespace Reception.Services;
 
@@ -20,6 +23,55 @@ public class PhotoService(
     IHttpContextAccessor contextAccessor
 ) : IPhotoService
 {
+    #region Get base filepaths.
+    public const string FILE_STORAGE_NAME = "Postbox";
+    public static readonly Dictionary<Dimension, string> StorageDirectories = new() {
+        { Dimension.SOURCE, "source" },
+        { Dimension.MEDIUM, "medium" },
+        { Dimension.THUMBNAIL, "thumbnail" }
+    };
+
+    /// <summary>
+    /// Get the name (only) of the base directory of my file storage
+    /// </summary>
+    public string GetBaseDirectoryName() => FILE_STORAGE_NAME;
+    /// <summary>
+    /// Get the name (only) of the Thumbnail directory of my file storage
+    /// </summary>
+    public string GetThumbnailDirectoryName() => StorageDirectories[Dimension.THUMBNAIL];
+    /// <summary>
+    /// Get the name (only) of the Medium directory of my file storage
+    /// </summary>
+    public string GetMediumDirectoryName() => StorageDirectories[Dimension.MEDIUM];
+    /// <summary>
+    /// Get the name (only) of the Source directory of my file storage
+    /// </summary>
+    public string GetSourceDirectoryName() => StorageDirectories[Dimension.SOURCE];
+    /// <summary>
+    /// Get the path (directories, plural) to the directory relative to a <see cref="DateTime"/>
+    /// </summary>
+    public string GetDatePath(DateTime dateTime) => Path.Combine(
+        dateTime.Year.ToString(),
+        dateTime.Month.ToString(),
+        dateTime.Day.ToString()
+    );
+    /// <summary>
+    /// Get the <strong>combined</strong> relative path (<c>Base + Thumbnail/Medium/Source + DatePath</c>) to a directory in my file storage.
+    /// </summary>
+    public string GetCombinedPath(Dimension dimension, DateTime? dateTime = null, string filename = "") => Path.Combine(
+        GetBaseDirectoryName(),
+        dimension switch {
+            Dimension.THUMBNAIL => GetThumbnailDirectoryName(),
+            Dimension.MEDIUM => GetMediumDirectoryName(),
+            Dimension.SOURCE => GetSourceDirectoryName(),
+            _ => GetSourceDirectoryName()
+        },
+        GetDatePath(dateTime ?? DateTime.UtcNow),
+        filename
+    );
+    #endregion
+
+
     #region Get single photos.
     /// <summary>
     /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Primary Key '<paramref ref="photoId"/>'
@@ -487,9 +539,16 @@ public class PhotoService(
             );
         }
 
+        long filesize = 0;
+        string sourcePath = string.Empty;
+        string mediumPath = string.Empty;
+        string thumbnailPath = string.Empty;
+        string fileExtension = string.Empty;
+        string trustedDisplayFilename = string.Empty;
 
-        string trustedDisplayFilename = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
-        string boundary = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
+        var mediaTypeHeader = MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!);
+        string boundary = MultipartHelper.GetBoundary(mediaTypeHeader, 70);
+
         var reader = new MultipartReader(boundary, httpContext.Request.Body);
         MultipartSection? section = await reader.ReadNextSectionAsync();
 
@@ -502,33 +561,239 @@ public class PhotoService(
                 continue;
             }
 
-            if (formFile.Length > MultipartHelper.FILE_SIZE_LIMIT)
-            {
-                // The file is too large ... discontinue processing the file
-            }
-
             if (MultipartHelper.HasFileContentDisposition(contentDisposition))
             {
-                string? untrustedFilename = contentDisposition.FileName.Value;
-
-                if () {
-
-                }
                 // Don't trust the file name sent by the client. To display the file name, HTML-encode the value.
                 // https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming
-                trustedDisplayFilename = WebUtility.HtmlEncode(contentDisposition.FileName.Value);
-
-
-                var ext = Path.GetExtension(uploadedFileName).ToLowerInvariant();
-
-                if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext))
-                {
-                    // The extension is invalid ... discontinue processing the file
+                string? untrustedFilename = contentDisposition.FileName.Value;
+            
+                if (string.IsNullOrWhiteSpace(untrustedFilename)) {
+                    throw new NotImplementedException("Handle case of no filename"); // TODO: HANDLE
                 }
+
+                trustedDisplayFilename = WebUtility.HtmlEncode(untrustedFilename);
+                fileExtension = Path.GetExtension(trustedDisplayFilename).ToLowerInvariant();
+
+                if (string.IsNullOrWhiteSpace(fileExtension) || !MimeVerifyer.SupportedExtensions.Contains(fileExtension))
+                {
+                    throw new NotImplementedException("The extension is invalid ... discontinue processing the file"); // TODO: HANDLE
+                }
+
+                using MemoryStream memStream = new MemoryStream();
+                await section!.Body.CopyToAsync(memStream);
+                filesize = memStream.Length;
+
+                if (filesize <= 0)
+                {
+                    throw new NotImplementedException("The file is empty."); // TODO: HANDLE
+                }
+                if (filesize > MultipartHelper.FILE_SIZE_LIMIT)
+                {
+                    throw new NotImplementedException("The file is too large ... discontinue processing the file"); // TODO: HANDLE
+                }
+                if (!MimeVerifyer.ValidateContentType(trustedDisplayFilename, fileExtension, memStream))
+                {
+                    throw new NotImplementedException("Error validating file content type / extension. Name missmatch, unsupported filetype or signature missmatch?"); // TODO: HANDLE
+                }
+
+                sourcePath = GetCombinedPath(Dimension.SOURCE, details.CreatedAt);
+                mediumPath = GetCombinedPath(Dimension.MEDIUM, details.CreatedAt);
+                thumbnailPath = GetCombinedPath(Dimension.THUMBNAIL, details.CreatedAt);
+
+                try {
+                    Directory.CreateDirectory(sourcePath);
+                    Directory.CreateDirectory(mediumPath);
+                    Directory.CreateDirectory(thumbnailPath);
+                }
+                catch (Exception ex) {
+                    /* // Handle billions of different exceptions, maybe..
+                    IOException
+                    UnauthorizedAccessException
+                    ArgumentException
+                    ArgumentNullException
+                    PathTooLongException
+                    DirectoryNotFoundException
+                    NotSupportedException
+                    */
+                    throw new NotImplementedException($"Handle directory create errors {nameof(UploadPhoto)} ({sourcePath}) " + ex.Message); // TODO: HANDLE
+                }
+
+                using var file = File.Create(Path.Combine(sourcePath, trustedDisplayFilename));
+                await memStream.CopyToAsync(file);
+
+                logging
+                    .Action(nameof(UploadPhoto))
+                    .ExternalInformation($"Finished streaming file '{trustedDisplayFilename}' to '{sourcePath}'");
+
+
+            }
+            // TODO! Maaaaaybe implement support for this in the future.
+            /* else if (MultipartHelper.HasFormDataContentDisposition(contentDisposition))
+            {
+                ...
+            } */
+        }
+
+        if (string.IsNullOrWhiteSpace(details.Title))
+        {
+            var filenameParts = trustedDisplayFilename.Split(".");
+            details.Title = string.Join('_', filenameParts[..^1]);
+        }
+
+        if (string.IsNullOrWhiteSpace(details.Slug))
+        {
+            details.Slug = WebUtility.HtmlEncode(details.Title).ToLower();
+            int count = await db.Photos.CountAsync(p => p.Slug == details.Slug);
+            if (count > 0) {
+                details.Slug += '_' + count;
             }
         }
 
-        return new CreatedAtActionResult(nameof(PhotosController.StreamPhoto), nameof(PhotosController), null, new {});
+        details.CreatedAt ??= DateTime.UtcNow;
+
+        PhotoEntity photo = new() {
+            Slug = details.Slug,
+            Title = details.Title,
+            Summary = trustedDisplayFilename,
+            Description = $"Uploaded {details.CreatedAt.Value.Year}/{details.CreatedAt.Value.Month} to " + sourcePath,
+            UpdatedAt = DateTime.UtcNow,
+            CreatedAt = details.CreatedAt.Value,
+            CreatedBy = details.CreatedBy,
+            Filepaths = [
+                new() {
+                    Filename = trustedDisplayFilename,
+                    Path = sourcePath,
+                    Dimension = Dimension.SOURCE,
+                    Filesize = filesize,
+                }
+            ],
+            Tags = [
+                new () {
+                    Name = details.CreatedAt.Value.Year.ToString(),
+                    Description = "Images uploaded during " + details.CreatedAt.Value.Year.ToString()
+                }
+            ]
+        };
+
+        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        {
+            Account? user = null;
+            try {
+                user = MageAuthentication.GetAccount(contextAccessor);
+            }
+            catch (Exception ex) {
+                await logging
+                    .Action(nameof(UploadPhoto))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
+                    .SaveAsync();
+            }
+
+            if (user is not null) {
+                photo.CreatedBy = user.Id;
+            }
+        }
+
+        return new CreatedAtActionResult(nameof(PhotosController.StreamPhoto), nameof(PhotosController), null, photo);
+    }
+    #endregion
+
+
+    #region Create a Filepath entity.
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    /// <remarks>
+    /// <trong>Note:</strong> Assumes a size of <see cref="Reception.Models.Entities.Dimension.SOURCE"/>.
+    /// </remarks>
+    public Task<ActionResult<Filepath>> CreateFilepathEntity(string filename, int photoId) =>
+        CreateFilepathEntity(Dimension.SOURCE, filename, photoId);
+
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// </summary>
+    public Task<ActionResult<Filepath>> CreateFilepathEntity(Dimension dimension, string filename, int photoId)
+    {
+        if (string.IsNullOrWhiteSpace(filename)) {
+            throw new NotImplementedException("Filename null or empty"); // TODO: HANDLE
+        }
+
+        return CreateFilepathEntity(new Filepath() {
+            Dimension = dimension,
+            Filename = filename,
+            PhotoId = photoId
+        });
+    }
+        
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    /// <remarks>
+    /// <trong>Note:</strong> Assumes a size of <see cref="Reception.Models.Entities.Dimension.SOURCE"/>.
+    /// </remarks>
+    public async Task<ActionResult<Filepath[]>> CreateFilepathEntity(PhotoEntity photo, string? filename)
+    {
+        ArgumentNullException.ThrowIfNull(photo.Filepaths, nameof(photo.Filepaths));
+        List<Filepath> paths = [];
+
+        foreach(Filepath path in photo.Filepaths)
+        {
+            if (!string.IsNullOrWhiteSpace(filename)) {
+                path.Filename = filename;
+            }
+            else if (string.IsNullOrWhiteSpace(path.Filename)) {
+                continue; // Skip `path` if it has no Filename
+            }
+
+            if (path.PhotoId <= 0 || path.PhotoId != photo.Id) {
+                path.PhotoId = photo.Id;
+            }
+
+            path.Photo ??= photo;
+
+            var createFilepath = await CreateFilepathEntity(path);
+            if (createFilepath.Value is null) {
+                return createFilepath.Result!;
+            }
+
+            paths.Add(createFilepath.Value);
+        }
+
+        return paths.ToArray();
+    }
+
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    public async Task<ActionResult<Filepath>> CreateFilepathEntity(Filepath path)
+    {
+        PhotoEntity? photo = path.Photo;
+        if (photo is null)
+        {
+            if (path.PhotoId is <= 0)
+            {
+                throw new NotImplementedException("path.PhotoId less than equal 0"); // TODO: HANDLE
+            }
+
+            photo = await db.Photos.FindAsync(path.PhotoId);
+
+            if (photo is null)
+            {
+                throw new NotImplementedException("Photo is null"); // TODO: HANDLE
+            }
+        }
+
+        path.Path = GetCombinedPath(path.Dimension ?? Dimension.SOURCE, photo.CreatedAt);
+        Directory.CreateDirectory(path.Path); // TODO - LOG & ERROR HANDLE
+
+        try {
+            db.Add(path);
+            await db.SaveChangesAsync();
+        }
+        catch(Exception ex) {
+            throw new NotImplementedException($"Handle db errors {nameof(CreateFilepathEntity)} " + ex.Message); // TODO: HANDLE
+        }
+
+        return path;
     }
     #endregion
 

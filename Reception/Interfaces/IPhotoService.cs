@@ -9,6 +9,34 @@ namespace Reception.Interfaces;
 
 public interface IPhotoService
 {
+    #region Get base filepaths.
+    /// <summary>
+    /// Get the name (only) of the base directory of my file storage
+    /// </summary>
+    public abstract string GetBaseDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Thumbnail directory of my file storage
+    /// </summary>
+    public abstract string GetThumbnailDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Medium directory of my file storage
+    /// </summary>
+    public abstract string GetMediumDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Source directory of my file storage
+    /// </summary>
+    public abstract string GetSourceDirectoryName();
+    /// <summary>
+    /// Get the path (directories, plural) to the directory relative to a <see cref="DateTime"/>
+    /// </summary>
+    public abstract string GetDatePath(DateTime dateTime);
+    /// <summary>
+    /// Get the <strong>combined</strong> relative path (<c>Base + Thumbnail/Medium/Source + DatePath</c>) to a directory in my file storage.
+    /// </summary>
+    public abstract string GetCombinedPath(Dimension dimension, DateTime? dateTime = null, string filename = "");
+    #endregion
+
+
     #region Get single photos.
     /// <summary>
     /// Get the <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) with Primary Key '<paramref ref="photoId"/>'
@@ -108,6 +136,76 @@ public interface IPhotoService
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
     public abstract Task<ActionResult<PhotoCollection>> UploadPhoto(FilterPhotosOptions details);
+    #endregion
+
+
+    #region Create a Filepath entity.
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    /// <remarks>
+    /// <trong>Note:</strong> Assumes a size of <see cref="Reception.Models.Entities.Dimension.SOURCE"/>.
+    /// </remarks>
+    public virtual Task<ActionResult<Filepath>> CreateFilepathEntity(string filename, int photoId) =>
+        CreateFilepathEntity(Dimension.SOURCE, filename, photoId);
+
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// </summary>
+    public virtual Task<ActionResult<Filepath>> CreateFilepathEntity(Dimension dimension, string filename, int photoId)
+    {
+        if (string.IsNullOrWhiteSpace(filename)) {
+            throw new NotImplementedException("Filename null or empty"); // TODO: HANDLE
+        }
+
+        return CreateFilepathEntity(new Filepath() {
+            Dimension = dimension,
+            Filename = filename,
+            PhotoId = photoId
+        });
+    }
+        
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    /// <remarks>
+    /// <trong>Note:</strong> Assumes a size of <see cref="Reception.Models.Entities.Dimension.SOURCE"/>.
+    /// </remarks>
+    public virtual async Task<ActionResult<Filepath[]>> CreateFilepathEntity(PhotoEntity photo, string? filename)
+    {
+        ArgumentNullException.ThrowIfNull(photo.Filepaths, nameof(photo.Filepaths));
+        List<Filepath> paths = [];
+
+        foreach(Filepath path in photo.Filepaths)
+        {
+            if (!string.IsNullOrWhiteSpace(filename)) {
+                path.Filename = filename;
+            }
+            else if (string.IsNullOrWhiteSpace(path.Filename)) {
+                continue; // Skip `path` if it has no Filename
+            }
+
+            if (path.PhotoId <= 0 || path.PhotoId != photo.Id) {
+                path.PhotoId = photo.Id;
+            }
+
+            path.Photo ??= photo;
+
+            var createFilepath = await CreateFilepathEntity(path);
+            if (createFilepath.Value is null) {
+                return createFilepath.Result!;
+            }
+
+            paths.Add(createFilepath.Value);
+        }
+
+        return paths.ToArray();
+    }
+
+    /// <summary>
+    /// Create a <see cref="Reception.Models.Entities.Filepath"/> in the database.
+    /// </summary>
+    public abstract Task<ActionResult<Filepath>> CreateFilepathEntity(Filepath path);
     #endregion
 
 

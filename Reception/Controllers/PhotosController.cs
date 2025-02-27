@@ -94,13 +94,19 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     /// <summary>
     /// Upload a photo/file by streaming it to disk.
     /// </summary>
-    [HttpPost("{slug}")]
+    [HttpPost("stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PhotoCollection>> StreamPhoto() =>
-        await handler.GetPhoto();
+        await handler.UploadPhoto(opts => {
+            // opts.Dimension = Dimension.SOURCE;
+            // opts.Slug = ???;
+            // opts.Title = ???;
+            opts.CreatedAt = DateTime.UtcNow;
+            // opts.CreatedBy = ???;
+        });
     #endregion
 }
