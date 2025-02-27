@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, effect, computed, ElementRef, afterRender } from '@angular/core';
+import { Component, Input, inject, signal, effect, computed, ElementRef, afterRender, EventEmitter, Output } from '@angular/core';
 import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle, MatCardTitleGroup } from '@angular/material/card';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatRipple } from '@angular/material/core';
@@ -34,7 +34,9 @@ export class PhotoCardComponent {
     @Input({ required: true })
     isHandset!: Observable<boolean>;
 
-    link = computed(() => this.photo ? `/garden/photos/single/${this.photo.photoId}` : '#');
+    link = computed<string>(
+        () => this.photo ? `/garden/photos/single/${this.photo.photoId}` : '#'
+    );
 
     ngOnInit() {
         this.imageIsLoading.set(true);

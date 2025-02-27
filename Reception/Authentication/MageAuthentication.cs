@@ -20,7 +20,6 @@ namespace Reception.Authentication;
 /// Intercepts incoming requests and checks if a valid session token is provided with the request.
 /// </summary>
 public class MageAuthentication(
-    MageDbContext db,
     ILoggingService loggingService,
     ReceptionAuthorizationService service,
     IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -116,7 +115,8 @@ public class MageAuthentication(
 
         if (user.Sessions is null || user.Sessions.Count == 0)
         {
-            Logger.LogInformation($"[{nameof(MageAuthentication)}] ({nameof(GenerateAuthenticationTicket)}) Loading missing navigation entries.");
+            AuthenticationException.Throw(Messages.UnknownErrorCode);
+            /* Logger.LogInformation($"[{nameof(MageAuthentication)}] ({nameof(GenerateAuthenticationTicket)}) Loading missing navigation entries.");
 
             foreach (var navigationEntry in db.Entry(user).Navigations)
             {
@@ -126,7 +126,7 @@ public class MageAuthentication(
             if (user.Sessions is null || user.Sessions.Count == 0)
             {
                 AuthenticationException.Throw(Messages.UnknownErrorCode);
-            }
+            } */
         }
 
         Claim[] identityClaims = [

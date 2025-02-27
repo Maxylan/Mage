@@ -10,18 +10,11 @@ namespace Reception.Services;
 
 public partial class MageDbContext : DbContext
 {
-    private readonly ILogger<MageDbContext> _logger;
+    public MageDbContext()
+    { }
 
-    public MageDbContext(ILogger<MageDbContext> logger)
-    {
-        this._logger = logger;
-    }
-
-    public MageDbContext(DbContextOptions<MageDbContext> options, ILogger<MageDbContext> logger)
-        : base(options)
-    {
-        this._logger = logger;
-    }
+    public MageDbContext(DbContextOptions<MageDbContext> options)
+        : base(options) { }
 
     public virtual DbSet<Account> Accounts { get; set; } = null!;
     public virtual DbSet<Album> Albums { get; set; } = null!;
@@ -52,8 +45,6 @@ public partial class MageDbContext : DbContext
                 opts.MapEnum<Severity>("severity", "magedb", nameTranslator);
                 opts.MapEnum<Source>("source", "magedb", nameTranslator);
             });
-
-            _logger.LogTrace("Configured Database '{}'.", databaseName);
         }
     }
 

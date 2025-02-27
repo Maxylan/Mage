@@ -1,3 +1,14 @@
+img {
+    max-height: 48px;
+    max-width: 48px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+h2 {
+    display: inline-block;
+}
+
 .sidenav-container {
     height: 100%;
 }
@@ -21,4 +32,11 @@
     position: sticky;
     top: 0;
     z-index: 1;
+}
+
+mat-icon.mat-icon {
+    width: unset;
+    height: unset;
+    max-width: 24px;
+    max-height: 24px;
 }

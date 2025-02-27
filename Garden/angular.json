@@ -54,8 +54,8 @@
               }
             ],
             "styles": [
-              "src/styles.css",
-              "src/theme.scss"
+              "src/app/styles/global_styles.css",
+              "src/app/styles/theme.scss"
             ],
             "scripts": []
           },

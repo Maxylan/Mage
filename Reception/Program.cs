@@ -120,7 +120,7 @@ public sealed class Program
             opts.EnableDetailedErrors();
         });
 
-        // builder.Services.AddSingleton<LoginTracker>();
+        builder.Services.AddSingleton<LoginTracker>();
 
         builder.Services.AddScoped<ILoggingService, LoggingService>();
         builder.Services.AddScoped<ISessionService, SessionService>();

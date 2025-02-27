@@ -9,13 +9,8 @@ import { AuthService } from './auth.service';
 })
 export class PhotosService {
     private authService!: AuthService;
-    private apiUrl: string = '/reception';
     private generateRequestInit = (method: Methods): RequestInit => {
-        const token = this.authService.getToken();
-        if (!token) {
-            throw new Error('Failed to get token from `AuthService`!');
-        }
-
+        const token: string = this.authService.getToken() ?? '';
         return {
             method: method,
             headers: { // TODO! Create auth - get token from there. 
@@ -33,7 +28,7 @@ export class PhotosService {
      * Get a single `Photo` (source) by its `photoId` (PK, uint)
      */
     public getSourcePhoto(photoId: number): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/source/' + photoId, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/source/' + photoId, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -55,7 +50,7 @@ export class PhotosService {
      * Get a single `Photo` (source) by its `slug` (unique, string)
      */
     public getSourcePhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/source/slug/' + slug, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/source/slug/' + slug, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -76,7 +71,7 @@ export class PhotosService {
      * Get a single `Photo` (medium) by its `photoId` (PK, uint)
      */
     public getMediumPhoto(photoId: number): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/medium/' + photoId, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/medium/' + photoId, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -97,7 +92,7 @@ export class PhotosService {
      * Get a single `Photo` (medium) by its `slug` (unique, string)
      */
     public getMediumPhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/medium/slug/' + slug, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/medium/slug/' + slug, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -118,7 +113,7 @@ export class PhotosService {
      * Get a single `Photo` (thumbnail) by its `photoId` (PK, uint)
      */
     public getThumbnailPhoto(photoId: number): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/thumbnail/' + photoId, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/thumbnail/' + photoId, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -139,7 +134,7 @@ export class PhotosService {
      * Get a single `Photo` (thumbnail) by its `slug` (unique, string)
      */
     public getThumbnailPhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.apiUrl + '/photos/thumbnail/slug/' + slug, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/thumbnail/slug/' + slug, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -160,7 +155,7 @@ export class PhotosService {
      * Get a `PhotoCollection` (all sizes) of the Photo with `photoId` (PK, uint)
      */
     public getPhoto(photoId: number): Promise<PhotoCollection> {
-        return fetch(this.apiUrl + '/photos/' + photoId, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/' + photoId, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -181,7 +176,7 @@ export class PhotosService {
      * Get a `PhotoCollection` (all sizes) of the Photo with `slug` (unique, string)
      */
     public getPhotoBySlug(slug: string): Promise<PhotoCollection> {
-        return fetch(this.apiUrl + '/photos/slug/' + slug, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/slug/' + slug, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -211,15 +206,11 @@ export class PhotosService {
             ))
             .map(kvp => `${kvp[0]}=${kvp[1].toString().trim()}`);
 
-        console.debug('params', params, parameters);
-
         let queryParameters = parameters.length > 0
             ? '?' + parameters.join('&')
             : '';
 
-        console.debug('queryParameters', queryParameters);
-
-        return fetch(this.apiUrl + '/photos' + queryParameters, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos' + queryParameters, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -273,7 +264,7 @@ export class PhotosService {
             ? '?' + parameters.join('&')
             : '';
 
-        return fetch(this.apiUrl + '/photos/' + dimension + queryParameters, this.generateRequestInit('GET'))
+        return fetch(this.authService.getApiUrl() + '/photos/' + dimension + queryParameters, this.generateRequestInit('GET'))
             .then(
                 res => {
                     if (res?.status === 401) {
@@ -295,7 +286,7 @@ export class PhotosService {
      * Get the Image `File` (blob) of the Photo with the given `photoId` (PK, uint)
      */
     public getPhotoBlob(photoId: number, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
-        let url = this.apiUrl + '/photos';
+        let url = this.authService.getApiUrl() + '/photos';
         switch(dimension) {
             case 'source':
             case Dimension.SOURCE:
@@ -352,7 +343,7 @@ export class PhotosService {
      * Get the Image `File` (blob) of the Photo with the given `slug` (unique, string)
      */
     public getPhotoBlobBySlug(slug: string, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
-        let url = this.apiUrl + '/photos';
+        let url = this.authService.getApiUrl() + '/photos';
         switch(dimension) {
             case 'source':
             case Dimension.SOURCE:

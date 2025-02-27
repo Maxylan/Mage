@@ -9,7 +9,11 @@
     border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
     border-color: rgba(0,0,0,0.0);
     border-style: solid;
-    border-width: 1px
+    border-width: 1px;
+    /* cursor: pointer; */
+}
+.photo-card-container a {
+    text-decoration: none;
 }
 .photo-card-container div p {
     overflow: hidden;
