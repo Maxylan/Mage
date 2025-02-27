@@ -10,15 +10,29 @@ namespace Reception.Models.Entities;
 public class LogEntry
 {
     public int Id { get; set; }
+
     public int? UserId { get; set; }
+    
     public string? UserEmail { get; set; }
+
     public string? UserUsername { get; set; }
+
     public string? UserFullName { get; set; }
+
+    public string? RequestAddress { get; set; }
+
+    public string? RequestUserAgent { get; set; }
+
     public DateTime CreatedAt { get; set; }
+
     public Severity? LogLevel { get; set; }
+
     public Source? Source { get; set; }
+
     public Method? Method { get; set; }
+
     public string Action { get; set; } = null!;
+
     public string? Log { get; set; }
 
     [JsonIgnore]
@@ -78,6 +92,12 @@ public class LogEntry
                     y => Enum.Parse<Method>(y, true)
                 ) */;
             entity.Property(e => e.Log).HasColumnName("log");
+            entity.Property(e => e.RequestAddress)
+                .HasMaxLength(255)
+                .HasColumnName("request_address");
+            entity.Property(e => e.RequestUserAgent)
+                .HasMaxLength(1023)
+                .HasColumnName("request_user_agent");
             entity.Property(e => e.UserEmail)
                 .HasMaxLength(255)
                 .HasColumnName("user_email");

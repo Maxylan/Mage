@@ -1,6 +1,5 @@
 using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
@@ -8,6 +7,8 @@ using Reception.Services;
 using System.Security.Claims;
 using Reception.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Reception.Authentication;
 
@@ -109,8 +110,103 @@ public class MageAuthentication(
         return ticket;
     }
     
+
     // Static Methods
 
+    /// <summary>
+    /// Attempt to get the <see cref="IPAddress"/> associated with this request.
+    /// </summary>
+    /// <remarks>
+    /// Tries <seealso cref="ConnectionInfo.RemoteIpAddress"/>, <seealso cref="HttpRequest.Headers"/><c>["HTTP_X_FORWARDED_FOR"]</c> and
+    /// <seealso cref="HttpRequest.Headers"/><c>["REMOTE_ADDR"]</c>, in that exact order.
+    /// </remarks>
+    public static string? GetRemoteAddress(IHttpContextAccessor contextAccessor) =>
+        GetRemoteAddress(contextAccessor.HttpContext!);
+    /// <summary>
+    /// Attempt to get the <see cref="IPAddress"/> associated with this request.
+    /// </summary>
+    /// <remarks>
+    /// Tries <seealso cref="ConnectionInfo.RemoteIpAddress"/>, <seealso cref="HttpRequest.Headers"/><c>["HTTP_X_FORWARDED_FOR"]</c> and
+    /// <seealso cref="HttpRequest.Headers"/><c>["REMOTE_ADDR"]</c>, in that exact order.
+    /// </remarks>
+    public static string? GetRemoteAddress(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context, nameof(context));
+
+        IPAddress? remoteAddress = context.Connection.RemoteIpAddress;
+        if (remoteAddress is not null && 
+            remoteAddress.AddressFamily is AddressFamily.InterNetwork
+        ) {
+            if (Program.IsDevelopment) {
+                Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a stringified 'context.Connection.RemoteIpAddress'.");
+            }
+            return remoteAddress.ToString();
+        }
+
+        string? remoteAddressValue = null;
+        bool hasForwardedForHeader = context.Request.Headers.ContainsKey("HTTP_X_FORWARDED_FOR");
+        if (hasForwardedForHeader)
+        {
+            remoteAddressValue = context.Request.Headers["HTTP_X_FORWARDED_FOR"].ToString();
+        }
+
+        if (string.IsNullOrWhiteSpace(remoteAddressValue))
+        {
+            bool hasRemoteAddrHeader = context.Request.Headers.ContainsKey("REMOTE_ADDR");
+
+            if (hasRemoteAddrHeader) {
+                remoteAddressValue = context.Request.Headers["REMOTE_ADDR"].ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(remoteAddressValue))
+            {
+                if (Program.IsDevelopment) {
+                    Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Failed to find a remote address tied to the current request.");
+                }
+
+                return null;
+            }
+        }
+
+        if (Program.IsDevelopment) {
+            Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a remote-address header. ({remoteAddressValue})");
+        }
+
+        return remoteAddressValue.Split(',')[^0].Trim();
+    }
+
+
+    /// <summary>
+    /// Attempts to determine if the current requesting user is authenticated.
+    /// </summary>
+    public static bool IsAuthenticated(IHttpContextAccessor contextAccessor) =>
+        IsAuthenticated(contextAccessor.HttpContext!);
+    /// <summary>
+    /// Attempts to determine if the current requesting user is authenticated.
+    /// </summary>
+    public static bool IsAuthenticated(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context, nameof(context));
+
+        var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
+        var authentication = getAuthenticationResult?.AuthenticateResult;
+        
+        if (authentication is null || !authentication.Succeeded) {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /// <summary>
+    /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
+    /// </summary>
+    /// <remarks>
+    /// Throws <seealso cref="AuthenticationProperties"/> w/ relevant error codes if the attempt was unsuccessful.
+    /// </remarks>
+    public static AuthenticationProperties Properties(IHttpContextAccessor contextAccessor) =>
+        Properties(contextAccessor.HttpContext!);
     /// <summary>
     /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
     /// </summary>
@@ -119,6 +215,8 @@ public class MageAuthentication(
     /// </remarks>
     public static AuthenticationProperties Properties(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context, nameof(context));
+
         var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
         var authentication = getAuthenticationResult?.AuthenticateResult;
         
@@ -131,6 +229,15 @@ public class MageAuthentication(
 
         return authentication!.Properties!;
     }
+
+    /// <summary>
+    /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <seealso cref="MageAuthentication.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// </remarks>
+    public static bool TryGetProperties(IHttpContextAccessor contextAccessor, out AuthenticationProperties? properties) =>
+        TryGetProperties(contextAccessor.HttpContext!, out properties);
     /// <summary>
     /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
     /// </summary>
@@ -139,6 +246,8 @@ public class MageAuthentication(
     /// </remarks>
     public static bool TryGetProperties(HttpContext context, out AuthenticationProperties? properties)
     {
+        ArgumentNullException.ThrowIfNull(context, nameof(context));
+
         properties = null;
         var getAuthenticationResult = context.Features.Get<IAuthenticateResultFeature>();
         var authentication = getAuthenticationResult?.AuthenticateResult;
@@ -163,8 +272,6 @@ public class MageAuthentication(
     /// </exception>
     public static Account? GetAccount(IHttpContextAccessor contextAccessor) =>
         GetAccount(contextAccessor.HttpContext!);
-
-
     /// <summary>
     /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
     /// </summary>
@@ -192,8 +299,6 @@ public class MageAuthentication(
     /// </exception>
     public static Session? GetSession(IHttpContextAccessor contextAccessor) =>
         GetSession(contextAccessor.HttpContext!);
-
-
     /// <summary>
     /// Get the current user's <see cref="Session"/> from the '<see cref="HttpContext"/>'
     /// </summary>
@@ -220,7 +325,6 @@ public class MageAuthentication(
     /// </exception>
     public static string? GetToken(IHttpContextAccessor contextAccessor) =>
         GetToken(contextAccessor.HttpContext!);
-
     /// <summary>
     /// Get the current user's Token (string) from the '<see cref="HttpContext"/>'
     /// </summary>

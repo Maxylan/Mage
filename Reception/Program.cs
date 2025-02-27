@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.OpenApi.Models;
 using Reception.Authentication;
+using Reception.Caching;
 using Reception.Interfaces;
 using Reception.Services;
 
@@ -82,6 +83,8 @@ public sealed class Program
             opts.EnableDetailedErrors();
         });
 
+        builder.Services.AddSingleton<LoginTracker>();
+
         builder.Services.AddScoped<ILoggingService, LoggingService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -109,6 +112,7 @@ public sealed class Program
             }
         }
 
+        app.UseForwardedHeaders();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
