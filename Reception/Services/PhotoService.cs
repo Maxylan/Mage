@@ -1,15 +1,15 @@
 
-using Microsoft.AspNetCore.Mvc;
-using Reception.Models.Entities;
-using PhotoEntity = Reception.Models.Entities.Photo;
 using Photo = Reception.Models.Photo;
+using PhotoEntity = Reception.Models.Entities.Photo;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
+using Microsoft.EntityFrameworkCore;
+using Reception.Models.Entities;
 using Reception.Models;
+using Reception.Utilities;
 using Reception.Interfaces;
 using System.Net;
-using Microsoft.EntityFrameworkCore;
-using Reception.Utilities;
-using Microsoft.Net.Http.Headers;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace Reception.Services;
 
@@ -440,12 +440,12 @@ public class PhotoService(
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public Task<ActionResult<PhotoCollection>> CreatePhoto(Action<FilterPhotosOptions> opts)
+    public Task<ActionResult<PhotoCollection>> UploadPhoto(Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
 
-        return CreatePhoto(filtering);
+        return UploadPhoto(filtering);
     }
 
     /// <summary>
@@ -456,15 +456,15 @@ public class PhotoService(
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public async Task<ActionResult<PhotoCollection>> CreatePhoto(FilterPhotosOptions details)
+    public async Task<ActionResult<PhotoCollection>> UploadPhoto(FilterPhotosOptions details)
     {
         string message;
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
         {
-            message = $"{nameof(CreatePhoto)} Failed: No {nameof(HttpContext)} found.";
+            message = $"{nameof(UploadPhoto)} Failed: No {nameof(HttpContext)} found.";
             await logging
-                .Action(nameof(CreatePhoto))
+                .Action(nameof(UploadPhoto))
                 .InternalError(message)
                 .SaveAsync();
 
@@ -475,9 +475,9 @@ public class PhotoService(
 
         if (!MultipartHelper.IsMultipartContentType(httpContext.Request.ContentType))
         {
-            message = $"{nameof(CreatePhoto)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
+            message = $"{nameof(UploadPhoto)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
             await logging
-                .Action(nameof(CreatePhoto))
+                .Action(nameof(UploadPhoto))
                 .ExternalError(message)
                 .SaveAsync();
 
@@ -491,6 +491,7 @@ public class PhotoService(
         var reader = new MultipartReader(boundary, httpContext.Request.Body);
         var section = await reader.ReadNextSectionAsync();
 
+        return new CreatedAtActionResult();
     }
     #endregion
 

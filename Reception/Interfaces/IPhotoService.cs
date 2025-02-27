@@ -91,12 +91,12 @@ public interface IPhotoService
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public virtual Task<ActionResult<PhotoCollection>> CreatePhoto(Action<FilterPhotosOptions> opts)
+    public virtual Task<ActionResult<PhotoCollection>> UploadPhoto(Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
 
-        return CreatePhoto(filtering);
+        return UploadPhoto(filtering);
     }
 
     /// <summary>
@@ -107,7 +107,7 @@ public interface IPhotoService
     /// <see cref="Reception.Models.Entities.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public abstract Task<ActionResult<PhotoCollection>> CreatePhoto(FilterPhotosOptions details);
+    public abstract Task<ActionResult<PhotoCollection>> UploadPhoto(FilterPhotosOptions details);
     #endregion
 
 
