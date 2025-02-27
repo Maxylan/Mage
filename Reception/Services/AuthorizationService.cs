@@ -15,9 +15,6 @@ public class AuthorizationService(
     MageDbContext db
 ) : IAuthorizationService
 {
-    public const string SESSION_CONTEXT_KEY = "session";
-    public const string ACCOUNT_CONTEXT_KEY = "account";
-
     /// <summary>
     /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
     /// </summary>
