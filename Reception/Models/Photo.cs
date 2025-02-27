@@ -69,7 +69,7 @@ public record Photo
     public int PhotoId { get => _entity.Id; }
     public int? FilepathId { get => _filepath.Id; }
     public string Slug { get => _entity.Slug; }
-    public string? Title { get => _entity.Title; }
+    public string Title { get => _entity.Title; }
     public string? Summary { get => _entity.Summary; }
     public string? Description { get => _entity.Description; }
     public int? UploadedBy { get => _entity.UploadedBy; }

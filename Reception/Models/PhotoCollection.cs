@@ -60,6 +60,13 @@ public record PhotoCollection
         Thumbnail = thumbnail;
     }
 
+    public int PhotoId { get => Source.PhotoId; }
+
+    /* // Unsure about repeating these two here..
+    public string Slug { get => Source.Slug; }
+    public string Title { get => Source.Title; }
+    */
+
     public required Photo Source { get; init; }
     public Photo? Medium { get; init; }
     public Photo? Thumbnail { get; init; }

@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS photos (
     id SERIAL NOT NULL,
     slug VARCHAR(127) UNIQUE NOT NULL,
-    title VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
     summary VARCHAR(255),
     description TEXT,
     uploaded_by INT,
