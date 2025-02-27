@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     username VARCHAR(63) NOT NULL UNIQUE,
     password VARCHAR(127) NOT NULL,
     full_name VARCHAR(127),
+    avatar_id INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_visit TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     permissions SMALLINT NOT NULL DEFAULT 0 CHECK (permissions >= 0 AND permissions <= 15),
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- The `photos` table keeps track of uploaded photos.
 CREATE TABLE IF NOT EXISTS photos (
     id SERIAL NOT NULL,
-    name VARCHAR(127) UNIQUE NOT NULL,
+    slug VARCHAR(127) UNIQUE NOT NULL,
     title VARCHAR(255),
     summary VARCHAR(255),
     description TEXT,
@@ -185,13 +186,16 @@ CREATE TABLE IF NOT EXISTS logs (
     PRIMARY KEY(id)
 );
 
+-- Last FK-Constraint, allowing for avatars on users.
+ALTER TABLE accounts ADD CONSTRAINT fk_user_avatar FOREIGN KEY(avatar_id) REFERENCES photos(id) ON DELETE SET NULL
+
 -- Indicies for session lookups by user_id
 CREATE INDEX idx_sessions_user_id ON sessions (user_id);
 
 -- Indicies for lookups by unique titles/names
 CREATE INDEX idx_filepaths_filename ON filepaths (filename);
 
-CREATE INDEX idx_photos_name ON photos (name);
+CREATE INDEX idx_photos_slug ON photos (name);
 CREATE INDEX idx_tags_name ON tags (name);
 
 CREATE INDEX idx_albums_title ON albums (title);

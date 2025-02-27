@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Text.Json.Serialization;
 
 namespace Reception.Models.Entities;
 
 public class Photo
 {
     public int Id { get; set; }
-    public string Name { get; set; } = null!;
+    public string Slug { get; set; } = null!;
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Description { get; set; }
@@ -20,7 +18,10 @@ public class Photo
     // Navigation Properties
 
     [JsonIgnore]
-    public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
+    public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
+
+    [JsonIgnore]
+    public virtual ICollection<Album> ThumbnailForAlbums { get; set; } = new List<Album>();
 
     [JsonIgnore]
     public virtual Account? CreatedByNavigation { get; set; }
@@ -41,11 +42,11 @@ public class Photo
 
             entity.ToTable("photos", "magedb");
 
-            entity.HasIndex(e => e.Name, "idx_photos_name");
+            entity.HasIndex(e => e.Slug, "idx_photos_slug");
 
             entity.HasIndex(e => e.UpdatedAt, "idx_photos_updated_at");
 
-            entity.HasIndex(e => e.Name, "photos_name_key").IsUnique();
+            entity.HasIndex(e => e.Slug, "photos_slug_key").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
@@ -53,7 +54,7 @@ public class Photo
                 .HasColumnName("created_at");
             entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Name)
+            entity.Property(e => e.Slug)
                 .HasMaxLength(127)
                 .HasColumnName("name");
             entity.Property(e => e.Summary)

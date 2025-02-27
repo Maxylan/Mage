@@ -18,6 +18,8 @@ public class Account
     [JsonIgnore, SwaggerIgnore]
     public string Password { get; set; } = null!;
 
+    public int? AvatarId { get; set; }
+
     public string? FullName { get; set; }
 
     public DateTime CreatedAt { get; set; }
@@ -30,6 +32,9 @@ public class Account
 
     [JsonIgnore]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
+
+    [JsonIgnore]
+    public virtual Photo? Avatar { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
@@ -56,6 +61,7 @@ public class Account
 
             entity.HasIndex(e => e.Username, "idx_accounts_username").IsUnique();
 
+            entity.Property(e => e.AvatarId).HasColumnName("avatar_id");
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
@@ -78,6 +84,11 @@ public class Account
             entity.Property(e => e.Username)
                 .HasMaxLength(63)
                 .HasColumnName("username");
+
+            entity.HasOne(d => d.Avatar).WithMany(p => p.Accounts)
+                .HasForeignKey(d => d.AvatarId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_user_avatar");
         }
     );
 }
