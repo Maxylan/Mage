@@ -8,15 +8,11 @@ namespace Reception.Models;
 public class Filepath
 {
     public int Id { get; set; }
-
     public int PhotoId { get; set; }
-
     public string Filename { get; set; } = null!;
-
     public string Path { get; set; } = null!;
-
+    public DataTypes.Dimension? Dimension { get; set; }
     public int Filesize { get; set; }
-
     public virtual Photo Photo { get; set; } = null!;
 
     public static Action<EntityTypeBuilder<Filepath>> Build => (
@@ -40,6 +36,14 @@ public class Filepath
                 .HasMaxLength(255)
                 .HasColumnName("path");
             entity.Property(e => e.Filesize).HasColumnName("filesize");
+            entity.Property(e => e.Dimension)
+                .HasColumnName("dimension")
+                .HasDefaultValue(DataTypes.Dimension.SOURCE)
+                .HasSentinel(null)
+                .HasConversion(
+                    x => x.ToString() ?? DataTypes.Dimension.SOURCE.ToString(),
+                    y => Enum.Parse<DataTypes.Dimension>(y, true)
+                );
             entity.Property(e => e.PhotoId).HasColumnName("photo_id");
 
             entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths)

@@ -11,6 +11,7 @@ public static class DataTypes
         SOURCE
     }
     public enum Method {
+        UNKNOWN,
         HEAD,
         GET,
         POST,
