@@ -1,13 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
 using Reception.Models.Entities;
 using Reception.Interfaces;
-using System.IO;
 using Reception.Utilities;
-using SixLabors.ImageSharp.Formats;
 using Reception.Constants;
 
 namespace Reception.Controllers;

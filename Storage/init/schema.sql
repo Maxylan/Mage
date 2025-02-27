@@ -53,10 +53,31 @@ CREATE TABLE IF NOT EXISTS photos (
         ON DELETE SET NULL
 );
 
+-- The `links` table keeps track of publically shared links to photos.
+CREATE TABLE IF NOT EXISTS links (
+    id SERIAL NOT NULL,
+    photo_id INT NOT NULL,
+    code CHAR(36) UNIQUE NOT NULL,
+    created_by INT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    access_limit INT CHECK (access_limit >= 0 OR access_limit IS null),
+    accessed INT NOT NULL DEFAULT 0 CHECK (accessed >= 0),
+    PRIMARY KEY(id),
+    CONSTRAINT fk_photo
+        FOREIGN KEY(photo_id)
+        REFERENCES photos(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_user
+        FOREIGN KEY(created_by)
+        REFERENCES accounts(id)
+        ON DELETE CASCADE
+);
+
 -- The `tags` table keeps track of tags.
 CREATE TABLE IF NOT EXISTS tags (
     id SERIAL NOT NULL,
-    name VARCHAR(127) UNIQUE NOT NULL,
+    name VARCHAR(127) UNIQUE NOT NULL CHECK (length(name) > 0),
     description TEXT,
     PRIMARY KEY(id)
 );
@@ -197,6 +218,8 @@ CREATE INDEX idx_sessions_user_id ON sessions (user_id);
 
 -- Indicies for lookups by unique titles/names
 CREATE INDEX idx_filepaths_filename ON filepaths (filename);
+
+CREATE INDEX idx_links_code ON links (code);
 
 CREATE INDEX idx_photos_slug ON photos (slug);
 CREATE INDEX idx_tags_name ON tags (name);

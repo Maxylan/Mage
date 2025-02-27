@@ -1,13 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("categories", Schema = "magedb")]
+[Index("Title", Name = "categories_title_key", IsUnique = true)]
+[Index("Title", Name = "idx_categories_title")]
+[Index("UpdatedAt", Name = "idx_categories_updated_at")]
 public partial class Category
 {
+    [Key]
     public int Id { get; set; }
 
     public string Title { get; set; } = null!;
@@ -24,10 +32,13 @@ public partial class Category
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("Category")]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("CreatedBy")]
+    [InverseProperty("Categories")]
     public virtual Account? CreatedByNavigation { get; set; }
 
     public static Action<EntityTypeBuilder<Category>> Build => (

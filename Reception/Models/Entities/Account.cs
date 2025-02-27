@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -7,8 +9,15 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
+[Table("accounts", Schema = "magedb")]
+[Index("Email", Name = "accounts_email_key", IsUnique = true)]
+[Index("Username", Name = "accounts_username_key", IsUnique = true)]
+[Index("Email", Name = "idx_accounts_email", IsUnique = true)]
+[Index("LastVisit", Name = "idx_accounts_last_visit")]
+[Index("Username", Name = "idx_accounts_username", IsUnique = true)]
 public class Account
 {
+    [Key]
     public int Id { get; set; }
 
     public string? Email { get; set; }
@@ -30,19 +39,29 @@ public class Account
 
     // Navigation Properties
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [ForeignKey("AvatarId")]
+    [InverseProperty("Accounts")]
     public virtual PhotoEntity? Avatar { get; set; }
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
-    [JsonIgnore]
-    public virtual ICollection<PhotoEntity> Photos { get; set; } = new List<PhotoEntity>();
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Link> Links { get; set; } = new List<Link>();
 
-    [JsonIgnore]
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("UploadedByNavigation")]
+    public virtual ICollection<PhotoEntity> UploadedPhotos { get; set; } = new List<PhotoEntity>();
+
+    [JsonIgnore, SwaggerIgnore]
+    [InverseProperty("User")]
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
 
     public static Action<EntityTypeBuilder<Account>> Build => (

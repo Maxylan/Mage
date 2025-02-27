@@ -27,6 +27,7 @@ public partial class MageDbContext : DbContext
     public virtual DbSet<Album> Albums { get; set; } = null!;
     public virtual DbSet<Category> Categories { get; set; } = null!;
     public virtual DbSet<Filepath> Filepaths { get; set; } = null!;
+    public virtual DbSet<Link> Links { get; set; }
     public virtual DbSet<LogEntry> Logs { get; set; } = null!;
     public virtual DbSet<PhotoEntity> Photos { get; set; } = null!;
     public virtual DbSet<Session> Sessions { get; set; } = null!;
@@ -67,6 +68,7 @@ public partial class MageDbContext : DbContext
         modelBuilder.Entity(Album.Build);
         modelBuilder.Entity(Category.Build);
         modelBuilder.Entity(Filepath.Build);
+        modelBuilder.Entity(Link.Build);
         modelBuilder.Entity(LogEntry.Build);
         modelBuilder.Entity(PhotoEntity.Build);
         modelBuilder.Entity(Session.Build);

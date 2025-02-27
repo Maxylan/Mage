@@ -1,4 +1,4 @@
-﻿namespace Reception.Models.Entities;
+namespace Reception.Models.Entities;
 
 public enum Dimension
 {
