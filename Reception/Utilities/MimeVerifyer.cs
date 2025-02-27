@@ -419,11 +419,9 @@ public class MimeVerifyer : IImageFormatDetector
 
     public bool TryDetectFormat(ReadOnlySpan<byte> header, [NotNullWhen(true)] out IImageFormat? format)
     {
-        Console.WriteLine($"{nameof(MimeVerifyer)} '{nameof(TryDetectFormat)}' [{(string.Join(", ", header.ToArray()))}] Length: {header.Length}");
         format = null;
         foreach (var mime in MagicNumbers)
         {
-            Console.WriteLine($"{nameof(MimeVerifyer)} Iteration: {mime.Key}");
             // Special case.. expects the file's size as bytes 4..8.
             // https://developers.google.com/speed/webp/docs/riff_container#webp_file_header
             if (mime.Key == "webp")
@@ -440,7 +438,6 @@ public class MimeVerifyer : IImageFormatDetector
                 {
                     HeaderSize = 12;
                     format = SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance;
-                    Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}] ({HeaderSize}), Iteration: {mime.Key}, [{string.Join(", ", mime.Value.Item2.ElementAt(0))}], [{string.Join(", ", mime.Value.Item2.ElementAt(1))}]");
                     return true;
                 }
 
@@ -461,17 +458,14 @@ public class MimeVerifyer : IImageFormatDetector
 
                     if (format is null && Program.IsDevelopment)
                     {
-                        Console.WriteLine($"{nameof(MimeVerifyer)} recognized & validated MimeType {mime.Key}, but its likely unsupported by SixLabors.ImageSharp");
                         return false;
                     }
 
-                    Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}] ({HeaderSize}), Iteration: {mime.Key}, [{string.Join(", ", signature)}]");
                     return format is not null;
                 }
             }
         }
 
-        Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}]");
         return format is not null;
     }
 }

@@ -10,24 +10,24 @@ namespace Reception.Services;
 
 public partial class MageDbContext : DbContext
 {
-    ILogger<MageDbContext> _logger;
+    private readonly ILogger<MageDbContext> _logger;
 
     public MageDbContext(ILogger<MageDbContext> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public MageDbContext(DbContextOptions<MageDbContext> options, ILogger<MageDbContext> logger)
         : base(options)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     public virtual DbSet<Account> Accounts { get; set; } = null!;
     public virtual DbSet<Album> Albums { get; set; } = null!;
     public virtual DbSet<Category> Categories { get; set; } = null!;
     public virtual DbSet<Filepath> Filepaths { get; set; } = null!;
-    public virtual DbSet<Link> Links { get; set; }
+    public virtual DbSet<Link> Links { get; set; } = null!;
     public virtual DbSet<LogEntry> Logs { get; set; } = null!;
     public virtual DbSet<PhotoEntity> Photos { get; set; } = null!;
     public virtual DbSet<Session> Sessions { get; set; } = null!;

@@ -1353,8 +1353,33 @@ public class PhotoService(
     /// <summary>
     /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
     /// </summary>
-    public Task<ActionResult<PhotoEntity>> CreatePhotoEntity(MutatePhoto mut) =>
-        CreatePhotoEntity((PhotoEntity)mut);
+    public async Task<ActionResult<PhotoEntity>> CreatePhotoEntity(MutatePhoto mut)
+    {
+        PhotoEntity entity = (PhotoEntity)mut;
+
+        if (mut.Tags is not null)
+        {
+            if (mut.Tags.Length > 9999)
+            {
+                mut.Tags = mut.Tags
+                    .Take(9999)
+                    .ToArray();
+            }
+
+            mut.Tags = mut.Tags
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Where(t => t.Length < 128)
+                .ToArray();
+
+            if (mut.Tags.Length > 0)
+            {
+                var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
+                entity.Tags = sanitizeAndCreateTags.Value?.ToList() ?? [];
+            }
+        }
+
+        return await CreatePhotoEntity(entity);
+    }
 
     /// <summary>
     /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
@@ -1482,7 +1507,264 @@ public class PhotoService(
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(mut, nameof(mut));
+        ArgumentNullException.ThrowIfNull(mut.Id, nameof(mut.Id));
+
+        if (mut.Tags?.Length > 9999)
+        {
+            mut.Tags = mut.Tags
+                .Take(9999)
+                .ToArray();
+        }
+
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(UpdatePhotoEntity)} Failed: No {nameof(HttpContext)} found.";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalError(message)
+                .SaveAsync();
+
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+        Account? user = null;
+
+        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        {
+            try
+            {
+                user = MageAuthentication.GetAccount(contextAccessor);
+            }
+            catch (Exception ex)
+            {
+                await logging
+                    .Action(nameof(UpdatePhotoEntity))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
+                    .SaveAsync();
+            }
+        }
+
+        if (mut.Id <= 0)
+        {
+            string message = $"Parameter '{nameof(mut.Id)}' has to be a non-zero positive integer! (Album ID)";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        PhotoEntity? existingPhoto = await db.Photos.FindAsync(mut.Id);
+
+        if (existingPhoto is null)
+        {
+            string message = $"{nameof(Album)} with ID #{mut.Id} could not be found!";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        foreach(var navigation in db.Entry(existingPhoto).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(mut.Slug))
+        {
+            string message = $"Parameter '{nameof(mut.Slug)}' may not be null/empty!";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (!mut.Slug.IsNormalized())
+        {
+            mut.Slug = mut.Slug
+                .Normalize()
+                .Trim();
+        }
+        if (mut.Slug.Length > 127)
+        {
+            string message = $"{nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (mut.Slug != existingPhoto.Slug)
+        {
+            bool slugTaken = await db.Photos.AnyAsync(photo => photo.Slug == mut.Slug);
+            if (slugTaken)
+            {
+                string message = $"{nameof(PhotoEntity.Slug)} was already taken!";
+                await logging
+                    .Action(nameof(UpdatePhotoEntity))
+                    .InternalDebug(message, opts => {
+                        opts.SetUser(user);
+                    })
+                    .SaveAsync();
+
+                return new ObjectResult(message) {
+                    StatusCode = StatusCodes.Status409Conflict
+                };
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(mut.Title))
+        {
+            string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (!mut.Title.IsNormalized())
+        {
+            mut.Title = mut.Title
+                .Normalize()
+                .Trim();
+        }
+        if (mut.Title.Length > 255)
+        {
+            string message = $"{nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (!string.IsNullOrWhiteSpace(mut.Summary))
+        {
+            if (!mut.Summary.IsNormalized())
+            {
+                mut.Summary = mut.Summary
+                    .Normalize()
+                    .Trim();
+            }
+            if (mut.Summary.Length > 255)
+            {
+                string message = $"{nameof(PhotoEntity.Summary)} exceeds maximum allowed length of 255.";
+                await logging
+                    .Action(nameof(UpdatePhotoEntity))
+                    .InternalDebug(message, opts => {
+                        opts.SetUser(user);
+                    })
+                    .SaveAsync();
+
+                return new BadRequestObjectResult(message);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(mut.Description) && !mut.Description.IsNormalized())
+        {
+            mut.Description = mut.Description
+                .Normalize()
+                .Trim();
+        }
+
+        List<Tag>? validTags = null;
+        if (mut.Tags?.Any() == true)
+        {
+            var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
+            validTags = sanitizeAndCreateTags.Value?.ToList();
+        }
+
+        existingPhoto.Slug = mut.Slug;
+        existingPhoto.Title = mut.Title;
+        existingPhoto.Summary = mut.Summary;
+        existingPhoto.Description = mut.Description;
+        existingPhoto.UpdatedAt = DateTime.UtcNow;
+
+        if (mut.Tags is not null) {
+            existingPhoto.Tags = validTags ?? [];
+        }
+
+        try
+        {
+            db.Update(existingPhoto);
+
+            logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalInformation($"{nameof(PhotoEntity)} '{existingPhoto.Slug}' (#{existingPhoto.Id}) was just updated.", opts =>
+                {
+                    opts.SetUser(user);
+                });
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Album '{existingPhoto.Slug}'. ";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingPhoto.Slug}'. ";
+            await logging
+                .Action(nameof(UpdatePhotoEntity))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .SaveAsync();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return existingPhoto;
     }
 
 
