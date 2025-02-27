@@ -31,96 +31,96 @@ public interface ILoggingService
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogTrace(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalTrace(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalTrace(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalTrace(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogDebug(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalDebug(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalDebug(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalDebug(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogInformation(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalInformation(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalInformation(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalInformation(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogSuspicious(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogWarning(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalWarning(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalWarning(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalWarning(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogError(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalError(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalError(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalError(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogCritical(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase InternalCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase InternalCritical(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase ExternalCritical(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase ExternalCritical(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public abstract StoreLogsInDatabase LogEvent(string message, Action<LogEntry>? predicate = null);
+    public abstract StoreLogsInDatabase LogEvent(string message, Action<LogEntryOptions>? predicate = null);
     /// <summary>
     /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
     /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
     /// </summary>
-    public abstract StoreLogsInDatabase LogEvents(params LogEntry[] entries);
+    public abstract StoreLogsInDatabase LogEvents(params LogEntryOptions[] entries);
 
     /// <summary>
     /// Deletes all provided <see cref="LogEntry"/>-entries.

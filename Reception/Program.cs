@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.OpenApi.Models;
 using Reception.Authentication;
@@ -47,11 +48,18 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddControllers();
 
-        builder.Services.AddAuthentication(Parameters.SCHEME)
-            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(Parameters.SCHEME, opts => { });
+        builder.Services
+            .AddAuthentication(conf => {
+                conf.DefaultAuthenticateScheme = Parameters.SCHEME;
+                // conf.DefaultScheme = Parameters.SCHEME;
+            })
+            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(
+                Parameters.SCHEME,
+                opts => { opts.Validate(); }
+            );
 
         builder.Services.AddAuthorizationBuilder()
-            .AddPolicy(Parameters.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
+            .AddDefaultPolicy(Parameters.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {
@@ -61,14 +69,28 @@ public sealed class Program
                 Version = VERSION
             });
 
-            conf.AddServer(new () {
-                Url = ApiPathBase
-            });
-
-            conf.AddSecurityDefinition(VERSION, new() { // OpenApiSecurityScheme
+            OpenApiSecurityScheme scheme =  new() {
+                Description = "Custom Bearer Authentication Header.",
                 Type = SecuritySchemeType.ApiKey,
                 In = ParameterLocation.Header,
+                Scheme = "Authorization",
                 Name = "x-mage-token",
+                Reference = new OpenApiReference()
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = Parameters.SCHEME
+                }
+            };
+
+            OpenApiSecurityRequirement requirement = new() {
+                [scheme] = []
+            };
+
+            conf.AddSecurityDefinition(Parameters.SCHEME, scheme);
+            conf.AddSecurityRequirement(requirement);
+
+            conf.AddServer(new OpenApiServer() {
+                Url = ApiPathBase
             });
 
             /* if (IsDevelopment) {
@@ -116,6 +138,7 @@ public sealed class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        
         app.Run();
     }
 }

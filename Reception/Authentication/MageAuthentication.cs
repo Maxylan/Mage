@@ -9,6 +9,8 @@ using Reception.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Reception.Interfaces;
 
 namespace Reception.Authentication;
 
@@ -17,12 +19,13 @@ namespace Reception.Authentication;
 /// Intercepts incoming requests and checks if a valid session token is provided with the request.
 /// </summary>
 public class MageAuthentication(
+    MageDbContext db,
+    ILoggingService loggingService,
+    ReceptionAuthorizationService service,
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
-    UrlEncoder encoder,
-    MageDbContext db,
-    ReceptionAuthorizationService service
-    ) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    UrlEncoder encoder
+) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     /// <summary>
     /// Core validation logic for our custom authentication schema.
@@ -39,27 +42,57 @@ public class MageAuthentication(
         }
 
         var token = headerValue.ToString();
-        var getSession = await service.ValidateSession(token);
+        var getSession = await service.ValidateSession(token, Source.EXTERNAL);
         Session? session = getSession.Value;
         
-        if (session is null || getSession.Result is not OkObjectResult)
+        if (session is null || string.IsNullOrWhiteSpace(session.Code))
         {
-            Logger.LogWarning($"Validation of session '{token}' failed with '{getSession.Result!.GetType().FullName}'");
-            return AuthenticateResult.Fail(Messages.MissingHeader);
+            string message = $"{Messages.ValidationFailed} Token: '{token}', Result '{getSession.GetType().FullName}', Session: {(session?.GetType()?.Name ?? "null")}).";
+            await loggingService
+                .Action(nameof(HandleAuthenticateAsync))
+                .ExternalWarning(message)
+                .SaveAsync();
+            
+            return AuthenticateResult.Fail(
+                Program.IsProduction ? Messages.ValidationFailed : message
+            );
         }
 
         AuthenticationTicket? ticket = null;
         try {
-            ticket = GenerateAuthenticationTicket(session.User, session);
+            ticket = GenerateAuthenticationTicket(session!.User, session);
         }
-        catch (AuthenticationException authException) {
-            return AuthenticateResult.Fail(Messages.ByCode(authException));
+        catch (AuthenticationException authException)
+        {
+            string message = Messages.ByCode(authException);
+            await loggingService
+                .Action(nameof(HandleAuthenticateAsync))
+                .LogEvent(message, opts => {
+                    opts.Exception = authException;
+                    opts.Source = Source.EXTERNAL;
+                    opts.LogLevel = authException.Code switch {
+                        1 => Severity.ERROR,
+                        2 => Severity.SUSPICIOUS,
+                        _ => Severity.INFORMATION
+                    };
+                })
+                .SaveAsync();
+            
+            return AuthenticateResult.Fail(message);
         }
-        catch (Exception ex) {
-            Logger.LogError(ex, Messages.UnknownError + " " + ex.Message, ex.StackTrace);
-            return AuthenticateResult.Fail(Messages.UnknownError + (
-                Program.IsProduction ? "" : " " + ex.Message
-            ));
+        catch (Exception ex)
+        {
+            string message = Messages.UnknownError + " " + ex.Message;
+            await loggingService
+                .Action(nameof(HandleAuthenticateAsync))
+                .ExternalError(message, opts => {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+            
+            return AuthenticateResult.Fail(
+                Program.IsProduction ? Messages.UnknownError : message
+            );
         }
         
         return AuthenticateResult.Success(ticket!);
@@ -134,36 +167,30 @@ public class MageAuthentication(
         ArgumentNullException.ThrowIfNull(context, nameof(context));
 
         IPAddress? remoteAddress = context.Connection.RemoteIpAddress;
+
         if (remoteAddress is not null && 
-            remoteAddress.AddressFamily is AddressFamily.InterNetwork
+            remoteAddress.AddressFamily == AddressFamily.InterNetwork
         ) {
-            if (Program.IsDevelopment) {
-                Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a stringified 'context.Connection.RemoteIpAddress'.");
-            }
             return remoteAddress.ToString();
         }
 
         string? remoteAddressValue = null;
-        bool hasForwardedForHeader = context.Request.Headers.ContainsKey("HTTP_X_FORWARDED_FOR");
-        if (hasForwardedForHeader)
+        bool hasForwardedForHeader = context.Request.Headers.ContainsKey("X-Forwarded-For");
+        if (hasForwardedForHeader) // HTTP_X_FORWARDED_FOR
         {
-            remoteAddressValue = context.Request.Headers["HTTP_X_FORWARDED_FOR"].ToString();
+            remoteAddressValue = context.Request.Headers["X-Forwarded-For"].ToString();
         }
 
         if (string.IsNullOrWhiteSpace(remoteAddressValue))
         {
-            bool hasRemoteAddrHeader = context.Request.Headers.ContainsKey("REMOTE_ADDR");
+            bool hasRemoteAddrHeader = context.Request.Headers.ContainsKey("Remote-Addr");
 
-            if (hasRemoteAddrHeader) {
-                remoteAddressValue = context.Request.Headers["REMOTE_ADDR"].ToString();
+            if (hasRemoteAddrHeader) { // REMOTE_ADDR
+                remoteAddressValue = context.Request.Headers["Remote-Addr"].ToString();
             }
 
             if (string.IsNullOrWhiteSpace(remoteAddressValue))
             {
-                if (Program.IsDevelopment) {
-                    Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Failed to find a remote address tied to the current request.");
-                }
-
                 return null;
             }
         }
@@ -172,7 +199,7 @@ public class MageAuthentication(
             Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a remote-address header. ({remoteAddressValue})");
         }
 
-        return remoteAddressValue.Split(',')[^0].Trim();
+        return remoteAddressValue.Split(',')[^1].Trim();
     }
 
 
