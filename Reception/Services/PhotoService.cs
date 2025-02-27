@@ -10,6 +10,7 @@ using Reception.Models;
 using Reception.Utilities;
 using Reception.Interfaces;
 using System.Net;
+using Reception.Controllers;
 
 namespace Reception.Services;
 
@@ -487,11 +488,47 @@ public class PhotoService(
         }
 
 
-        var boundary = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
+        string trustedDisplayFilename = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
+        string boundary = MultipartHelper.GetBoundary(MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!), 70);
         var reader = new MultipartReader(boundary, httpContext.Request.Body);
-        var section = await reader.ReadNextSectionAsync();
+        MultipartSection? section = await reader.ReadNextSectionAsync();
 
-        return new CreatedAtActionResult();
+        while (section is not null)
+        {
+            bool hasContentDisposition = 
+                ContentDispositionHeaderValue.TryParse(section?.ContentDisposition, out var contentDisposition);
+
+            if (!hasContentDisposition || contentDisposition is null) {
+                continue;
+            }
+
+            if (formFile.Length > MultipartHelper.FILE_SIZE_LIMIT)
+            {
+                // The file is too large ... discontinue processing the file
+            }
+
+            if (MultipartHelper.HasFileContentDisposition(contentDisposition))
+            {
+                string? untrustedFilename = contentDisposition.FileName.Value;
+
+                if () {
+
+                }
+                // Don't trust the file name sent by the client. To display the file name, HTML-encode the value.
+                // https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming
+                trustedDisplayFilename = WebUtility.HtmlEncode(contentDisposition.FileName.Value);
+
+
+                var ext = Path.GetExtension(uploadedFileName).ToLowerInvariant();
+
+                if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext))
+                {
+                    // The extension is invalid ... discontinue processing the file
+                }
+            }
+        }
+
+        return new CreatedAtActionResult(nameof(PhotosController.StreamPhoto), nameof(PhotosController), null, new {});
     }
     #endregion
 
