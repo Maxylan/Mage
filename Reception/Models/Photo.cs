@@ -11,7 +11,8 @@ public record Photo
 {
     public Photo(
         PhotoEntity entity,
-        Dimension dimension
+        Dimension dimension,
+        bool defaultToSource = false
     )
     {
         if (entity.Id == default)
@@ -23,11 +24,20 @@ public record Photo
             throw new ArgumentException($"Navigation {nameof(PhotoEntity.Filepaths)} can't be null/empty", nameof(entity));
         }
 
-        var path = entity.Filepaths.FirstOrDefault(path => path.Dimension == dimension);
+        var path = entity.Filepaths
+            .FirstOrDefault(path => path.Dimension == dimension);
 
         if (path is null)
         {
-            throw new ArgumentException($"{nameof(PhotoEntity)} did not have a {nameof(Filepath)} with Dimension {dimension.ToString()}", nameof(entity));
+            if (defaultToSource)
+            {
+                path = entity.Filepaths
+                    .FirstOrDefault(path => path.Dimension == Reception.Models.Entities.Dimension.SOURCE);
+            }
+
+            if (path is null) {
+                throw new ArgumentException($"{nameof(PhotoEntity)} did not have a {nameof(Filepath)} with Dimension {dimension.ToString()}", nameof(entity));
+            }
         }
         if (path.PhotoId != entity.Id)
         {

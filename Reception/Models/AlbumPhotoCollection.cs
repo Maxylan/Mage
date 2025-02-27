@@ -19,6 +19,11 @@ public record AlbumPhotoCollection
     public string? CategoryTitle { get => _album.Category?.Title; }
     public int? ThumbnailId { get => _album.ThumbnailId; }
     public string? ThumbnailTitle { get => _album.Thumbnail?.Title; }
+    public Photo? Thumbnail {
+        get => _album.Thumbnail is not null
+            ? new Photo(_album.Thumbnail, Dimension.THUMBNAIL, true)
+            : null;
+    }
     public string Title { get => _album.Title; }
     public string? Summary { get => _album.Summary; }
     public string? Description { get => _album.Description; }

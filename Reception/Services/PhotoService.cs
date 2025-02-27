@@ -22,7 +22,8 @@ namespace Reception.Services;
 public class PhotoService(
     MageDbContext db,
     ILoggingService logging,
-    IHttpContextAccessor contextAccessor
+    IHttpContextAccessor contextAccessor,
+    ITagService tagService
 ) : IPhotoService
 {
     #region Get base filepaths.
@@ -353,9 +354,30 @@ public class PhotoService(
 
         if (!string.IsNullOrWhiteSpace(filter.Title))
         {
+            if (!filter.Title.IsNormalized())
+            {
+                filter.Title = filter.Title
+                    .Normalize()
+                    .Trim();
+            }
+
             photoQuery = photoQuery
                 .Where(photo => !string.IsNullOrWhiteSpace(photo.Title))
                 .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Summary))
+        {
+            if (!filter.Summary.IsNormalized())
+            {
+                filter.Summary = filter.Summary
+                    .Normalize()
+                    .Trim();
+            }
+
+            photoQuery = photoQuery
+                .Where(photo => !string.IsNullOrWhiteSpace(photo.Summary))
+                .Where(photo => photo.Summary!.StartsWith(filter.Summary) || photo.Summary.EndsWith(filter.Summary));
         }
 
         if (filter.UploadedBy is not null)
@@ -399,6 +421,20 @@ public class PhotoService(
 
             photoQuery = photoQuery
                 .Where(photo => photo.CreatedAt >= filter.CreatedAfter);
+        }
+
+        if (filter.Tags is not null && filter.Tags.Length > 0)
+        {
+            var sanitizeAndCreateTags = await tagService.CreateTags(filter.Tags);
+            Tag[]? validTags = sanitizeAndCreateTags.Value?.ToArray();
+
+            if (validTags?.Any() == true)
+            {
+                photoQuery = photoQuery
+                    .Where( // I really hope this makes a valid query..
+                        photo => photo.Tags.Any(tag => validTags.Contains(tag))
+                    );
+            }
         }
 
         // Pagination
@@ -1049,6 +1085,10 @@ public class PhotoService(
                 options.Slug = options.Slug[..extensionIndex];
             }
 
+            if (options.Slug.Length > 123) { // Limit length, to avoid hitting the limit of 128 with the auto-generated slug.
+                options.Slug = options.Slug.Subsmart(0, 120) + "_" + options.Slug.Length;
+            }
+
             // Resolve possible (..yet, unlikely) ..conflicts/duplicate slugs:
             int count = await db.Photos.CountAsync(photo => photo.Slug == options.Slug);
             if (count > 0)
@@ -1056,14 +1096,48 @@ public class PhotoService(
                 options.Slug += "_" + count;
             }
         }
+        else if (!options.Slug.IsNormalized())
+        {
+            options.Slug = options.Slug
+                .Normalize()
+                .Trim();
+        }
+
+        if (options.Slug.Length > 127)
+        {
+            string message = $"Failed to upload photo, {nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
+            await logging
+                .Action(nameof(UploadSinglePhoto))
+                .InternalWarning(message)
+                .SaveAsync();
+
+            throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
+        }
 
         if (string.IsNullOrWhiteSpace(options.Title))
         {
             options.Title = trustedFilename;
         }
+        else if (!options.Title.IsNormalized())
+        {
+            options.Title = options.Title
+                .Normalize()
+                .Trim();
+        }
         if (conflicts > 0)
         {
             options.Title += $" (#{conflicts})";
+        }
+
+        if (options.Title.Length > 255)
+        {
+            string message = $"Failed to upload photo, {nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
+            await logging
+                .Action(nameof(UploadSinglePhoto))
+                .InternalWarning(message)
+                .SaveAsync();
+
+            throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
         }
 
         if (string.IsNullOrWhiteSpace(options.Summary))
@@ -1076,6 +1150,17 @@ public class PhotoService(
             else {
                 options.Summary += $"{sourceFilesizeFormatted}.";
             }
+        }
+        else if (!options.Summary.IsNormalized())
+        {
+            options.Summary = options.Summary
+                .Normalize()
+                .Trim();
+        }
+
+        if (options.Summary.Length > 255)
+        {   // Think this is the better option for summaries, since they're optional..
+            options.Summary = options.Summary.Subsmart(0, 253)+"..";
         }
 
         StringBuilder formattedDescription = new();

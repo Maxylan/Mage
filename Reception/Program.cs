@@ -130,6 +130,7 @@ public sealed class Program
         builder.Services.AddScoped<ILinkService, LinkService>();
         builder.Services.AddScoped<IViewService, ViewService>();
         builder.Services.AddScoped<ITagService, TagService>();
+        builder.Services.AddScoped<IAlbumService, AlbumService>();
 
         var app = builder.Build();
 

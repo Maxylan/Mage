@@ -34,15 +34,20 @@ public class Album
 
     public DateTime UpdatedAt { get; set; }
 
+    // Methods
+
     public string[] Tags {
         get => this.AlbumTags
             .Select(tag => tag.Name)
             .ToArray();
     }
 
+    [SwaggerIgnore]
+    public int Items => this.Photos?.Count ?? 0;
+
     // Navigation Properties
 
-    [JsonIgnore, SwaggerIgnore]
+    [SwaggerIgnore]
     [ForeignKey("CategoryId")]
     [InverseProperty("Albums")]
     public virtual Category? Category { get; set; }

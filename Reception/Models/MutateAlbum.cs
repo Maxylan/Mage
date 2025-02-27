@@ -6,7 +6,9 @@ namespace Reception.Models;
 public class MutateAlbum : Album
 {
     public new int? Id { get; set; }
+    public new string? Category { get; set; }
     public new string[]? Tags { get; set; }
+    public new int[]? Photos { get; set; }
 
     /*
     public int Id { get; set; }

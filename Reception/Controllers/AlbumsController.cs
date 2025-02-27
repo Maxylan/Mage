@@ -98,7 +98,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     /// <summary>
     /// Update the properties of the <see cref="Album"/> with '<paramref ref="album_id"/>' (string), *not* its members (i.e Photos or Albums).
     /// </summary>
-    [HttpPut("{album_id:int}")]
+    [HttpPut]
     [Tags(ControllerTags.ALBUMS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
