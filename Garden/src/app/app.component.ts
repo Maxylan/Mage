@@ -1,18 +1,22 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { PostFormComponent } from './post-form/post-form.component';
+import { UploadFormComponent } from './layout/upload-form/upload-form.component';
+import { LayoutNavbarComponent } from './layout/navbar/navbar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, PostFormComponent],
+  imports: [
+      RouterOutlet,
+      UploadFormComponent,
+      LayoutNavbarComponent
+  ],
   template: `
-    <h1>Welcome to {{title}}!</h1>
-    <router-outlet />
-    <post-form-component />
+    <layout-navbar>
+        <router-outlet />
+    </layout-navbar>
+    <upload-form />
   `,
   styles: [],
 })
 
-export class AppComponent {
-  title = 'Garden';
-}
+export class AppComponent {}

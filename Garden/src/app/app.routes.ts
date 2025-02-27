@@ -1,3 +1,18 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
+import { HomeComponent } from './pages/home/home.component';
+import { PhotosComponent } from './pages/photos/photos.component';
+import { SinglePhotoComponent } from './pages/photos/single-photo.component';
 
-export const routes: Routes = [];
+export const navigation: (Route & { headline: string })[] = [
+    { path: '', component: HomeComponent, headline: 'Home' },
+    { path: 'photos', component: PhotosComponent, headline: 'Photos' },
+    { path: 'tags', component: PhotosComponent, headline: 'Tags' },
+    { path: 'albums', component: PhotosComponent, headline: 'Albums' },
+    { path: 'categories', component: PhotosComponent, headline: 'Categories' },
+    { path: 'admin', component: PhotosComponent, headline: 'Admin' },
+];
+
+export const routes: Routes = [
+    { path: 'photos/single/:id', component: SinglePhotoComponent },
+    ...navigation
+];

@@ -1,0 +1,13 @@
+<mat-paginator
+    [color]=color
+    [length]=length
+    [pageSize]=pageSize
+    [pageIndex]=pageIndex
+    [pageSizeOptions]=pageSizeOptions
+    [color]=color
+    [disabled]=disabled
+    [hidePageSize]=hidePageSize
+    [showFirstLastButtons]=showFirstLastButtons
+    (page)=forwardPageEvent($event)>
+    <ng-content/>
+</mat-paginator>

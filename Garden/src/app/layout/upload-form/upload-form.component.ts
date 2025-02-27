@@ -2,42 +2,14 @@ import { HttpClient } from "@angular/common/http";
 import { Component } from "@angular/core";
 
 @Component({
-	selector: "post-form-component",
-	template: `
-		<p>post-form works!</p>
-		<form
-			id="uploadForm"
-			(submit)="onSubmit($event)"
-		>
-			<dl>
-				<dt>
-					<label for="tags">Tags</label>
-				</dt>
-				<dd>
-					<input id="tags" type="text" name="tags" />
-				</dd>
-				<dt>
-					<label for="file">File</label>
-				</dt>
-				<dd>
-					<input id="file" type="file" name="file" />
-				</dd>
-			</dl>
-
-			<input class="btn" type="submit" value="Upload" />
-
-			<div style="margin-top:15px">
-				<output form="uploadForm" name="result"></output>
-			</div>
-		</form>
-	`,
-	styles: ``
+	selector: "upload-form",
+	templateUrl: 'upload-form.component.html',
+	styleUrl: 'upload-form.component.css'
 })
-export class PostFormComponent {
+export class UploadFormComponent {
 	constructor(private http: HttpClient) { }
 
 	onSubmit(ev: Event): any {
-		console.log('onSubmit fired.', ev);
 		if (!ev) {
 			return;
 		}

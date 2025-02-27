@@ -1,0 +1,9 @@
+<mat-card>
+    @if(imageIsLoading()) {
+        <mat-progress-bar [mode]="'buffer'" />
+    }
+    @else {
+        <img mat-card-image [src]=imageEncoded [alt]=photo.slug >
+    }
+    <ng-content/>
+</mat-card>
