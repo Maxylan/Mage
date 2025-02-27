@@ -419,7 +419,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to create new Album '{newAlbum.Title}'. ";
             await logging
                 .Action(nameof(CreateAlbum))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
@@ -724,7 +724,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(UpdateAlbum))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
@@ -840,7 +840,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update the photos of an existing Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(MutateAlbumPhotos))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
@@ -945,7 +945,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a photo from Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(RemovePhoto))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
@@ -1049,7 +1049,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Album '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(RemoveTag))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
@@ -1130,7 +1130,7 @@ public class AlbumService(
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
             await logging
                 .Action(nameof(DeleteAlbum))
-                .InternalError(message + updateException.Message, opts =>
+                .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })

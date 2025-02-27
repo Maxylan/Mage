@@ -11,9 +11,7 @@ using SixLabors.ImageSharp.Formats;
 namespace Reception.Services;
 
 public class BlobService(
-    MageDbContext db,
     ILoggingService logging,
-    IHttpContextAccessor contextAccessor,
     IPhotoService photoService
 ) : IBlobService
 {
