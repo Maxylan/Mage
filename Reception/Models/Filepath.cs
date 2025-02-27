@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Reception.Models;
 
-public partial class Filepath
+public class Filepath
 {
     public int Id { get; set; }
 
@@ -11,7 +13,39 @@ public partial class Filepath
 
     public string Filename { get; set; } = null!;
 
+    public string Path { get; set; } = null!;
+
     public int Filesize { get; set; }
 
     public virtual Photo Photo { get; set; } = null!;
+
+    public static Action<EntityTypeBuilder<Filepath>> Build => (
+        entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("filepaths_pkey");
+
+            entity.ToTable("filepaths", "magedb");
+
+            entity.HasIndex(e => e.Filename, "filepaths_filename_key").IsUnique();
+
+            entity.HasIndex(e => e.Filename, "idx_filepaths_filename");
+
+            entity.HasIndex(e => e.PhotoId, "idx_filepaths_photo_id");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Filename)
+                .HasMaxLength(127)
+                .HasColumnName("filename");
+            entity.Property(e => e.Path)
+                .HasMaxLength(255)
+                .HasColumnName("path");
+            entity.Property(e => e.Filesize).HasColumnName("filesize");
+            entity.Property(e => e.PhotoId).HasColumnName("photo_id");
+
+            entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths)
+                .HasForeignKey(d => d.PhotoId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_photo");
+        }
+    );
 }
