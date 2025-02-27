@@ -15,12 +15,26 @@ namespace Reception.Models.Entities;
 public class Tag
 {
     [Key]
+    [JsonIgnore, SwaggerIgnore]
     public int Id { get; set; }
 
     [StringLength(127)]
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
+
+    // Methods
+
+    [SwaggerIgnore]
+    [JsonPropertyName("Albums")]
+    public int AlbumsCount => this.Albums?.Count() ?? 0;
+
+    [SwaggerIgnore]
+    [JsonPropertyName("Photos")]
+    public int PhotosCount => this.Photos?.Count() ?? 0;
+
+    [SwaggerIgnore]
+    public int Items => AlbumsCount + PhotosCount;
 
     // Navigation Properties
 
