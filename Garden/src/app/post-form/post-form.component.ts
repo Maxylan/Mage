@@ -11,10 +11,10 @@ import { Component } from "@angular/core";
 		>
 			<dl>
 				<dt>
-					<label for="note">Note</label>
+					<label for="tags">Tags</label>
 				</dt>
 				<dd>
-					<input id="note" type="text" name="note" />
+					<input id="tags" type="text" name="tags" />
 				</dd>
 				<dt>
 					<label for="file">File</label>

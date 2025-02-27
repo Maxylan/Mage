@@ -245,7 +245,7 @@ public class MimeVerifyer : IImageFormatDetector
 		string extension = filename;
 	    int lastDotIndex = filename.LastIndexOf(".");
 	    if (lastDotIndex != -1) {
-	        extension = filename[lastDotIndex..];
+	        extension = filename[(lastDotIndex + 1)..];
 	    }
 
 		if (string.IsNullOrWhiteSpace(extension))
@@ -277,7 +277,7 @@ public class MimeVerifyer : IImageFormatDetector
         if (lastDotIndex != -1)
         {
             string originalExtensionArgument = extension;
-            extension = extension[lastDotIndex..];
+            extension = extension[(lastDotIndex + 1)..];
 
             if (string.IsNullOrWhiteSpace(extension))
             {
@@ -300,7 +300,7 @@ public class MimeVerifyer : IImageFormatDetector
         }
         if (!SupportedExtensions.Contains(extension))
         {
-            throw new NotImplementedException("File extension not supported!"); // TODO: HANDLE
+            throw new NotImplementedException($"File extension '{extension}' not supported!"); // TODO: HANDLE
         }
 
         int offset = (int)MagicNumbers[extension].Item1;
@@ -341,7 +341,7 @@ public class MimeVerifyer : IImageFormatDetector
 		string extension = filename;
 	    int lastDotIndex = filename.LastIndexOf(".");
 	    if (lastDotIndex != -1) {
-	        extension = filename[lastDotIndex..];
+	        extension = filename[(lastDotIndex + 1)..];
 	    }
 
 		if (string.IsNullOrWhiteSpace(extension))
@@ -376,7 +376,7 @@ public class MimeVerifyer : IImageFormatDetector
         if (lastDotIndex != -1)
         {
             string originalExtensionArgument = extension;
-            extension = extension[lastDotIndex..];
+            extension = extension[(lastDotIndex + 1)..];
 
             if (string.IsNullOrWhiteSpace(extension))
             {

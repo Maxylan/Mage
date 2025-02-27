@@ -683,23 +683,29 @@ public class PhotoService(
                 	new(newPhoto)
                 );
             }
-            // TODO! Support for form data parameters
             else if (MultipartHelper.HasFormDataContentDisposition(contentDisposition))
             {
                 // TODO! Alternative way to get created-date?
                 // if (string.IsNullOrWhiteSpace(contentDisposition.CreationDate))
 
-                var parameterList = contentDisposition.Parameters.ToList();
-
-                int titleIndex = parameterList.FindIndex(p => p.Name == "Title" || p.Name == "title");
-                if (titleIndex != -1) {
-                    options.Title = parameterList[titleIndex].Value.ToString();
+                string sectionName = contentDisposition.Name.ToString().ToLower();
+                if (sectionName == "title")
+                {
+                    options.Title = await section!.ReadAsStringAsync();
                     continue;
                 }
 
-                int slugIndex = parameterList.FindIndex(p => p.Name == "Slug" || p.Name == "slug");
-                if (slugIndex != -1) {
-                    options.Slug = parameterList[slugIndex].Value.ToString();
+                if (sectionName == "slug")
+                {
+                    options.Slug = await section!.ReadAsStringAsync();
+                    continue;
+                }
+
+                if (sectionName == "tags")
+                {
+                    string tagsString = await section!.ReadAsStringAsync();
+                    tagsString = tagsString.Replace(", ", ","); // Additional level of fault-tolerance..
+                    options.Tags = tagsString.Trim().Split(",");
                     continue;
                 }
             }
@@ -1177,8 +1183,11 @@ public class PhotoService(
 	        .Action(nameof(UploadSinglePhoto))
 	        .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(PhotoCollection)} '{photo.Slug}'.");
 
+		// Reset provided 'options' to defaults.
+		// Order matters, since we're uploading more than one file..
         options.Slug = null;
         options.Title = null;
+        options.Tags = null;
 
         return photo;
     }
