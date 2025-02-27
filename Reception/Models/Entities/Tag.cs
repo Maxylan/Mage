@@ -40,7 +40,7 @@ public class Tag
 
     [JsonIgnore, SwaggerIgnore]
     [ForeignKey("TagId")]
-    [InverseProperty("Tags")]
+    [InverseProperty("AlbumTags")]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
     [JsonIgnore, SwaggerIgnore]

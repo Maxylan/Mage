@@ -34,6 +34,12 @@ public class Album
 
     public DateTime UpdatedAt { get; set; }
 
+    public string[] Tags {
+        get => this.AlbumTags
+            .Select(tag => tag.Name)
+            .ToArray();
+    }
+
     // Navigation Properties
 
     [JsonIgnore, SwaggerIgnore]
@@ -59,7 +65,7 @@ public class Album
     [JsonIgnore, SwaggerIgnore]
     [ForeignKey("AlbumId")]
     [InverseProperty("Albums")]
-    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public virtual ICollection<Tag> AlbumTags { get; set; } = new List<Tag>();
 
     public static Action<EntityTypeBuilder<Album>> Build => (
         entity =>
@@ -107,7 +113,7 @@ public class Album
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_thumbnail");
 
-            entity.HasMany(d => d.Tags).WithMany(p => p.Albums)
+            entity.HasMany(d => d.AlbumTags).WithMany(p => p.Albums)
                 .UsingEntity<Dictionary<string, object>>(
                     "AlbumTag",
                     r => r.HasOne<Tag>().WithMany()

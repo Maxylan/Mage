@@ -228,6 +228,7 @@ public class PhotosController(
     [HttpGet("source")]
     [Tags(ControllerTags.PHOTOS_ENTITIES)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<Photo>>> GetSourceSingles(
@@ -236,6 +237,7 @@ public class PhotosController(
         [FromQuery] string? slug = null,
         [FromQuery] string? title = null,
         [FromQuery] string? summary = null,
+        [FromQuery] string[]? tags = null,
         [FromQuery] int? uploadedBy = null,
         [FromQuery] DateTime? uploadedBefore = null,
         [FromQuery] DateTime? uploadedAfter = null,
@@ -255,6 +257,7 @@ public class PhotosController(
             opts.UploadedAfter = uploadedAfter;
             opts.CreatedBefore = createdBefore;
             opts.CreatedAfter = createdAfter;
+            opts.Tags = tags;
         });
 
     /// <summary>
