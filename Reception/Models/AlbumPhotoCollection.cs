@@ -16,9 +16,8 @@ public record AlbumPhotoCollection
     [SwaggerIgnore]
     public int AlbumId { get => _album.Id; }
     public int? CategoryId { get => _album.CategoryId; }
-    public string? CategoryTitle { get => _album.Category?.Title; }
+    public Category? Category { get => _album.Category; }
     public int? ThumbnailId { get => _album.ThumbnailId; }
-    public string? ThumbnailTitle { get => _album.Thumbnail?.Title; }
     public Photo? Thumbnail {
         get => _album.Thumbnail is not null
             ? new Photo(_album.Thumbnail, Dimension.THUMBNAIL, true)
@@ -31,6 +30,12 @@ public record AlbumPhotoCollection
     public int? CreatedBy { get => _album.CreatedBy; }
     public DateTime CreatedAt { get => _album.CreatedAt; }
     public DateTime UpdatedAt { get => _album.UpdatedAt; }
+
+    /// <summary>
+    /// Returns the number of elements (photos) in this sequence. (See - <seealso cref="IEnumerable{PhotoCollection}.Count()"/>)
+    /// </summary>
+    public int Count => this._collection.Value.Count();
+
     public IEnumerable<PhotoCollection> Photos { get => _collection.Value; }
 
     [SetsRequiredMembers]
@@ -50,9 +55,4 @@ public record AlbumPhotoCollection
     public PhotoCollection this[int index] {
         get => this._collection.Value.ElementAt(index);
     }
-
-    /// <summary>
-    /// Returns the number of elements in a sequence. (See - <seealso cref="IEnumerable{PhotoCollection}.Count()"/>)
-    /// </summary>
-    public int Count => this._collection.Value.Count();
 }

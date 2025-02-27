@@ -36,14 +36,14 @@ public class Album
 
     // Methods
 
+    [SwaggerIgnore]
+    public int Count => this.Photos?.Count ?? 0;
+
     public string[] Tags {
         get => this.AlbumTags
             .Select(tag => tag.Name)
             .ToArray();
     }
-
-    [SwaggerIgnore]
-    public int Items => this.Photos?.Count ?? 0;
 
     // Navigation Properties
 

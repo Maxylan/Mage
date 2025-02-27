@@ -17,7 +17,13 @@ public record TagAlbumCollection
     public int Id { get => _tag.Id; }
     public string Name { get => _tag.Name; }
     public string? Description { get => _tag.Description; }
-    public IEnumerable<Album> Photos { get => _collection; }
+
+    /// <summary>
+    /// Returns the number of elements in a sequence. (See - <seealso cref="ICollection{Album}.Count"/>)
+    /// </summary>
+    public int Count => this._collection.Count;
+
+    public IEnumerable<Album> Albums { get => _collection; }
 
     [SetsRequiredMembers]
     public TagAlbumCollection(Tag tag)
@@ -32,9 +38,4 @@ public record TagAlbumCollection
     public Album this[int index] {
         get => this._collection.ElementAt(index);
     }
-
-    /// <summary>
-    /// Returns the number of elements in a sequence. (See - <seealso cref="ICollection{PhotoCollection}.Count"/>)
-    /// </summary>
-    public int Count => this._collection.Count;
 }
