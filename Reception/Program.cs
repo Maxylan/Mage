@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.OpenApi.Models;
 using Reception.Interfaces;
+using Reception.Middleware;
 using Reception.Services;
 
 namespace Reception;
@@ -43,6 +44,13 @@ public sealed class Program
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddControllers();
+
+        builder.Services.AddAuthentication("x-mage-token")
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyRequirement>("x-mage-token", opts => { });
+
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf => {
             conf.SwaggerDoc(VERSION, new() {
@@ -53,6 +61,12 @@ public sealed class Program
 
             conf.AddServer(new () {
                 Url = ApiPathBase
+            });
+
+            conf.AddSecurityDefinition(VERSION, new() { // OpenApiSecurityScheme
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = "x-mage-token",
             });
 
             /* if (IsDevelopment) {
@@ -95,9 +109,7 @@ public sealed class Program
         }
 
         app.UseAuthorization();
-
         app.MapControllers();
-
         app.Run();
     }
 }

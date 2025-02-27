@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +11,13 @@ public class Tag
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
+
+    // Navigation Properties
+
+    [JsonIgnore]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
+
+    [JsonIgnore]
     public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
 
     public static Action<EntityTypeBuilder<Tag>> Build => (

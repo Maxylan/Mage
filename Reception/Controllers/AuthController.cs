@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Reception.Interfaces;
+using Reception.Models;
 using Reception.Models.Entities;
 
 namespace Reception.Controllers;
@@ -34,7 +35,7 @@ public class AuthController : ControllerBase
     [HttpGet("session/{id:int}")]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status418ImATeapot)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Session>> GetSessionById([FromRoute] int id) => 
         await _sessions.GetSessionById(id);
 
@@ -42,6 +43,21 @@ public class AuthController : ControllerBase
     /// Attempt to grab a full `<see cref="Session"/>` instance, identified by unique <paramref name="session"/> code (string).
     /// </summary>
     [HttpGet("session/code/{session}")]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] string session) => 
         await _sessions.GetSession(session);
+
+    /// <summary>
+    /// Attempt to login a user, creating a new `<see cref="Session"/>` instance.
+    /// </summary>
+    [HttpPost("login")]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Session>> Login([FromBody] Login body) => 
+        await _handler.Login(body.Username, body.Hash);
 }

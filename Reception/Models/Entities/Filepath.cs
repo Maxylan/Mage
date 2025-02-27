@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +14,10 @@ public class Filepath
     public string Path { get; set; } = null!;
     public Dimension? Dimension { get; set; }
     public int Filesize { get; set; }
+
+    // Navigation Properties
+
+    [JsonIgnore]
     public virtual Photo Photo { get; set; } = null!;
 
     public static Action<EntityTypeBuilder<Filepath>> Build => (

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,8 +22,12 @@ public partial class Category
 
     public DateTime UpdatedAt { get; set; }
 
+    // Navigation Properties
+
+    [JsonIgnore]
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 
+    [JsonIgnore]
     public virtual Account? CreatedByNavigation { get; set; }
 
     public static Action<EntityTypeBuilder<Category>> Build => (

@@ -14,6 +14,10 @@ public class Session
     public string? UserAgent { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
+
+    // Navigation Properties
+
+    [JsonIgnore]
     public virtual Account User { get; set; } = null!;
 
     [JsonIgnore]
