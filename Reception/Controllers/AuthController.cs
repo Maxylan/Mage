@@ -25,9 +25,15 @@ public class AuthController : ControllerBase
     [HttpHead("session/validate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status418ImATeapot)]
-    public async Task<IStatusCodeActionResult> ValidateSession() => 
-        await _handler.ValidateSession();
+    public async Task<IStatusCodeActionResult> ValidateSession()
+    {
+        var sessionValidation = await _handler.ValidateSession();
+        if (sessionValidation is null) {
+            return StatusCode(StatusCodes.Status401Unauthorized);
+        }
+
+        return (sessionValidation.Result as IStatusCodeActionResult)!;
+    }
 
     /// <summary>
     /// Attempt to grab a full `<see cref="Session"/>` instance, identified by PK (uint) <paramref name="id"/>.
@@ -36,7 +42,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionById([FromRoute] int id) => 
+    public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id) => 
         await _sessions.GetSessionById(id);
 
     /// <summary>
@@ -47,7 +53,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] string session) => 
+    public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session) => 
         await _sessions.GetSession(session);
 
     /// <summary>

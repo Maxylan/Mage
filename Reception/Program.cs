@@ -46,8 +46,8 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddControllers();
 
-        builder.Services.AddAuthentication(MageAuthentication.SESSION_TOKEN_HEADER)
-            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(MageAuthentication.SESSION_TOKEN_HEADER, opts => { });
+        builder.Services.AddAuthentication(Parameters.SCHEME)
+            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(Parameters.SCHEME, opts => { });
 
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy("Authenticated", policy => policy.RequireAuthenticatedUser());
@@ -109,6 +109,7 @@ public sealed class Program
             }
         }
 
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();

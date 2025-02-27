@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reception.Models.Entities;
 using Reception.Interfaces;
 using Reception.Models;
+using Reception.Authentication;
 
 namespace Reception.Services;
 
@@ -17,21 +18,24 @@ public class LoggingService(
     /// <summary>
     /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
     /// </summary>
+    /// <remarks>
+    /// Catches most errors thrown, logs them, and finally returns `null`.
+    /// </remarks>
     private Account? GetAccount()
     {
-        if (contextAccessor.HttpContext is not null &&
-            contextAccessor.HttpContext.Items.TryGetValue(AuthorizationService.ACCOUNT_CONTEXT_KEY, out object? currentUser)
-        ) {
-            return (Account) currentUser!;
+        try {
+            return MageAuthentication.GetAccount(contextAccessor);
         }
-
-        return null;
+        catch (Exception ex) {
+            logger.LogError(ex, $"Cought an '{ex.GetType().FullName}' invoking {nameof(LoggingService.GetAccount)}!", ex.StackTrace);
+            return null;
+        }
     }
 
     /// <summary>
     /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
     /// </summary>
-    public ILogger GetLogger() => logger;
+    public ILogger Logger => logger;
 
     /// <summary>
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
