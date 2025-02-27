@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormControlOptions, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HashedUserDetails, LoginBody, Session } from './login.types';
 import { MatCheckbox } from '@angular/material/checkbox';
 
@@ -33,14 +33,36 @@ export class AppLoginComponent {
     private matIconsRegistry = inject(MatIconRegistry);
     private apiUrl: string = '/reception';
 
+    public failedLoginMessage = signal<string|null>(null);
     public usernameErrorState = signal<boolean>(false);
     public passwordErrorState = signal<boolean>(false);
 
-    public usernameControl = new FormControl('');
-    public passwordControl = new FormControl('');
-    public rememberMeControl = new FormControl('');
+    public usernameControl = new FormControl<string>('', { disable: false } as FormControlOptions);
+    public passwordControl = new FormControl<string>('', { disable: false } as FormControlOptions);
+    public rememberMeControl = new FormControl<string>('', { disable: false } as FormControlOptions);
 
-    public disableFormFields: boolean = true;
+    public toggleFormFields = (state?: boolean): void => {
+        if (state === undefined) {
+            state = (
+                this.usernameControl.disabled &&
+                this.passwordControl.disabled &&
+                this.rememberMeControl.disabled
+            );
+        }
+        switch(state) {
+            case true:
+                this.usernameControl.enable();
+                this.passwordControl.enable();
+                this.rememberMeControl.enable();
+                break;
+            case false:
+                this.usernameControl.disable();
+                this.passwordControl.disable();
+                this.rememberMeControl.disable();
+                break;
+        }
+    };
+
     public loginForm = new FormGroup({
         username: this.usernameControl,
         password: this.passwordControl,
@@ -51,7 +73,7 @@ export class AppLoginComponent {
 
     constructor() {
         this.matIconsRegistry.registerFontClassAlias('hack', 'hack-nerd-font .hack-icons');
-        this.disableFormFields = false;
+        this.toggleFormFields(true);
     }
 
     isHandset$: Observable<boolean> = this.breakpointObserver
@@ -62,12 +84,17 @@ export class AppLoginComponent {
         );
 
     onLoginSubmit() {
-        this.disableFormFields = true;
+        this.toggleFormFields(false);
         if (!this.userDetails) {
             this.userDetails = {
                 username: '',
-                password: ''
+                hash: ''
             };
+        }
+
+        if (this.failedLoginMessage() !== null) {
+            // Reset 'failed login' message, if one exists.
+            this.failedLoginMessage.set(null);
         }
 
         setTimeout(() => {
@@ -78,62 +105,65 @@ export class AppLoginComponent {
             if (!sanitizedUsername) {
                 console.error('[onLoginSubmit] Username was falsy after sanitation!', sanitizedUsername);
                 this.usernameErrorState.set(true); 
-                this.disableFormFields = false;
+                this.toggleFormFields(true);
                 return;
             }
 
-            const usernameMaxLength: boolean = sanitizedUsername.length > 127;
-            const usernameMinLength: boolean = sanitizedUsername.length < 3;
+            this.userDetails!.username = sanitizedUsername;
 
-            if (!usernameMaxLength || !usernameMinLength) {
+            const exceedsMaxLength: boolean = sanitizedUsername.length > 127;
+            const belowMinLength: boolean = sanitizedUsername.length < 3;
+
+            if (exceedsMaxLength || belowMinLength) {
                 console.error('[onLoginSubmit] Username length invalid!', sanitizedUsername);
                 this.usernameErrorState.set(true); 
-                this.disableFormFields = false;
+                this.toggleFormFields(true);
                 return;
             }
 
             if (!this.passwordControl.value) {
                 this.passwordErrorState.set(true);
-                this.disableFormFields = false;
+                this.toggleFormFields(true);
                 console.error('[onLoginSubmit] Password value was falsy!');
                 return;
             }
 
-            const passwordMaxLength: boolean = this.passwordControl.value.length > 127;
-            const passwordMinLength: boolean = this.passwordControl.value.length < 4;
+            const passwordExceedsMaxLength: boolean = this.passwordControl.value.length > 127;
+            const passwordBelowMinLength: boolean = this.passwordControl.value.length < 4;
 
-            if (!passwordMaxLength || !passwordMinLength) {
+            if (passwordExceedsMaxLength || passwordBelowMinLength) {
                 console.error('[onLoginSubmit] Password length invalid!', this.passwordControl.value.length);
                 this.passwordErrorState.set(true); 
-                this.disableFormFields = false;
+                this.toggleFormFields(true);
                 return;
             }
 
-            const encodedUsername = 
-                new TextEncoder().encode(sanitizedUsername);
             const encodedPassword = 
                 new TextEncoder().encode(this.passwordControl.value);
-
+            /*
+            const encodedUsername = 
+                new TextEncoder().encode(sanitizedUsername);
             Promise
                 .all([
                     crypto.subtle.digest('SHA-256', encodedUsername),
                     crypto.subtle.digest('SHA-256', encodedPassword),
                 ])
-                .then((credentials) => {
-                    const hashedCredentials: string[] = credentials
-                        .map((buffer: ArrayBuffer) => {
-                            return Array.from(new Uint8Array(buffer))
-                            // Converts to hexadecimal (i.e base 16)
+            */
+            crypto.subtle.digest('SHA-256', encodedPassword)
+                .then((digest) => {
+                    const hashedPassword: string = 
+                        // Converts to hexadecimal (i.e base 16)
+                        Array.from(new Uint8Array(digest))
                             .map(byte => byte.toString(16))
                             .join('');
-                        });
 
-                    return Promise.resolve(hashedCredentials);
+                    this.userDetails!.hash = hashedPassword;
+                    return Promise.resolve(hashedPassword);
                 })
                 .then(
-                    (hashedCredentials) => this.sendLoginRequest(
-                        hashedCredentials[0],
-                        hashedCredentials[1]
+                    (hashedPassword) => this.sendLoginRequest(
+                        sanitizedUsername,
+                        hashedPassword
                     )
                 )
                 .then(
@@ -143,30 +173,77 @@ export class AppLoginComponent {
                             this.rememberMeControl.value
                         );
 
+                        localStorage.setItem('mage-stored-usr', JSON.stringify(session));
+
                         if (!!this.rememberMeControl.value) {
-                            localStorage.setItem('mage-stored-usr', JSON.stringify(session));
+                            localStorage.setItem('mage-stored-creds', JSON.stringify(this.userDetails));
                         }
 
                         return Promise.resolve(session);
                     }
                 )
-                .catch()
+                .then(
+                    (session) => location.href = '/garden#@' + session.code
+                )
+                .catch(
+                    err => {
+                        if (err instanceof ReadableStream) {
+                            const utf8Decoder = new TextDecoder('utf-8');
+                            const reader = err.getReader();
+
+                            let processErrorResponse = '';
+                            reader
+                                .read()
+                                .then(function processText({ done, value }): Promise<any> {
+                                    processErrorResponse += utf8Decoder.decode(value);
+
+                                    if (done) {
+                                        return Promise.resolve(
+                                            processErrorResponse
+                                                .trim()
+                                                .replace(/^[\\"]{0,3}(.*)/, '$1')
+                                                .replace(/[\\"]*$/, '')
+                                        );
+                                    }
+
+                                    return reader
+                                        .read()
+                                        .then(processText);
+                                })
+                                .then(errorMessage => {
+                                    console.error('[onLoginSubmit] Login failed!', errorMessage);
+                                    this.failedLoginMessage.set(
+                                        JSON.stringify(errorMessage, null, 4)
+                                    );
+                                });
+                        }
+                        else {
+                            console.error('[onLoginSubmit] Login failed!', err);
+                            if (!!err) {
+                                this.failedLoginMessage.set(JSON.stringify(err, null, 4));
+                            }
+                        }
+                    }
+                )
                 .finally(() => {
-                    this.disableFormFields = false;
+                    this.toggleFormFields(true);
                 })
         }, 333); // Surface-level spam prevention
         // In practice a `setTimeout` is easily circumvented, but my backend
-        // has spam-protection so this is just an added precaution.
+        // has spam-protection, so this is just a small added precaution.
     }
 
-    sendLoginRequest(hashedUsername: string, hashedPassword: string): Promise<Session> {
+    sendLoginRequest(username: string, hashedPassword: string): Promise<Session> {
         const requestBody: LoginBody = {
-            username: hashedUsername,
-            password: hashedPassword
+            username: username,
+            hash: hashedPassword
         };
 
-        return fetch(this.apiUrl, {
+        return fetch(this.apiUrl + '/auth/login', {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(requestBody)
         })
             .then(

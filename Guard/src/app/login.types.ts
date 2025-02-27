@@ -1,12 +1,9 @@
 export interface HashedUserDetails {
     username: string,
-    password: string
+    hash: string
 }
 
-export type LoginBody = {
-    username: string,
-    password: string
-}
+export type LoginBody = HashedUserDetails & {}
 
 export type Session = {
     id: number;

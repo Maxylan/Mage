@@ -5,3 +5,17 @@ export interface BlobResponse {
     contentLength: string|null,
     file?: File
 }
+
+export type Session = {
+    id: number;
+    userId: number;
+    code: string;
+    userAgent?: string|null;
+    createdAt: string;
+    expiresAt: string;
+}
+
+export type RefreshCredentials = {
+    username: string,
+    hash: string
+}

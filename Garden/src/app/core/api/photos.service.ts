@@ -10,13 +10,20 @@ import { AuthService } from './auth.service';
 export class PhotosService {
     private authService!: AuthService;
     private apiUrl: string = '/reception';
-    private generateRequestInit = (method: Methods): RequestInit => ({
-        method: method,
-        headers: { // TODO! Create auth - get token from there. 
-            // -- Don't worry, the fact this is not gitignored is intentional, its just a random GUID :p
-            "x-mage-token": "d352a82b-2fdc-46fb-af36-a24fbfa4b8aa"
+    private generateRequestInit = (method: Methods): RequestInit => {
+        const token = this.authService.getToken();
+        if (!token) {
+            throw new Error('Failed to get token from `AuthService`!');
         }
-    });
+
+        return {
+            method: method,
+            headers: { // TODO! Create auth - get token from there. 
+                // -- Don't worry, the fact this is not gitignored is intentional, its just a random GUID :p
+                "x-mage-token": token
+            }
+        }
+    };
 
     constructor(auth: AuthService) {
         this.authService = auth;

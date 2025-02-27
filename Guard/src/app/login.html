@@ -1,19 +1,41 @@
 <div [ngClass]="(isHandset$ | async) ? 'login-container-handset' : 'login-container'">
     <form name="login" [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()">
-        <h2>
-            Guard
-        </h2>
+        <div>
+            <img src="/guard/Homie-locked-png-48.png"/>
+            <h2>Guard</h2>
+        </div>
         <mat-form-field>
             <mat-label>Username</mat-label>
-            <input matInput type="text" name="username" [formControl]="usernameControl" minlength="3" maxlength="127">
+            <input 
+                matInput
+                type="text"
+                name="username"
+                [formControl]="usernameControl"
+                minlength="3"
+                maxlength="127"/>
         </mat-form-field>
         <mat-form-field>
             <mat-label>Password</mat-label>
-            <input matInput type=password name="password" [formControl]="passwordControl" minlength="4" maxlength="127">
+            <input 
+                matInput
+                type=password
+                name="password"
+                [formControl]="passwordControl"
+                minlength="4"
+                maxlength="127"/>
         </mat-form-field>
-        <mat-checkbox [formControl]="rememberMeControl">Remember me!</mat-checkbox>
+        <mat-checkbox name="rememberMe" [formControl]="rememberMeControl">
+            Remember me!
+        </mat-checkbox>
         <button mat-raised-button type=submit>
             Login
         </button>
+        @if (failedLoginMessage()) {
+            <div>
+                <pre>
+                    {{ failedLoginMessage() }}
+                </pre>
+            </div>
+        }
     </form>
 </div>

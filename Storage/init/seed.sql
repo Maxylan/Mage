@@ -15,5 +15,5 @@ TRUNCATE TABLE album_tags CASCADE;
 TRUNCATE TABLE logs CASCADE;
 
 INSERT INTO accounts (email, username, password, full_name, permissions) VALUES(
-    'webmaster@torpssons.se', 'root', 'password', 'Administrator', 15
+    'webmaster@torpssons.se', 'root', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Administrator', 15
 );
