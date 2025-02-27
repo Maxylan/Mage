@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL NOT NULL,
     user_id INT NOT NULL,
     code CHAR(36) UNIQUE NOT NULL,
+    code CHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(id),

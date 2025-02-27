@@ -9,6 +9,11 @@ namespace Reception.Interfaces;
 public interface ILoggingService
 {
     /// <summary>
+    /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
+    /// </summary>
+    public abstract ILogger GetLogger();
+
+    /// <summary>
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
     public abstract Task<ActionResult<LogEntry?>> GetEvent(int id);

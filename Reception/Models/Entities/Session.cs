@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,9 +11,13 @@ public class Session
     public int Id { get; set; }
     public int UserId { get; set; }
     public string Code { get; set; } = null!;
+    public string? UserAgent { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public virtual Account User { get; set; } = null!;
+
+    [JsonIgnore]
+    public bool HasUserAgent => !string.IsNullOrWhiteSpace(UserAgent);
 
     public static Action<EntityTypeBuilder<Session>> Build => (
         entity =>
@@ -35,6 +40,10 @@ public class Session
                 .HasColumnName("created_at");
             entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UserAgent)
+                .HasMaxLength(255)
+                .IsFixedLength()
+                .HasColumnName("user_agent");
 
             entity.HasOne(d => d.User).WithMany(p => p.Sessions)
                 .HasForeignKey(d => d.UserId)

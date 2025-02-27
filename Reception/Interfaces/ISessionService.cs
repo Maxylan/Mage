@@ -15,11 +15,11 @@ public interface ISessionService
     /// <summary>
     /// Get the <see cref="Session"/> with matching '<paramref ref="code"/>'
     /// </summary>
-    public abstract Task<ActionResult<Session?>> GetSession(string code);
+    public abstract Task<ActionResult<Session>> GetSession(string code);
     /// <summary>
     /// Get the <see cref="Session"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
-    public abstract Task<ActionResult<Session?>> GetSessionById(int id);
+    public abstract Task<ActionResult<Session>> GetSessionById(int id);
     /// <summary>
     /// Get the current <see cref="Session"/> of the <see cref="Account"/> with Primary Key '<paramref ref="userId"/>'
     /// </summary>
@@ -30,7 +30,7 @@ public interface ISessionService
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public abstract Task<ActionResult<Session?>> GetSessionByUserId(int userId, bool deleteDuplicates = false);
+    public abstract Task<ActionResult<Session>> GetSessionByUserId(int userId, bool deleteDuplicates = false);
     /// <summary>
     /// Get the current <see cref="Session"/> of the <see cref="Account"/> with unique '<paramref ref="userName"/>'
     /// </summary>
@@ -41,7 +41,7 @@ public interface ISessionService
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public abstract Task<ActionResult<Session?>> GetSessionByUsername(string userName, bool deleteDuplicates = false);
+    public abstract Task<ActionResult<Session>> GetSessionByUsername(string userName, bool deleteDuplicates = false);
     /// <summary>
     /// Get the current <see cref="Session"/> of the given '<see cref="Account"/>'.
     /// </summary>
@@ -52,7 +52,17 @@ public interface ISessionService
     /// <param name="deleteDuplicates">
     /// Provide '<c>true</c>' to if you want to automatically clean-up duplicates / old sessions from the database.
     /// </param>
-    public abstract Task<ActionResult<Session?>> GetSessionByUser(Account account, bool deleteDuplicates = false);
+    public abstract Task<ActionResult<Session>> GetSessionByUser(Account account, bool deleteDuplicates = false);
+
+    /// <summary>
+    /// Get the <see cref="Account"/> associated with a given '<see cref="Session"/>'.
+    /// </summary>
+    public abstract Task<ActionResult<Account>> GetUserBySession(Session session);
+
+    /// <summary>
+    /// Create a new <see cref="Session"/> for the given '<see cref="Account"/>'.
+    /// </summary>
+    public abstract Task<ActionResult<Session>> CreateSession(Account account, HttpRequest? request, Source source = Source.INTERNAL);
 
     /// <summary>
     /// Delete expired sessions &amp; duplicates from the database.
