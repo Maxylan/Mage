@@ -19,7 +19,7 @@ public class Link
 
     public int PhotoId { get; set; }
 
-    [StringLength(36)]
+    [StringLength(32)]
     public string Code { get; set; } = null!;
 
     public int? CreatedBy { get; set; }
@@ -55,7 +55,7 @@ public class Link
 
             entity.Property(e => e.Accessed).HasDefaultValue(0);
             entity.Property(e => e.Code)
-                .HasMaxLength(36)
+                .HasMaxLength(32)
                 .IsFixedLength();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
