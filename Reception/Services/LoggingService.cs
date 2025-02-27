@@ -1,23 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Models;
+using Reception.Models.Entities;
 using Reception.Interfaces;
-using Reception.Properties;
+using Reception.Models;
 
 namespace Reception.Services;
 
-public class LoggingService : ILoggingService
+public class LoggingService(
+    IHttpContextAccessor contextAccessor,
+    ILogger<LoggingService> logger,
+    MageDbContext db
+) : ILoggingService
 {
-    private readonly IHttpContextAccessor contextAccessor;
-    private readonly ILogger<LoggingService> logger;
-    private readonly MageDbContext db;
-
-    public LoggingService(ILogger<LoggingService> logger, IHttpContextAccessor httpContextAccessor, MageDbContext dbContext)
-    {
-        contextAccessor = httpContextAccessor;
-        this.logger = logger;
-        db = dbContext;
-    }
+    private string nextAction = string.Empty;
 
     /// <summary>
     /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
@@ -25,7 +20,7 @@ public class LoggingService : ILoggingService
     private Account? GetAccount()
     {
         if (contextAccessor.HttpContext is not null &&
-            contextAccessor.HttpContext.Items.TryGetValue(Constants.HttpContext.CURRENT_USER, out object? currentUser)
+            contextAccessor.HttpContext.Items.TryGetValue(AuthorizationService.ACCOUNT_CONTEXT_KEY, out object? currentUser)
         ) {
             return (Account) currentUser!;
         }
@@ -54,183 +49,200 @@ public class LoggingService : ILoggingService
 
 #region Create Logs (w/ many shortcuts)
     /// <summary>
+    /// Set what action triggered this entry to be created.
+    /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogEvent"/>.
+    /// </summary>
+    public ILoggingService Action(string actionName) {
+        this.nextAction = actionName;
+        return this;
+    }
+
+    /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogTrace(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.TRACE;
+    public StoreLogsInDatabase LogTrace(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.TRACE;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalTrace(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.TRACE;
+    public StoreLogsInDatabase InternalTrace(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.TRACE;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalTrace(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.TRACE;
+    public StoreLogsInDatabase ExternalTrace(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.TRACE;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogDebug(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.DEBUG;
+    public StoreLogsInDatabase LogDebug(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.DEBUG;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalDebug(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.DEBUG;
+    public StoreLogsInDatabase InternalDebug(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.DEBUG;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalDebug(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.DEBUG;
+    public StoreLogsInDatabase ExternalDebug(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.DEBUG;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogInformation(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.INFORMATION;
+    public StoreLogsInDatabase LogInformation(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.INFORMATION;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalInformation(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.INFORMATION;
+    public StoreLogsInDatabase InternalInformation(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.INFORMATION;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalInformation(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.INFORMATION;
+    public StoreLogsInDatabase ExternalInformation(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.INFORMATION;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogSuspicious(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.SUSPICIOUS;
+    public StoreLogsInDatabase LogSuspicious(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.SUSPICIOUS;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalSuspicious(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.SUSPICIOUS;
+    public StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.SUSPICIOUS;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalSuspicious(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.SUSPICIOUS;
+    public StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.SUSPICIOUS;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogWarning(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.WARNING;
+    public StoreLogsInDatabase LogWarning(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.WARNING;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalWarning(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.WARNING;
+    public StoreLogsInDatabase InternalWarning(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.WARNING;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalWarning(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.WARNING;
+    public StoreLogsInDatabase ExternalWarning(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.WARNING;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogError(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.ERROR;
+    public StoreLogsInDatabase LogError(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.ERROR;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalError(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.ERROR;
+    public StoreLogsInDatabase InternalError(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.ERROR;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalError(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.ERROR;
+    public StoreLogsInDatabase ExternalError(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.ERROR;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogCritical(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.LogLevel = DataTypes.Severity.CRITICAL;
+    public StoreLogsInDatabase LogCritical(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.LogLevel = Severity.CRITICAL;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> InternalCritical(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.INTERNAL;
-            entry.LogLevel = DataTypes.Severity.CRITICAL;
+    public StoreLogsInDatabase InternalCritical(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.INTERNAL;
+            entry.LogLevel = Severity.CRITICAL;
         });
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> ExternalCritical(string message, Action<LogEntry>? predicate = null) => 
-        await LogNewEvent(message, entry => {
-            entry.Source = DataTypes.Source.EXTERNAL;
-            entry.LogLevel = DataTypes.Severity.CRITICAL;
+    public StoreLogsInDatabase ExternalCritical(string message, Action<LogEntry>? predicate = null) => 
+        LogEvent(message, entry => {
+            entry.Source = Source.EXTERNAL;
+            entry.LogLevel = Severity.CRITICAL;
         });
     
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public async Task<int> LogNewEvent(string message, Action<LogEntry>? predicate = null)
+    public StoreLogsInDatabase LogEvent(string message, Action<LogEntry>? predicate = null)
     {
         LogEntry entry = new() {
             Log = message,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Action = this.nextAction
         };
 
-        Account? user = GetAccount();
-        if (user is not null) {
-            entry.UserId = user.Id;
-            entry.UserUsername = user.Username;
-            entry.UserFullName = user.Username;
-            entry.UserEmail = user.Email;
+        this.nextAction = string.Empty;
+
+        if (contextAccessor.HttpContext is not null)
+        {
+            entry.SetMethod(contextAccessor.HttpContext.Request.Method);
+
+            Account? user = GetAccount();
+            if (user is not null) {
+                entry.UserId = user.Id;
+                entry.UserUsername = user.Username;
+                entry.UserFullName = user.Username;
+                entry.UserEmail = user.Email;
+            }
         }
 
         if (predicate is not null) {
@@ -241,67 +253,61 @@ public class LoggingService : ILoggingService
             entry.Action = "Unknown";
         }
         
-        return await LogEvents(entry);
+        return LogEvents(entry);
     }
 
     /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event, attempts to add it to the database, but does 
-    /// <strong>not</strong> call <see cref="DbContext.SaveChangesAsync"/>.
+    /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
+    /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
     /// </summary>
-    /// <remarks>
-    /// Note: Shares a similar name with <seealso cref="ILoggingService.LogEvents"/>, but the two methods couldn't be more different.
-    /// </remarks>
-    public async Task LogEvent(LogEntry entry)
+    public StoreLogsInDatabase LogEvents(params LogEntry[] entries)
     {
-        if (db.Entry(entry).State != EntityState.Added)
+        foreach(var entry in entries)
         {
-            switch(await db.Logs.ContainsAsync(entry)) {
-                case true: // Exists
-                    db.Update(entry);
+            bool isNew = db.Entry(entry).State == EntityState.Detached;
+            bool shouldStore = (
+                entry.LogLevel != Severity.DEBUG ||
+                Program.IsDevelopment
+            );
+
+            if (isNew && shouldStore)
+            {
+                switch(db.Logs.Contains(entry)) {
+                    case true: // Exists
+                        db.Update(entry);
+                        break;
+                    case false: // New
+                        db.Add(entry);
+                        break;
+                }
+            }
+
+            switch(entry.LogLevel) {
+                case Severity.TRACE:
+                    logger.LogTrace(entry.Format.Short(false));
                     break;
-                case false: // New
-                    db.Add(entry);
+                case Severity.DEBUG:
+                    logger.LogDebug(entry.Format.Short());
+                    break;
+                case Severity.SUSPICIOUS:
+                    logger.LogWarning(entry.Format.Standard());
+                    break;
+                case Severity.WARNING:
+                    logger.LogWarning(entry.Format.Standard());
+                    break;
+                case Severity.ERROR:
+                    logger.LogError(entry.Format.Standard());
+                    break;
+                case Severity.CRITICAL:
+                    logger.LogCritical(entry.Format.Standard());
+                    break;
+                default: // Severity.INFORMATION:
+                    logger.LogInformation(entry.Format.Short(true, true));
                     break;
             }
         }
 
-        switch(entry.LogLevel) {
-            case DataTypes.Severity.TRACE:
-                logger.LogTrace(entry.Format.Short(false));
-                break;
-            case DataTypes.Severity.DEBUG:
-                logger.LogDebug(entry.Format.Short());
-                break;
-            case DataTypes.Severity.SUSPICIOUS:
-                logger.LogWarning(entry.Format.Standard());
-                break;
-            case DataTypes.Severity.WARNING:
-                logger.LogWarning(entry.Format.Standard());
-                break;
-            case DataTypes.Severity.ERROR:
-                logger.LogError(entry.Format.Standard());
-                break;
-            case DataTypes.Severity.CRITICAL:
-                logger.LogCritical(entry.Format.Standard());
-                break;
-            default: // DataTypes.Severity.INFORMATION:
-                logger.LogInformation(entry.Format.Short(true, true));
-                break;
-        }
-    }
-    /// <summary>
-    /// Log any number of custom <see cref="LogEntry"/>-events to the database.
-    /// </summary>
-    /// <remarks>
-    /// Plural name (<see cref="ILoggingService.LogEvents"/>), but you can do one/single entry, or many (plural)
-    /// </remarks>
-    public async Task<int> LogEvents(params LogEntry[] entries)
-    {
-        foreach(var entry in entries) {
-            await LogEvent(entry);
-        }
-
-        return await db.SaveChangesAsync();
+        return new(() => db);
     }
 #endregion
 

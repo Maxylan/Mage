@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Reception.Models;
+namespace Reception.Models.Entities;
 
 public readonly struct LogFormat(LogEntry entry)
 {

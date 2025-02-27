@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Reception.Models;
+namespace Reception.Models.Entities;
 
 public class LogEntry
 {
@@ -15,14 +15,27 @@ public class LogEntry
     public string? UserUsername { get; set; }
     public string? UserFullName { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DataTypes.Severity? LogLevel { get; set; }
-    public DataTypes.Source? Source { get; set; }
-    public DataTypes.Method? Method { get; set; }
+    public Severity? LogLevel { get; set; }
+    public Source? Source { get; set; }
+    public Method? Method { get; set; }
     public string Action { get; set; } = null!;
     public string? Log { get; set; }
 
     [JsonIgnore]
     public LogFormat Format => new(this);
+
+    /// <summary>
+    /// Set the <see cref="Reception.Models.Entities.Method"/> of this entity using a string (<paramref name="method"/>)
+    /// </summary>
+    public void SetMethod(string? method) => this.Method = method?.ToUpper() switch {
+        "HEAD" => Entities.Method.HEAD,
+        "GET" => Entities.Method.GET,
+        "POST" => Entities.Method.POST,
+        "PUT" => Entities.Method.PUT,
+        "PATCH" => Entities.Method.PATCH,
+        "DELETE" => Entities.Method.DELETE,
+        _ => Entities.Method.UNKNOWN
+    };
 
     public static Action<EntityTypeBuilder<LogEntry>> Build => (
         entity =>
@@ -42,27 +55,27 @@ public class LogEntry
                 .HasColumnName("created_at");
             entity.Property(e => e.LogLevel)
                 .HasColumnName("log_level")
-                .HasDefaultValue(DataTypes.Severity.INFORMATION)
+                .HasDefaultValue(Severity.INFORMATION.ToString())
                 .HasSentinel(null)
                 .HasConversion(
-                    x => x.ToString() ?? DataTypes.Severity.ERROR.ToString(),
-                    y => Enum.Parse<DataTypes.Severity>(y, true)
+                    x => x.ToString() ?? Severity.ERROR.ToString(),
+                    y => Enum.Parse<Severity>(y, true)
                 );
             entity.Property(e => e.Source)
                 .HasColumnName("source")
-                .HasDefaultValue(DataTypes.Source.INTERNAL)
+                .HasDefaultValue(Reception.Models.Entities.Source.INTERNAL.ToString())
                 .HasSentinel(null)
                 .HasConversion(
-                    x => x.ToString() ?? DataTypes.Source.INTERNAL.ToString(),
-                    y => Enum.Parse<DataTypes.Source>(y, true)
+                    x => x.ToString() ?? Reception.Models.Entities.Source.INTERNAL.ToString(),
+                    y => Enum.Parse<Source>(y, true)
                 );
             entity.Property(e => e.Method)
                 .HasColumnName("method")
-                .HasDefaultValue(DataTypes.Method.UNKNOWN)
+                .HasDefaultValue(Reception.Models.Entities.Method.UNKNOWN.ToString())
                 .HasSentinel(null)
                 .HasConversion(
-                    x => x.ToString() ?? DataTypes.Method.UNKNOWN.ToString(),
-                    y => Enum.Parse<DataTypes.Method>(y, true)
+                    x => x.ToString() ?? Reception.Models.Entities.Method.UNKNOWN.ToString(),
+                    y => Enum.Parse<Method>(y, true)
                 );
             entity.Property(e => e.Log).HasColumnName("log");
             entity.Property(e => e.UserEmail)

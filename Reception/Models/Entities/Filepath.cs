@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Reception.Models;
+namespace Reception.Models.Entities;
 
 public class Filepath
 {
@@ -11,7 +11,7 @@ public class Filepath
     public int PhotoId { get; set; }
     public string Filename { get; set; } = null!;
     public string Path { get; set; } = null!;
-    public DataTypes.Dimension? Dimension { get; set; }
+    public Dimension? Dimension { get; set; }
     public int Filesize { get; set; }
     public virtual Photo Photo { get; set; } = null!;
 
@@ -38,11 +38,11 @@ public class Filepath
             entity.Property(e => e.Filesize).HasColumnName("filesize");
             entity.Property(e => e.Dimension)
                 .HasColumnName("dimension")
-                .HasDefaultValue(DataTypes.Dimension.SOURCE)
+                .HasDefaultValue(Reception.Models.Entities.Dimension.SOURCE.ToString())
                 .HasSentinel(null)
                 .HasConversion(
-                    x => x.ToString() ?? DataTypes.Dimension.SOURCE.ToString(),
-                    y => Enum.Parse<DataTypes.Dimension>(y, true)
+                    x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
+                    y => Enum.Parse<Dimension>(y, true)
                 );
             entity.Property(e => e.PhotoId).HasColumnName("photo_id");
 

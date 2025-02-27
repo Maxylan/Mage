@@ -1,7 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Models;
+using Reception.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Reception.Interfaces;
@@ -9,40 +9,31 @@ namespace Reception.Interfaces;
 public interface IAuthorizationService
 {
     /// <summary>
-    /// Get the <see cref="Session"/> with matching '<paramref ref="code"/>'
+    /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
     /// </summary>
+    /// <remarks>
+    /// Argument <paramref name="source"/> Assumes <see cref="Source.EXTERNAL"/> by-default
+    /// </remarks>
+    /// <param name="source">Assumes <see cref="Source.EXTERNAL"/> by-default</param>
     public abstract Task<IStatusCodeActionResult> ValidateSession(HttpContext httpContext);
     /// <summary>
-    /// Get the <see cref="Session"/> with Primary Key '<paramref ref="id"/>'
+    /// Validates that a given <see cref="Session.Code"/> (string) is valid.
     /// </summary>
-    public abstract Task<ActionResult<Session?>> GetSessionById(int id);
+    public abstract Task<IStatusCodeActionResult> ValidateSession(string sessionCode);
     /// <summary>
-    /// Get the current <see cref="Session"/> of the <see cref="Account"/> with Primary Key '<paramref ref="userId"/>'
+    /// Validates that a given <see cref="Session"/> is valid.
     /// </summary>
-    /// <remarks>
-    /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
-    /// clean-up duplicates / old sessions from the database.
-    /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUserId(int userId, bool deleteDuplicates = false);
-    /// <summary>
-    /// Get the current <see cref="Session"/> of the <see cref="Account"/> with unique '<paramref ref="userName"/>'
-    /// </summary>
-    /// <remarks>
-    /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
-    /// clean-up duplicates / old sessions from the database.
-    /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUsername(int userName, bool deleteDuplicates = false);
-    /// <summary>
-    /// Get the current <see cref="Session"/> of the given '<see cref="Account"/>'.
-    /// </summary>
-    /// <remarks>
-    /// You may optionally provide '<c>true</c>' to '<paramref ref="deleteDuplicates"/>' if you want to automatically
-    /// clean-up duplicates / old sessions from the database.
-    /// </remarks>
-    public abstract Task<ActionResult<Session?>> GetSessionByUser(Account user, bool deleteDuplicates = false);
+    public abstract Task<IStatusCodeActionResult> ValidateSession(Session session);
 
     /// <summary>
-    /// Delete expired sessions & duplicates from the database.
+    /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.
     /// </summary>
-    public abstract DbSet<Session> DeleteExpiredSessions();
+    /// <param name="userName">Unique Username of an <see cref="Account"/></param>
+    /// <param name="hash">SHA-256</param>
+    public abstract Task<ActionResult<Session?>> Login(string userName, string hash);
+    /// <summary>
+    /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.
+    /// </summary>
+    /// <param name="hash">SHA-256</param>
+    public abstract Task<ActionResult<Session?>> Login(Account account, string hash);
 }

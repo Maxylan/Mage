@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Reception.Interfaces;
-using Reception.Models;
+using Reception.Models.Entities;
 
 namespace Reception.Controllers;
 
@@ -19,7 +19,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// 
+    /// Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
     /// </summary>
     [HttpHead("session")]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status200OK)]
