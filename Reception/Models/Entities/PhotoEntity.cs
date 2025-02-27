@@ -11,9 +11,10 @@ public class PhotoEntity
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Description { get; set; }
-    public int? CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public int? UploadedBy { get; set; }
+    public DateTime UploadedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     // Navigation Properties
 
@@ -50,9 +51,8 @@ public class PhotoEntity
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("now()")
                 .HasColumnName("created_at");
-            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.UploadedBy).HasColumnName("uploaded_by");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.Slug)
                 .HasMaxLength(127)
@@ -63,12 +63,15 @@ public class PhotoEntity
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
+            entity.Property(e => e.UploadedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("uploaded_at");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("updated_at");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Photos)
-                .HasForeignKey(d => d.CreatedBy)
+                .HasForeignKey(d => d.UploadedBy)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_user");
 

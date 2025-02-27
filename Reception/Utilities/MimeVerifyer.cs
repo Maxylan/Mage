@@ -1,15 +1,17 @@
 using System;
-using System.Collections.ObjectModel;
 using System.IO;
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Net.Http.Headers;
+using SixLabors.ImageSharp.Formats;
 
 namespace Reception.Utilities;
 
 /// <summary>
-/// Inspired by examples found at Microsoft Learn.<br/>
+/// My own implimentation of an ImageFormatDetector & MimeVerifyer, inspired by examples found at Microsoft Learn.<br/>
 /// <see href="https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming"/>
 /// </summary>
-public static class MimeVerifyer
+public class MimeVerifyer : IImageFormatDetector
 {
     /// <summary>
     /// "Magic Numbers" of various MIME Types / Content Types.
@@ -27,10 +29,11 @@ public static class MimeVerifyer
             { "jpeg", (
                 0u, [
                     [0xFF, 0xD8, 0xFF, 0xDB],
-                    [0xFF, 0xD8, 0xFF, 0xEE],
+                    [0xFF, 0xD8, 0xFF, 0xE0],
                     [0xFF, 0xD8, 0xFF, 0xE1],
                     [0xFF, 0xD8, 0xFF, 0xE2],
-                    [0xFF, 0xD8, 0xFF, 0xE3]
+                    [0xFF, 0xD8, 0xFF, 0xE3],
+                    [0xFF, 0xD8, 0xFF, 0xEE]
                 ]
             )},
             { "jpg", (
@@ -67,6 +70,16 @@ public static class MimeVerifyer
             { "png", (
                 0u, [
                     [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+                ]
+            )},
+            { "bmp", (
+                0u, [
+                    [0x42, 0x4D]
+                ]
+            )},
+            { "dib", (
+                0u, [
+                    [0x42, 0x4D]
                 ]
             )},
             { "pdf", (
@@ -184,31 +197,271 @@ public static class MimeVerifyer
     /// </summary>
     public static readonly IReadOnlyCollection<string> SupportedExtensions = MimeVerifyer.MagicNumbers.Keys;
 
+    /// <summary>
+    /// Convert a MIME Type (string) to a <see cref="IImageFormat"/> instance.
+    /// </summary>
+    public static IImageFormat? GetImageFormat(string key) => key switch {
+        "jpeg" => SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance,
+        "jpg" => SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance,
+        "jp2" => null,
+        "jpg2" => null,
+        "jpm" => null,
+        "jpc" => null,
+        "png" => SixLabors.ImageSharp.Formats.Png.PngFormat.Instance,
+        "bmp" => SixLabors.ImageSharp.Formats.Bmp.BmpFormat.Instance,
+        "dib" => SixLabors.ImageSharp.Formats.Bmp.BmpFormat.Instance,
+        "pdf" => null,
+        "ico" => null,
+        "icns" => null,
+        "heic" => null,
+        "tif" => SixLabors.ImageSharp.Formats.Tiff.TiffFormat.Instance,
+        "tiff" => SixLabors.ImageSharp.Formats.Tiff.TiffFormat.Instance,
+        "gif" => SixLabors.ImageSharp.Formats.Gif.GifFormat.Instance,
+        "ogg" => null,
+        "oga" => null,
+        "ogv" => null,
+        "mp3" => null,
+        "mp3_id3" => null,
+        "webp" => SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance,
+        "mpg" => null,
+        "mpeg" => null,
+        "mp4" => null,
+        "mp4_iso" => null,
+        "flv" => null,
+        "hdr" => null,
+        _ => throw new InvalidOperationException(
+            $"{(string.IsNullOrWhiteSpace(key) ? "'null'" : key)} is completely unsupported by {nameof(MimeVerifyer)}"
+        )
+    };
 
+    /// <summary>
+    /// Check the first few bytes of the stream, i.e the "Magic Numbers", to validate that
+    /// the contentType of the stream matches what was given as its '<paramref name="extension"/>'
+    /// </summary>
+    public static bool ValidateContentType(string filename, Stream stream)
+    {
+   		ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+
+		string extension = filename;
+	    int lastDotIndex = filename.LastIndexOf(".");
+	    if (lastDotIndex != -1) {
+	        extension = filename[lastDotIndex..];
+	    }
+
+		if (string.IsNullOrWhiteSpace(extension))
+		{
+			ArgumentException argException = new(
+				$"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
+				nameof(filename)
+			);
+
+	        if (Program.IsDevelopment) {
+	            Console.WriteLine(argException.Message);
+	        }
+
+          throw argException;
+		}
+
+        return ValidateContentType(filename, extension, stream);
+    }
     /// <summary>
     /// Check the first few bytes of the stream, i.e the "Magic Numbers", to validate that
     /// the contentType of the stream matches what was given as its '<paramref name="extension"/>'
     /// </summary>
     public static bool ValidateContentType(string filename, string extension, Stream stream)
     {
-        if (!filename.EndsWith("."+extension)) {
+        ArgumentException.ThrowIfNullOrWhiteSpace(extension, nameof(extension));
+       	ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+
+        int lastDotIndex = extension.LastIndexOf(".");
+        if (lastDotIndex != -1)
+        {
+            string originalExtensionArgument = extension;
+            extension = extension[lastDotIndex..];
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                ArgumentException argException = new(
+                	$"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
+					nameof(extension)
+                );
+
+                if (Program.IsDevelopment) {
+                    Console.WriteLine(argException.Message);
+                }
+
+                throw argException;
+            }
+        }
+
+        if (!filename.EndsWith(extension))
+        {
             throw new NotImplementedException("Filename does not end with the given extension!"); // TODO: HANDLE
         }
-        if (!SupportedExtensions.Contains(extension)) {
+        if (!SupportedExtensions.Contains(extension))
+        {
             throw new NotImplementedException("File extension not supported!"); // TODO: HANDLE
         }
 
-        using BinaryReader reader = new BinaryReader(stream);
-
         int offset = (int)MagicNumbers[extension].Item1;
-        int longestSignature = MagicNumbers[extension].Item2.Max(m => m.Length);
+        stream.Position = offset;
 
-        // https://stackoverflow.com/questions/4883618/empty-array-with-binaryreader-on-uploadedfile-in-c-sharp
-        // Debug: Console.WriteLine($"Skipping first {offset} bytes..");
-        reader.BaseStream.Position = offset;
-        var headerBytes = reader.ReadBytes(longestSignature);
+        BinaryReader reader = new BinaryReader(stream);
+
+        // Special case.. expects the file's size as bytes 4..8.
+        // https://developers.google.com/speed/webp/docs/riff_container#webp_file_header
+        if (extension == "webp")
+        {
+            byte[] webpHeader = reader.ReadBytes(12);
+            bool signatureOneMatch = webpHeader[0..4].SequenceEqual(MagicNumbers["webp"].Item2.ElementAt(0));
+            bool signatureTwoMatch = webpHeader[8..12].SequenceEqual(MagicNumbers["webp"].Item2.ElementAt(1));
+
+            return signatureOneMatch && signatureTwoMatch;
+        }
+
+        byte[] headerBytes = reader.ReadBytes(
+            MagicNumbers[extension].Item2.Max(m => m.Length)
+        );
 
         return MagicNumbers[extension].Item2 // 'if any signatures in MagicNumbers[..] matches `headerBytes`'..
             .Any(signature => headerBytes.Take(signature.Length).SequenceEqual(signature));
+    }
+
+    /// <summary>
+    /// Check the first few bytes of the stream, i.e the "Magic Numbers", to validate that
+    /// the contentType of the stream matches what was given as its '<paramref name="extension"/>'.
+    /// <para>
+    /// Returns a <see cref="IImageFormat"/> instance matching the parsed/detected MIME-Type.
+    /// </para>
+    /// </summary>
+    public static IImageFormat? DetectImageFormat(string filename, Stream stream)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+
+		string extension = filename;
+	    int lastDotIndex = filename.LastIndexOf(".");
+	    if (lastDotIndex != -1) {
+	        extension = filename[lastDotIndex..];
+	    }
+
+		if (string.IsNullOrWhiteSpace(extension))
+		{
+			ArgumentException argException = new(
+				$"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
+				nameof(filename)
+			);
+
+	        if (Program.IsDevelopment) {
+	            Console.WriteLine(argException.Message);
+	        }
+
+          throw argException;
+		}
+
+        return DetectImageFormat(filename, extension, stream);
+    }
+    /// <summary>
+    /// Check the first few bytes of the stream, i.e the "Magic Numbers", to validate that
+    /// the contentType of the stream matches what was given as its '<paramref name="extension"/>'
+    /// <para>
+    /// Returns a <see cref="IImageFormat"/> instance matching the parsed/detected MIME-Type.
+    /// </para>
+    /// </summary>
+    public static IImageFormat? DetectImageFormat(string filename, string extension, Stream stream)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(extension, nameof(extension));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+
+        int lastDotIndex = extension.LastIndexOf(".");
+        if (lastDotIndex != -1)
+        {
+            string originalExtensionArgument = extension;
+            extension = extension[lastDotIndex..];
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                ArgumentException argException = new(
+                	$"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
+					nameof(extension)
+                );
+
+                if (Program.IsDevelopment) {
+                    Console.WriteLine(argException.Message);
+                }
+
+                throw argException;
+            }
+        }
+
+        bool isGivenExtensionValid = ValidateContentType(filename, extension, stream);
+        if (isGivenExtensionValid) {
+            return GetImageFormat(extension);
+        }
+        else if (Program.IsDevelopment) {
+            Console.WriteLine($"(Debug) ({nameof(DetectImageFormat)}) {nameof(ValidateContentType)} Deemed the extension '{extension}' on file '{filename}' invalid. Could be that the MIME is unspported, naming missmatches, or invalid Magic Numbers.");
+        }
+
+        return null;
+    }
+
+    // -- IImageFormatDetector
+
+    public int HeaderSize { get; private set; }
+
+    public bool TryDetectFormat(ReadOnlySpan<byte> header, [NotNullWhen(true)] out IImageFormat? format)
+    {
+        Console.WriteLine($"{nameof(MimeVerifyer)} '{nameof(TryDetectFormat)}' [{(string.Join(", ", header.ToArray()))}] Length: {header.Length}");
+        format = null;
+        foreach (var mime in MagicNumbers)
+        {
+            Console.WriteLine($"{nameof(MimeVerifyer)} Iteration: {mime.Key}");
+            // Special case.. expects the file's size as bytes 4..8.
+            // https://developers.google.com/speed/webp/docs/riff_container#webp_file_header
+            if (mime.Key == "webp")
+            {
+                if (header.Length < 12) {
+                    continue;
+                }
+
+                bool signatureOneMatch = header[0..4].SequenceEqual(mime.Value.Item2.ElementAt(0));
+                bool signatureTwoMatch = header[8..12].SequenceEqual(mime.Value.Item2.ElementAt(1));
+
+                if (signatureOneMatch && signatureTwoMatch)
+                {
+                    HeaderSize = 12;
+                    format = SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance;
+                    Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}] ({HeaderSize}), Iteration: {mime.Key}, [{string.Join(", ", mime.Value.Item2.ElementAt(0))}], [{string.Join(", ", mime.Value.Item2.ElementAt(1))}]");
+                    return true;
+                }
+
+                continue;
+            }
+
+            foreach (var signature in mime.Value.Item2)
+            {
+                if (signature.Length > header.Length)
+                {
+                    continue;
+                }
+
+                if (header[(int)mime.Value.Item1..signature.Length].SequenceEqual(signature))
+                {
+                    HeaderSize = (int)mime.Value.Item1 + signature.Length;
+                    format = GetImageFormat(mime.Key);
+
+                    if (format is null && Program.IsDevelopment)
+                    {
+                        Console.WriteLine($"{nameof(MimeVerifyer)} recognized & validated MimeType {mime.Key}, but its likely unsupported by SixLabors.ImageSharp");
+                        return false;
+                    }
+
+                    Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}] ({HeaderSize}), Iteration: {mime.Key}, [{string.Join(", ", signature)}]");
+                    return format is not null;
+                }
+            }
+        }
+
+        Console.WriteLine($"{nameof(MimeVerifyer)} '{(format?.GetType()?.Name ?? "null")}' [{(string.Join(", ", header.ToArray()))}]");
+        return format is not null;
     }
 }

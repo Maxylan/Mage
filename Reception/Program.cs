@@ -5,6 +5,8 @@ using Reception.Authentication;
 using Reception.Interfaces;
 using Reception.Services;
 using Reception.Caching;
+using SixLabors.ImageSharp;
+using Reception.Utilities;
 
 namespace Reception;
 
@@ -21,8 +23,8 @@ public sealed class Program
     public static string? ApiInternalUrl => System.Environment.GetEnvironmentVariable("RECEPTION_URL");
 
     public static string Environment => (
-        System.Environment.GetEnvironmentVariable("RECEPTION_ENVIRONMENT") ?? 
-        System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? 
+        System.Environment.GetEnvironmentVariable("RECEPTION_ENVIRONMENT") ??
+        System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
         DEVELOPMENT_FLAG
     );
 
@@ -47,10 +49,10 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services
             .AddControllers()
-            .AddJsonOptions(opts => 
+            .AddJsonOptions(opts =>
                 opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
             );
-        
+
         builder.Services
             .AddAuthentication(conf => {
                 conf.DefaultAuthenticateScheme = Parameters.SCHEME;
@@ -143,7 +145,7 @@ public sealed class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-        
+
         app.Run();
     }
 }

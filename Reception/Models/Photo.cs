@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Reception.Models.Entities;
 
 namespace Reception.Models;
@@ -31,7 +31,7 @@ public record Photo
         _filepath = path;
         _entity = entity;
     }
-    
+
     public Photo(
         PhotoEntity entity,
         Filepath path
@@ -53,11 +53,14 @@ public record Photo
     public string? Title { get => _entity.Title; }
     public string? Summary { get => _entity.Summary; }
     public string? Description { get => _entity.Description; }
-    public int? CreatedBy { get => _entity.CreatedBy; }
+    public int? UploadedBy { get => _entity.UploadedBy; }
+    public DateTime UploadedAt { get => _entity.UploadedAt; }
     public DateTime CreatedAt { get => _entity.CreatedAt; }
     public DateTime UpdatedAt { get => _entity.UpdatedAt; }
     public Dimension? Dimension { get => _filepath.Dimension; }
     public long? Filesize { get => _filepath.Filesize; }
+    public int? Height { get => _filepath.Height; }
+    public int? Width { get => _filepath.Width; }
     public string Filename { get => _filepath.Filename; }
     public string Path { get => _filepath.Path; }
     public string[] Tags {
@@ -69,13 +72,13 @@ public record Photo
 
     [JsonIgnore]
     protected PhotoEntity _entity;
-    
+
     [JsonIgnore]
     public PhotoEntity Entity { get => _entity; }
 
     [JsonIgnore]
     protected Filepath _filepath;
-    
+
     [JsonIgnore]
     public Filepath Filepath { get => _filepath; }
 }

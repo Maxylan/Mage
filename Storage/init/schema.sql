@@ -42,12 +42,13 @@ CREATE TABLE IF NOT EXISTS photos (
     title VARCHAR(255),
     summary VARCHAR(255),
     description TEXT,
-    created_by INT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    uploaded_by INT,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL,
     PRIMARY KEY(id),
     CONSTRAINT fk_user
-        FOREIGN KEY(created_by)
+        FOREIGN KEY(uploaded_by)
         REFERENCES accounts(id)
         ON DELETE SET NULL
 );
@@ -109,10 +110,12 @@ CREATE TYPE dimension AS ENUM('THUMBNAIL','MEDIUM','SOURCE');
 CREATE TABLE IF NOT EXISTS filepaths (
     id SERIAL NOT NULL,
     photo_id INT NOT NULL,
-    filename VARCHAR(127) UNIQUE NOT NULL,
+    filename VARCHAR(127) NOT NULL,
     path VARCHAR(255) NOT NULL,
     dimension DIMENSION NOT NULL DEFAULT 'SOURCE',
     filesize INT CHECK (filesize >= 0),
+    width INT CHECK (width >= 0),
+    height INT CHECK (height >= 0),
     PRIMARY KEY(id),
     CONSTRAINT fk_photo
         FOREIGN KEY(photo_id)
@@ -140,7 +143,7 @@ CREATE TABLE IF NOT EXISTS photo_albums (
     photo_id INT NOT NULL,
     album_id INT NOT NULL,
     PRIMARY KEY(photo_id, album_id),
-    CONSTRAINT fk_photo 
+    CONSTRAINT fk_photo
         FOREIGN KEY(photo_id)
         REFERENCES photos(id)
         ON DELETE CASCADE,
@@ -217,6 +220,8 @@ CREATE INDEX idx_album_tags_tag_id ON album_tags (tag_id);
 -- Indicies for commonly filtered columns
 CREATE UNIQUE INDEX idx_accounts_email ON accounts (email);
 CREATE UNIQUE INDEX idx_accounts_username ON accounts (username);
+
+CREATE UNIQUE INDEX idx_path_filename ON filepaths (path, filename);
 
 -- Indicies for time-based filtering
 CREATE INDEX idx_logs_created_at ON logs (created_at);
