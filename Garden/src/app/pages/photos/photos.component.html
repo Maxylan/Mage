@@ -1,4 +1,4 @@
-<div>
+<div [className]="'photos-container'">
     @if (!isLoading() && (!photos || photos.length == 0)) {
         <p>
           photos works but no photos was fetched!

@@ -1,20 +1,24 @@
 import { Component, Input, inject, signal, effect, computed, ElementRef, afterRender } from '@angular/core';
-import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
+import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle, MatCardTitleGroup } from '@angular/material/card';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatRipple } from '@angular/material/core';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { Dimension, Photo } from '../../../core/types/photos.types';
 import { BlobResponse } from '../../../core/types/generic.types';
+import { AsyncPipe, NgClass } from '@angular/common';
 import { Observable } from 'rxjs';
 
 @Component({
     selector: 'shared-photo-card',
     imports: [
+        NgClass,
         MatCard,
-        MatCardContent,
+        MatCardTitleGroup,
+        MatCardTitle,
         MatCardSubtitle,
         /* MatRipple, */
-        MatProgressBar
+        MatProgressBar,
+        AsyncPipe
     ],
     templateUrl: 'photo-card.component.html',
     styleUrl: 'photo-card.component.css'
@@ -32,12 +36,6 @@ export class PhotoCardComponent {
 
     @Input({ required: true })
     isHandset!: Observable<boolean>;
-
-    imageMaxWidth = signal<6|8>(6);
-    imageMaxHeight = signal<6|8>(6);
-
-    cardInlineStyling = computed<string>(() => `width: ${this.imageMaxWidth()}rem; height: ${this.imageMaxHeight() + 2}rem;`);
-    imageInlineStyling = computed<string>(() => `object-fit: contain; min-width: ${this.imageMaxWidth()}rem; min-height: ${this.imageMaxHeight()}rem;`);
 
     ngOnInit() {
         this.imageIsLoading.set(true);
@@ -67,10 +65,5 @@ export class PhotoCardComponent {
                 this.imageIsLoading.set(false);
             })
             .finally(() => this.imageIsLoading.set(false));
-
-        this.isHandset.subscribe(isHandset => {
-            this.imageMaxWidth.set(isHandset ? 6 : 8);
-            this.imageMaxHeight.set(isHandset ? 6 : 8);
-        });
     };
 }
