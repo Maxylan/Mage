@@ -15,7 +15,7 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("photos")]
 [Produces("application/json")]
-public class PhotosController(IPhotoService handler) : ControllerBase
+public class PhotosController(IPhotoService handler, IBlobService blobs) : ControllerBase
 {
     #region Get single photos.
     /// <summary>
@@ -133,63 +133,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetSourceBlobById(int photo_id)
-    {
-        var getSourcePhoto = await handler.GetSinglePhoto(photo_id, Dimension.SOURCE);
-        var source = getSourcePhoto.Value;
-        if (source is null)
-        {
-            return getSourcePhoto.Result!;
-        }
-
-        string path = Path.Combine(source.Path, source.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(source.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetSourceBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : source.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : source.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetSourceBlobById(int photo_id) =>
+        await blobs.GetSourceBlob(photo_id);
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single source blob) by its <paramref name="slug"/> (string).
@@ -202,63 +147,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetSourceBlobBySlug(string slug)
-    {
-        var getSourcePhoto = await handler.GetSinglePhoto(slug, Dimension.SOURCE);
-        var source = getSourcePhoto.Value;
-        if (source is null)
-        {
-            return getSourcePhoto.Result!;
-        }
-
-        string path = Path.Combine(source.Path, source.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(source.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetSourceBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : source.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : source.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetSourceBlobBySlug(string slug) =>
+        await blobs.GetSourceBlobBySlug(slug);
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single medium blob) by its <paramref name="photo_id"/> (PK, uint).
@@ -270,63 +160,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetMediumBlobById(int photo_id)
-    {
-        var getMediumPhoto = await handler.GetSinglePhoto(photo_id, Dimension.MEDIUM);
-        var medium = getMediumPhoto.Value;
-        if (medium is null)
-        {
-            return getMediumPhoto.Result!;
-        }
-
-        string path = Path.Combine(medium.Path, medium.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(medium.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetMediumBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : medium.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : medium.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetMediumBlobById(int photo_id) =>
+        await blobs.GetMediumBlob(photo_id);
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single medium blob) by its <paramref name="slug"/> (string).
@@ -339,63 +174,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetMediumBlobBySlug(string slug)
-    {
-        var getMediumPhoto = await handler.GetSinglePhoto(slug, Dimension.MEDIUM);
-        var medium = getMediumPhoto.Value;
-        if (medium is null)
-        {
-            return getMediumPhoto.Result!;
-        }
-
-        string path = Path.Combine(medium.Path, medium.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(medium.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetMediumBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : medium.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : medium.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetMediumBlobBySlug(string slug) =>
+        await blobs.GetMediumBlobBySlug(slug);
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single thumbnail blob) by its <paramref name="photo_id"/> (PK, uint).
@@ -407,63 +187,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetThumbnailBlobById(int photo_id)
-    {
-        var getThumbnailPhoto = await handler.GetSinglePhoto(photo_id, Dimension.THUMBNAIL);
-        var thumbnail = getThumbnailPhoto.Value;
-        if (thumbnail is null)
-        {
-            return getThumbnailPhoto.Result!;
-        }
-
-        string path = Path.Combine(thumbnail.Path, thumbnail.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(thumbnail.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetThumbnailBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : thumbnail.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : thumbnail.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetThumbnailBlobById(int photo_id) =>
+        await blobs.GetThumbnailBlob(photo_id);
 
     /// <summary>
     /// Get a single <see cref="Photo"/> (single thumbnail blob) by its <paramref name="slug"/> (string).
@@ -476,63 +201,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status423Locked)]
-    public async Task<ActionResult/*FileContentResult*/> GetThumbnailBlobBySlug(string slug)
-    {
-        var getThumbnailPhoto = await handler.GetSinglePhoto(slug, Dimension.THUMBNAIL);
-        var thumbnail = getThumbnailPhoto.Value;
-        if (thumbnail is null)
-        {
-            return getThumbnailPhoto.Result!;
-        }
-
-        string path = Path.Combine(thumbnail.Path, thumbnail.Filename);
-        try
-        {
-            FileStream fileStream = System.IO.File.OpenRead(path);
-            IImageFormat? format = MimeVerifyer.DetectImageFormat(thumbnail.Filename, fileStream);
-
-            if (format is null)
-            {   // TODO! Handle below scenarios!
-                // - Bad filename/extension string
-                // - Extension/Filename missmatch
-                // - MIME not supported
-                // - MIME not a valid image type.
-                // - MIME not supported by ImageSharp / Missing ImageFormat
-                // - MIME Could not be validated (bad magic numbers)
-                throw new NotImplementedException($"{nameof(GetThumbnailBlobById)} {nameof(format)} is null."); // TODO! Handle!!
-                // ..could fallback to "application/octet-stream here" instead of throwing?
-            }
-
-            fileStream.Position = 0;
-            return File(fileStream, format.DefaultMimeType);
-        }
-        catch (FileNotFoundException notFound)
-        {
-            return NotFound(
-                $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : thumbnail.Filename
-                )
-            );
-        }
-        catch (UnauthorizedAccessException unauthorizedAccess)
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                $"Cought {nameof(UnauthorizedAccessException)} attempting to open file " + (
-                    Program.IsDevelopment ? $"'{path}'. {unauthorizedAccess.Message}" : thumbnail.Filename
-                )
-            );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                "Cought Internal Server Error " + (
-                    Program.IsDevelopment ? ex.Message : ex.GetType().Name
-                )
-            );
-        }
-    }
+    public async Task<ActionResult/*FileContentResult*/> GetThumbnailBlobBySlug(string slug) =>
+        await blobs.GetThumbnailBlobBySlug(slug);
     #endregion
 
     #region Get multiple photos.

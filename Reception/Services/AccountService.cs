@@ -119,6 +119,7 @@ public class AccountService(
         account.Username = mut.Username;
         account.FullName = mut.FullName;
         account.Permissions = mut.Permissions;
+        account.AvatarId = mut.AvatarId;
 
         // Not changed during update..
         // account.Password = mut.Password

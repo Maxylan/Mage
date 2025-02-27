@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Sockets;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Reception.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Reception.Authentication;
 
@@ -276,7 +277,7 @@ public class MageAuthentication(
     /// <remarks>
     /// Unlike <seealso cref="MageAuthentication.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
-    public static bool TryGetProperties(IHttpContextAccessor contextAccessor, out AuthenticationProperties? properties) =>
+    public static bool TryGetProperties(IHttpContextAccessor contextAccessor, [NotNullWhen(true)] out AuthenticationProperties? properties) =>
         TryGetProperties(contextAccessor.HttpContext!, out properties);
     /// <summary>
     /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
@@ -284,7 +285,7 @@ public class MageAuthentication(
     /// <remarks>
     /// Unlike <seealso cref="MageAuthentication.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
-    public static bool TryGetProperties(HttpContext context, out AuthenticationProperties? properties)
+    public static bool TryGetProperties(HttpContext context, [NotNullWhen(true)] out AuthenticationProperties? properties)
     {
         ArgumentNullException.ThrowIfNull(context, nameof(context));
 
@@ -299,6 +300,38 @@ public class MageAuthentication(
 
         properties = authentication.Properties;
         return true;
+    }
+
+
+    /// <summary>
+    /// Attempt to get the current user's <see cref="Account"/> from the '<see cref="AuthenticationProperties"/>'
+    /// </summary>
+    /// <remarks>
+    /// Unlike <seealso cref="MageAuthentication.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// </remarks>
+    public static bool TryGetAccount(IHttpContextAccessor contextAccessor, [NotNullWhen(true)] out Account? account) =>
+        TryGetAccount(contextAccessor.HttpContext!, out account);
+    /// <summary>
+    /// Attempt to get the current user's <see cref="Account"/> from the '<see cref="AuthenticationProperties"/>'
+    /// </summary>
+    /// <remarks>
+    /// Unlike <seealso cref="MageAuthentication.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// If provided '<see cref="HttpContext"/>' is null
+    /// </exception>
+    public static bool TryGetAccount(HttpContext httpContext, [NotNullWhen(true)] out Account? account)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
+        account = null;
+
+        if (MageAuthentication.TryGetProperties(httpContext, out var properties))
+        {
+            account = properties.GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+            return account is not null;
+        }
+
+        return false;
     }
 
 

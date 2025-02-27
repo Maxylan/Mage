@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using Reception.Models;
 using Reception.Models.Entities;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Reception.Interfaces;
 
@@ -47,7 +47,7 @@ public interface ILinkService
     /// <summary>
     /// Increment the <see cref="Link.Accessed"/> property of a <see cref="Link"/>.
     /// </summary>
-    public abstract Task<Link> IncrementLinkAccessed(Link link);
+    public abstract Task<Link> IncrementLinkAccessed(Link link, bool reload = true);
 
     /// <summary>
     /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
