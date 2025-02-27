@@ -38,12 +38,12 @@ public class Filepath
             entity.Property(e => e.Filesize).HasColumnName("filesize");
             entity.Property(e => e.Dimension)
                 .HasColumnName("dimension")
-                .HasDefaultValue(Reception.Models.Entities.Dimension.SOURCE.ToString())
+                .HasDefaultValue(Reception.Models.Entities.Dimension.SOURCE)
                 .HasSentinel(null)
-                .HasConversion(
+                /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
                     y => Enum.Parse<Dimension>(y, true)
-                );
+                ) */;
             entity.Property(e => e.PhotoId).HasColumnName("photo_id");
 
             entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths)

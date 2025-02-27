@@ -51,6 +51,10 @@ public sealed class Program
                 Version = VERSION
             });
 
+            conf.AddServer(new () {
+                Url = ApiPathBase
+            });
+
             /* if (IsDevelopment) {
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
             } */
@@ -59,6 +63,7 @@ public sealed class Program
             if (IsDevelopment) {
                 opts.EnableSensitiveDataLogging();
             }
+
             opts.EnableDetailedErrors();
         });
 
@@ -75,27 +80,7 @@ public sealed class Program
                 Console.WriteLine($"Won't initialize with Swagger; {nameof(ApiPathBase)} is null/empty.");
             }
             else {
-                app.UseSwagger(/* opts =>{
-                    opts.RouteTemplate = ApiPathBase + "/swagger/{documentName}/swagger.json";
-                    Console.WriteLine("Swagger Route Template: " + opts.RouteTemplate);
-                } */);
-                app.MapSwagger(ApiPathBase + "/swagger/{documentName}/swagger.json", opts => {
-                    opts.PreSerializeFilters.Add((swaggerDoc, request) => {
-                        var serverUrl = $"{request.Scheme}://{request.Host}{ApiPathBase}";
-                        swaggerDoc.Servers.Add(new OpenApiServer() { Url = serverUrl });
-
-                        swaggerDoc.Paths = new OpenApiPaths(swaggerDoc.Paths.Select(p => new KeyValuePair<string, OpenApiPathItem>(p.Key, p.Value)).ToDictionary(), swaggerDoc.Paths.Extensions);
-                        /* OpenApiPaths newPaths = new(,);
-
-                        for(int i = 0; i < swaggerDoc.Paths.Keys.Count; i++) {
-                            swaggerDoc.Paths.Key[i] = swaggerDoc.Paths.Keys[i];
-                        }
-
-                        foreach(var path in swaggerDoc.Paths) {
-                            path.Key = ApiPathBase + path.Key;
-                        } */
-                    });
-                });
+                app.UseSwagger();
                 app.UseSwaggerUI(opts => {
                     opts.EnableFilter();
                     opts.EnablePersistAuthorization();

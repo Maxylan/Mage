@@ -42,7 +42,6 @@ public class Session
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.UserAgent)
                 .HasMaxLength(255)
-                .IsFixedLength()
                 .HasColumnName("user_agent");
 
             entity.HasOne(d => d.User).WithMany(p => p.Sessions)
