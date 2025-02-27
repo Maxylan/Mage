@@ -32,7 +32,9 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
             );
         }
 
-        Session? session = await db.Sessions.FirstOrDefaultAsync(s => s.Code == code);
+        Session? session = await db.Sessions
+            .Include(session => session.User)
+            .FirstOrDefaultAsync(s => s.Code == code);
 
         if (session is null)
         {
@@ -65,7 +67,9 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     /// </summary>
     public async Task<ActionResult<Session>> GetSessionById(int id)
     {
-        Session? session = await db.Sessions.FindAsync(id);
+        Session? session = await db.Sessions
+            .Include(session => session.User)
+            .FirstOrDefaultAsync(log => log.Id == id);
 
         if (session is null)
         {
