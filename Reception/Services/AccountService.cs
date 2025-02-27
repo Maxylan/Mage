@@ -36,7 +36,7 @@ public class AccountService(
                 .Action(nameof(GetAccount))
                 .ExternalDebug(message)
                 .SaveAsync();
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -53,22 +53,25 @@ public class AccountService(
         IQueryable<Account> query = db.Accounts.OrderByDescending(account => account.CreatedAt);
         string message;
 
-        if (lastVisit is not null) {
+        if (lastVisit is not null)
+        {
             query = query.Where(account => account.LastVisit >= lastVisit);
         }
-        if (!string.IsNullOrWhiteSpace(fullName)) {
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
             query = query.Where(account => account.FullName == fullName);
         }
 
         if (offset is not null)
         {
-            if (offset < 0) {
+            if (offset < 0)
+            {
                 message = $"Parameter {nameof(offset)} has to either be `0`, or any positive integer greater-than `0`.";
                 await loggingService
                     .Action(nameof(GetAccount))
                     .LogDebug(message)
                     .SaveAsync();
-                
+
                 return new BadRequestObjectResult(message);
             }
 
@@ -77,7 +80,8 @@ public class AccountService(
 
         if (limit is not null)
         {
-            if (limit <= 0) {
+            if (limit <= 0)
+            {
                 message = $"Parameter {nameof(limit)} has to be a positive integer greater-than `0`.";
                 await loggingService
                     .Action(nameof(GetAccount))
@@ -107,7 +111,7 @@ public class AccountService(
                 .Action(nameof(UpdateAccount))
                 .LogDebug(message)
                 .SaveAsync();
-            
+
             return new NotFoundObjectResult(message);
         }
 
@@ -121,7 +125,8 @@ public class AccountService(
         // account.CreatedAt = mut.CreatedAt
         // account.LastVisit = mut.LastVisit
 
-        try {
+        try
+        {
             db.Update(account);
             await db.SaveChangesAsync();
         }
@@ -130,14 +135,16 @@ public class AccountService(
             string message = $"Cought a {nameof(DbUpdateException)}. ";
             await loggingService
                 .Action(nameof(UpdateAccount))
-                .InternalError(message + updateException.Message, opts => {
+                .InternalError(message + updateException.Message, opts =>
+                {
                     opts.Exception = updateException;
                 })
                 .SaveAsync();
-            
+
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
-            )) {
+            ))
+            {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
@@ -146,14 +153,16 @@ public class AccountService(
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
             await loggingService
                 .Action(nameof(UpdateAccount))
-                .InternalError(message + ex.Message, opts => {
+                .InternalError(message + ex.Message, opts =>
+                {
                     opts.Exception = ex;
                 })
                 .SaveAsync();
-            
+
             return new BadRequestObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
-            )) {
+            ))
+            {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
@@ -172,7 +181,7 @@ public class AccountService(
     }
 
     // TODO, maybe?
-    
+
     /// <summary>
     /// Add a new <see cref="Account"/> to the database.
     /// </summary>

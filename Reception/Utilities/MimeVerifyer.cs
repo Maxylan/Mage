@@ -200,7 +200,8 @@ public class MimeVerifyer : IImageFormatDetector
     /// <summary>
     /// Convert a MIME Type (string) to a <see cref="IImageFormat"/> instance.
     /// </summary>
-    public static IImageFormat? GetImageFormat(string key) => key switch {
+    public static IImageFormat? GetImageFormat(string key) => key switch
+    {
         "jpeg" => SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance,
         "jpg" => SixLabors.ImageSharp.Formats.Jpeg.JpegFormat.Instance,
         "jp2" => null,
@@ -240,27 +241,29 @@ public class MimeVerifyer : IImageFormatDetector
     /// </summary>
     public static bool ValidateContentType(string filename, Stream stream)
     {
-   		ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
 
-		string extension = filename;
-	    int lastDotIndex = filename.LastIndexOf(".");
-	    if (lastDotIndex != -1) {
-	        extension = filename[(lastDotIndex + 1)..];
-	    }
+        string extension = filename;
+        int lastDotIndex = filename.LastIndexOf(".");
+        if (lastDotIndex != -1)
+        {
+            extension = filename[(lastDotIndex + 1)..];
+        }
 
-		if (string.IsNullOrWhiteSpace(extension))
-		{
-			ArgumentException argException = new(
-				$"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
-				nameof(filename)
-			);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            ArgumentException argException = new(
+                $"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
+                nameof(filename)
+            );
 
-	        if (Program.IsDevelopment) {
-	            Console.WriteLine(argException.Message);
-	        }
+            if (Program.IsDevelopment)
+            {
+                Console.WriteLine(argException.Message);
+            }
 
-          throw argException;
-		}
+            throw argException;
+        }
 
         return ValidateContentType(filename, extension, stream);
     }
@@ -271,7 +274,7 @@ public class MimeVerifyer : IImageFormatDetector
     public static bool ValidateContentType(string filename, string extension, Stream stream)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(extension, nameof(extension));
-       	ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
 
         int lastDotIndex = extension.LastIndexOf(".");
         if (lastDotIndex != -1)
@@ -282,11 +285,12 @@ public class MimeVerifyer : IImageFormatDetector
             if (string.IsNullOrWhiteSpace(extension))
             {
                 ArgumentException argException = new(
-                	$"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
-					nameof(extension)
+                    $"{nameof(MimeVerifyer.ValidateContentType)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
+                    nameof(extension)
                 );
 
-                if (Program.IsDevelopment) {
+                if (Program.IsDevelopment)
+                {
                     Console.WriteLine(argException.Message);
                 }
 
@@ -338,25 +342,27 @@ public class MimeVerifyer : IImageFormatDetector
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filename, nameof(filename));
 
-		string extension = filename;
-	    int lastDotIndex = filename.LastIndexOf(".");
-	    if (lastDotIndex != -1) {
-	        extension = filename[(lastDotIndex + 1)..];
-	    }
+        string extension = filename;
+        int lastDotIndex = filename.LastIndexOf(".");
+        if (lastDotIndex != -1)
+        {
+            extension = filename[(lastDotIndex + 1)..];
+        }
 
-		if (string.IsNullOrWhiteSpace(extension))
-		{
-			ArgumentException argException = new(
-				$"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
-				nameof(filename)
-			);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            ArgumentException argException = new(
+                $"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(filename)} ({filename}). Better look into that.",
+                nameof(filename)
+            );
 
-	        if (Program.IsDevelopment) {
-	            Console.WriteLine(argException.Message);
-	        }
+            if (Program.IsDevelopment)
+            {
+                Console.WriteLine(argException.Message);
+            }
 
-          throw argException;
-		}
+            throw argException;
+        }
 
         return DetectImageFormat(filename, extension, stream);
     }
@@ -381,11 +387,12 @@ public class MimeVerifyer : IImageFormatDetector
             if (string.IsNullOrWhiteSpace(extension))
             {
                 ArgumentException argException = new(
-                	$"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
-					nameof(extension)
+                    $"{nameof(MimeVerifyer.DetectImageFormat)} was passed a *really* bad {nameof(extension)} ({originalExtensionArgument}). Better look into that.",
+                    nameof(extension)
                 );
 
-                if (Program.IsDevelopment) {
+                if (Program.IsDevelopment)
+                {
                     Console.WriteLine(argException.Message);
                 }
 
@@ -394,10 +401,12 @@ public class MimeVerifyer : IImageFormatDetector
         }
 
         bool isGivenExtensionValid = ValidateContentType(filename, extension, stream);
-        if (isGivenExtensionValid) {
+        if (isGivenExtensionValid)
+        {
             return GetImageFormat(extension);
         }
-        else if (Program.IsDevelopment) {
+        else if (Program.IsDevelopment)
+        {
             Console.WriteLine($"(Debug) ({nameof(DetectImageFormat)}) {nameof(ValidateContentType)} Deemed the extension '{extension}' on file '{filename}' invalid. Could be that the MIME is unspported, naming missmatches, or invalid Magic Numbers.");
         }
 
@@ -419,7 +428,8 @@ public class MimeVerifyer : IImageFormatDetector
             // https://developers.google.com/speed/webp/docs/riff_container#webp_file_header
             if (mime.Key == "webp")
             {
-                if (header.Length < 12) {
+                if (header.Length < 12)
+                {
                     continue;
                 }
 

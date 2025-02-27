@@ -17,7 +17,7 @@ public interface ILoggingService
     /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
     /// </summary>
     public abstract Task<ActionResult<LogEntry>> GetEvent(int id);
-    
+
     /// <summary>
     /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of 
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.

@@ -54,7 +54,8 @@ public sealed class Program
             );
 
         builder.Services
-            .AddAuthentication(conf => {
+            .AddAuthentication(conf =>
+            {
                 conf.DefaultAuthenticateScheme = Parameters.SCHEME;
                 // conf.DefaultScheme = Parameters.SCHEME;
             })
@@ -67,14 +68,17 @@ public sealed class Program
             .AddDefaultPolicy(Parameters.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen(conf => {
-            conf.SwaggerDoc(VERSION, new() {
+        builder.Services.AddSwaggerGen(conf =>
+        {
+            conf.SwaggerDoc(VERSION, new()
+            {
                 Title = $"{AppName} '{ApiName}' ({ApiVersion}) {VERSION}",
                 Description = $"{AppName} Backend Server (ASP.NET 8.0, '{ApiPathBase}'). {VERSION}",
                 Version = VERSION
             });
 
-            OpenApiSecurityScheme scheme =  new() {
+            OpenApiSecurityScheme scheme = new()
+            {
                 Description = "Custom Bearer Authentication Header.",
                 Type = SecuritySchemeType.ApiKey,
                 In = ParameterLocation.Header,
@@ -87,14 +91,16 @@ public sealed class Program
                 }
             };
 
-            OpenApiSecurityRequirement requirement = new() {
+            OpenApiSecurityRequirement requirement = new()
+            {
                 [scheme] = []
             };
 
             conf.AddSecurityDefinition(Parameters.SCHEME, scheme);
             conf.AddSecurityRequirement(requirement);
 
-            conf.AddServer(new OpenApiServer() {
+            conf.AddServer(new OpenApiServer()
+            {
                 Url = ApiPathBase
             });
 
@@ -102,8 +108,10 @@ public sealed class Program
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
             } */
         });
-        builder.Services.AddDbContext<MageDbContext>(opts => {
-            if (IsDevelopment) {
+        builder.Services.AddDbContext<MageDbContext>(opts =>
+        {
+            if (IsDevelopment)
+            {
                 opts.EnableSensitiveDataLogging();
             }
 
@@ -123,12 +131,15 @@ public sealed class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment() || IsDevelopment)
         {
-            if (string.IsNullOrWhiteSpace(ApiPathBase)) {
+            if (string.IsNullOrWhiteSpace(ApiPathBase))
+            {
                 Console.WriteLine($"Won't initialize with Swagger; {nameof(ApiPathBase)} is null/empty.");
             }
-            else {
+            else
+            {
                 app.UseSwagger();
-                app.UseSwaggerUI(opts => {
+                app.UseSwaggerUI(opts =>
+                {
                     opts.EnableFilter();
                     opts.EnablePersistAuthorization();
                     opts.EnableTryItOutByDefault();

@@ -18,7 +18,8 @@ public class Login
 
 public record class LoginAttempt
 {
-    public LoginAttempt(string username) {
+    public LoginAttempt(string username)
+    {
         Username = username;
     }
 
@@ -27,27 +28,33 @@ public record class LoginAttempt
     public string Username { get; init; }
     public uint Attempts { get; init; } = 0;
 
-    public string Key {
-        get {
+    public string Key
+    {
+        get
+        {
             string? deviceIdentifier = Address ?? UserAgent;
             ArgumentException.ThrowIfNullOrWhiteSpace(deviceIdentifier, nameof(deviceIdentifier));
 
             return LoginAttempt.KeyFormat(this.Username, deviceIdentifier);
         }
     }
-    public string AddressKey {
-        get {
+    public string AddressKey
+    {
+        get
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(this.Address, nameof(this.Address));
             return LoginAttempt.KeyFormat(this.Username, this.Address);
         }
     }
-    public string UserAgentKey {
-        get {
+    public string UserAgentKey
+    {
+        get
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(this.UserAgent, nameof(this.UserAgent));
             return LoginAttempt.KeyFormat(this.Username, this.UserAgent);
         }
     }
 
-    public static string KeyFormat(string username, string deviceIdentifier) => 
+    public static string KeyFormat(string username, string deviceIdentifier) =>
         $"{username}_{deviceIdentifier}";
 }

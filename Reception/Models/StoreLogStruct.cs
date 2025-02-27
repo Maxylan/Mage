@@ -20,4 +20,4 @@ public readonly struct StoreLogsInDatabase(Func<MageDbContext> getDbContext)
     /// <c><seealso cref="Microsoft.EntityFrameworkCore.DbContext.SaveChanges"/></c>
     /// </remarks>
     public int Save() => getDbContext().SaveChanges();
-} 
+}

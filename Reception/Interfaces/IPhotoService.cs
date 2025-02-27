@@ -154,11 +154,13 @@ public interface IPhotoService
     /// </summary>
     public virtual Task<ActionResult<Filepath>> CreateFilepathEntity(Dimension dimension, string filename, int photoId)
     {
-        if (string.IsNullOrWhiteSpace(filename)) {
+        if (string.IsNullOrWhiteSpace(filename))
+        {
             throw new NotImplementedException("Filename null or empty"); // TODO: HANDLE
         }
 
-        return CreateFilepathEntity(new Filepath() {
+        return CreateFilepathEntity(new Filepath()
+        {
             Dimension = dimension,
             Filename = filename,
             PhotoId = photoId
@@ -176,23 +178,27 @@ public interface IPhotoService
         ArgumentNullException.ThrowIfNull(photo.Filepaths, nameof(photo.Filepaths));
         List<Filepath> paths = [];
 
-        foreach(Filepath path in photo.Filepaths)
+        foreach (Filepath path in photo.Filepaths)
         {
-            if (!string.IsNullOrWhiteSpace(filename)) {
+            if (!string.IsNullOrWhiteSpace(filename))
+            {
                 path.Filename = filename;
             }
-            else if (string.IsNullOrWhiteSpace(path.Filename)) {
+            else if (string.IsNullOrWhiteSpace(path.Filename))
+            {
                 continue; // Skip `path` if it has no Filename
             }
 
-            if (path.PhotoId <= 0 || path.PhotoId != photo.Id) {
+            if (path.PhotoId <= 0 || path.PhotoId != photo.Id)
+            {
                 path.PhotoId = photo.Id;
             }
 
             path.Photo ??= photo;
 
             var createFilepath = await CreateFilepathEntity(path);
-            if (createFilepath.Value is null) {
+            if (createFilepath.Value is null)
+            {
                 return createFilepath.Result!;
             }
 

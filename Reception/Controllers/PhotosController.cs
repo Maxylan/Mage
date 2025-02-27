@@ -138,7 +138,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getSourcePhoto = await handler.GetSinglePhoto(photo_id, Dimension.SOURCE);
         var source = getSourcePhoto.Value;
-        if (source is null) {
+        if (source is null)
+        {
             return getSourcePhoto.Result!;
         }
 
@@ -163,7 +164,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -171,7 +172,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -180,7 +181,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -206,7 +207,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getSourcePhoto = await handler.GetSinglePhoto(slug, Dimension.SOURCE);
         var source = getSourcePhoto.Value;
-        if (source is null) {
+        if (source is null)
+        {
             return getSourcePhoto.Result!;
         }
 
@@ -231,7 +233,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -239,7 +241,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -248,7 +250,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -273,7 +275,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getMediumPhoto = await handler.GetSinglePhoto(photo_id, Dimension.MEDIUM);
         var medium = getMediumPhoto.Value;
-        if (medium is null) {
+        if (medium is null)
+        {
             return getMediumPhoto.Result!;
         }
 
@@ -298,7 +301,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -306,7 +309,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -315,7 +318,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -341,7 +344,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getMediumPhoto = await handler.GetSinglePhoto(slug, Dimension.MEDIUM);
         var medium = getMediumPhoto.Value;
-        if (medium is null) {
+        if (medium is null)
+        {
             return getMediumPhoto.Result!;
         }
 
@@ -366,7 +370,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -374,7 +378,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -383,7 +387,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -408,7 +412,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getThumbnailPhoto = await handler.GetSinglePhoto(photo_id, Dimension.THUMBNAIL);
         var thumbnail = getThumbnailPhoto.Value;
-        if (thumbnail is null) {
+        if (thumbnail is null)
+        {
             return getThumbnailPhoto.Result!;
         }
 
@@ -433,7 +438,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -441,7 +446,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -450,7 +455,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -476,7 +481,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
     {
         var getThumbnailPhoto = await handler.GetSinglePhoto(slug, Dimension.THUMBNAIL);
         var thumbnail = getThumbnailPhoto.Value;
-        if (thumbnail is null) {
+        if (thumbnail is null)
+        {
             return getThumbnailPhoto.Result!;
         }
 
@@ -501,7 +507,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
             fileStream.Position = 0;
             return File(fileStream, format.DefaultMimeType);
         }
-        catch(FileNotFoundException notFound)
+        catch (FileNotFoundException notFound)
         {
             return NotFound(
                 $"Cought {nameof(FileNotFoundException)} attempting to open file " + (
@@ -509,7 +515,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(UnauthorizedAccessException unauthorizedAccess)
+        catch (UnauthorizedAccessException unauthorizedAccess)
         {
             return StatusCode(
                 StatusCodes.Status423Locked,
@@ -518,7 +524,7 @@ public class PhotosController(IPhotoService handler) : ControllerBase
                 )
             );
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -563,7 +569,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts => {
+        await handler.GetSingles(opts =>
+        {
             opts.Limit = limit;
             opts.Offset = offset;
             opts.Dimension = Dimension.SOURCE;
@@ -609,7 +616,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts => {
+        await handler.GetSingles(opts =>
+        {
             opts.Limit = limit;
             opts.Offset = offset;
             opts.Dimension = Dimension.MEDIUM;
@@ -655,7 +663,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts => {
+        await handler.GetSingles(opts =>
+        {
             opts.Limit = limit;
             opts.Offset = offset;
             opts.Dimension = Dimension.THUMBNAIL;
@@ -702,7 +711,8 @@ public class PhotosController(IPhotoService handler) : ControllerBase
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetPhotos(opts => {
+        await handler.GetPhotos(opts =>
+        {
             opts.Limit = limit;
             opts.Offset = offset;
             opts.Dimension = dimension;

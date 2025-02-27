@@ -12,7 +12,7 @@ public class LogEntry
     public int Id { get; set; }
 
     public int? UserId { get; set; }
-    
+
     public string? UserEmail { get; set; }
 
     public string? UserUsername { get; set; }
@@ -44,7 +44,8 @@ public class LogEntry
     /// <summary>
     /// Set the <see cref="Reception.Models.Entities.Method"/> of this entity using a string (<paramref name="method"/>)
     /// </summary>
-    public void SetMethod(string? method) => this.Method = method?.ToUpper() switch {
+    public void SetMethod(string? method) => this.Method = method?.ToUpper() switch
+    {
         "HEAD" => Entities.Method.HEAD,
         "GET" => Entities.Method.GET,
         "POST" => Entities.Method.POST,

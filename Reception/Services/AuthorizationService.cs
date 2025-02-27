@@ -34,7 +34,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
             await logging
-                .LogError(message, m => {
+                .LogError(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -50,7 +51,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(AuthenticationProperties)} found.";
             await logging
-                .LogError(message, m => {
+                .LogError(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -75,7 +77,8 @@ public class AuthorizationService(
         }
 
         var session = authenticationProperties!.GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
-        if (session is not null) {
+        if (session is not null)
+        {
             return await ValidateSession(
                 session,
                 source
@@ -83,7 +86,8 @@ public class AuthorizationService(
         }
 
         bool tokenExists = authenticationProperties!.Items.TryGetValue(Parameters.TOKEN_CONTEXT_KEY, out string? token);
-        if (tokenExists && !string.IsNullOrWhiteSpace(token)) {
+        if (tokenExists && !string.IsNullOrWhiteSpace(token))
+        {
             return await ValidateSession(
                 token,
                 source
@@ -92,12 +96,13 @@ public class AuthorizationService(
 
         message = $"Failed to infer a {nameof(Session)} or Token from contextual {nameof(Account)}, {nameof(Session.Code)} or {nameof(AuthenticationProperties)}";
         await logging
-            .LogInformation(message, m => {
+            .LogInformation(message, m =>
+            {
                 m.Action = nameof(ValidateSession);
                 m.Source = source;
             })
             .SaveAsync();
-        
+
         return new UnauthorizedObjectResult(message);
     }
     /// <summary>
@@ -108,19 +113,20 @@ public class AuthorizationService(
         var getSession = await sessions.GetSession(sessionCode);
         var session = getSession.Value;
 
-        if (session is not null) {
+        if (session is not null)
+        {
             return await ValidateSession(session, source);
         }
 
         if (getSession.Result is NotFoundObjectResult)
         {
             return new UnauthorizedObjectResult(
-                Program.IsDevelopment 
+                Program.IsDevelopment
                     ? $"Failed to get a {nameof(Session)} from the {nameof(sessionCode)} '{nameof(sessionCode)}'"
                     : HttpStatusCode.Unauthorized.ToString()
             );
         }
-        
+
         return getSession;
     }
     /// <summary>
@@ -135,7 +141,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
             await logging
-                .LogError(message, m => {
+                .LogError(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -150,7 +157,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: Expired";
             await logging
-                .LogInformation(message, m => {
+                .LogInformation(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -167,7 +175,8 @@ public class AuthorizationService(
             {
                 message = $"{nameof(Session)} Validation Failed: UserAgent missmatch";
                 await logging
-                    .LogSuspicious(message, m => {
+                    .LogSuspicious(message, m =>
+                    {
                         m.Action = nameof(ValidateSession);
                         m.Source = source;
                     })
@@ -183,7 +192,8 @@ public class AuthorizationService(
             {
                 message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
                 await logging
-                    .LogSuspicious(message, m => {
+                    .LogSuspicious(message, m =>
+                    {
                         m.Action = nameof(ValidateSession);
                         m.Source = source;
                     })
@@ -200,7 +210,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
             await logging
-                .LogSuspicious(message, m => {
+                .LogSuspicious(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -218,7 +229,8 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: Bad Account.";
             await logging
-                .LogSuspicious(message, m => {
+                .LogSuspicious(message, m =>
+                {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
@@ -228,7 +240,8 @@ public class AuthorizationService(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
             );
         }
-        else if (session.User is null) {
+        else if (session.User is null)
+        {
             session.User = account;
         }
 
@@ -250,14 +263,14 @@ public class AuthorizationService(
         if (account is null)
         {
             // To rate-limit password attempts, even in this early fail-fast check..
-            Thread.Sleep(512); 
+            Thread.Sleep(512);
 
             string message = $"Failed to find an {nameof(Account)} with Username '{userName}'.";
             await logging
                 .Action(nameof(Login))
                 .ExternalDebug(message)
                 .SaveAsync();
-            
+
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
@@ -283,7 +296,8 @@ public class AuthorizationService(
 
             return new ObjectResult(
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message
-            ) {
+            )
+            {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
@@ -291,7 +305,8 @@ public class AuthorizationService(
         string? userAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
         string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
 
-        LoginAttempt attempt = new(account.Username) {
+        LoginAttempt attempt = new(account.Username)
+        {
             UserAgent = userAgent,
             Address = userAddress
         };
@@ -303,10 +318,11 @@ public class AuthorizationService(
                 .Action(nameof(Login))
                 .ExternalSuspicious(message)
                 .SaveAsync();
-            
+
             return new ObjectResult(
                 Program.IsProduction ? HttpStatusCode.RequestTimeout.ToString() : message
-            ) {
+            )
+            {
                 StatusCode = StatusCodes.Status408RequestTimeout
             };
         }
@@ -321,7 +337,7 @@ public class AuthorizationService(
                 .ExternalSuspicious(message);
 
             await sessions.CleanupSessions();
-            
+
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
             );
@@ -348,7 +364,7 @@ public class AuthorizationService(
                 .Action(nameof(Login))
                 .ExternalDebug(message)
                 .SaveAsync();
-            
+
             return createSession.Result!;
         }
 

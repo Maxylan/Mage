@@ -13,11 +13,13 @@ public class LoginTracker : MemoryCache
     public LoginTracker(
         ILoggerFactory loggerFactory
     ) : base(
-        new MemoryCacheOptions() {
+        new MemoryCacheOptions()
+        {
             ExpirationScanFrequency = TimeSpan.FromSeconds(6)
         },
         loggerFactory
-    ) {
+    )
+    {
         this.logger = loggerFactory.CreateLogger<LoginTracker>();
     }
 
@@ -27,31 +29,34 @@ public class LoginTracker : MemoryCache
     ) : base(
         optionsAccessor,
         loggerFactory
-    ) {
+    )
+    {
         this.logger = loggerFactory.CreateLogger<LoginTracker>();
     }
 
 
-    public LoginAttempt? GetByAddress(string username, string remoteAddress) => 
+    public LoginAttempt? GetByAddress(string username, string remoteAddress) =>
         this.Get<LoginAttempt>(LoginAttempt.KeyFormat(username, remoteAddress));
     public LoginAttempt? GetByAddress(LoginAttempt login)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(login.Username, nameof(LoginAttempt.Username));
         // ArgumentException.ThrowIfNullOrWhiteSpace(login.Address, nameof(LoginAttempt.Address));
-        if (string.IsNullOrWhiteSpace(login.Address)) {
+        if (string.IsNullOrWhiteSpace(login.Address))
+        {
             return null;
         }
 
         return this.Get<LoginAttempt>(LoginAttempt.KeyFormat(login.Username, login.Address));
     }
 
-    public LoginAttempt? GetByUserAgent(string username, string userAgent) => 
+    public LoginAttempt? GetByUserAgent(string username, string userAgent) =>
         this.Get<LoginAttempt>(LoginAttempt.KeyFormat(username, userAgent));
     public LoginAttempt? GetByUserAgent(LoginAttempt login)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(login.Username, nameof(LoginAttempt.Username));
         // ArgumentException.ThrowIfNullOrWhiteSpace(login.UserAgent, nameof(LoginAttempt.UserAgent));
-        if (string.IsNullOrWhiteSpace(login.UserAgent)) {
+        if (string.IsNullOrWhiteSpace(login.UserAgent))
+        {
             return null;
         }
 
@@ -70,7 +75,7 @@ public class LoginTracker : MemoryCache
             logger.LogError(
                 exception, $"[{nameof(LoginTracker)}] {message}"
             );
-            
+
             throw exception;
         }
 
@@ -81,7 +86,8 @@ public class LoginTracker : MemoryCache
 
             var cacheEntry = base.CreateEntry(login.AddressKey);
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-            cacheEntry.Value = existingLoginAttempt! with {
+            cacheEntry.Value = existingLoginAttempt! with
+            {
                 UserAgent = existingLoginAttempt.UserAgent ?? login.UserAgent,
                 Attempts = existingLoginAttempt.Attempts + 1
             };
@@ -94,7 +100,8 @@ public class LoginTracker : MemoryCache
 
             var cacheEntry = base.CreateEntry(login.UserAgentKey);
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-            cacheEntry.Value = existingLoginAttempt! with {
+            cacheEntry.Value = existingLoginAttempt! with
+            {
                 UserAgent = existingLoginAttempt.Address ?? login.Address,
                 Attempts = existingLoginAttempt.Attempts + 1
             };
@@ -113,7 +120,7 @@ public class LoginTracker : MemoryCache
             logger.LogError(
                 exception, $"[{nameof(LoginTracker)}] {message}"
             );
-            
+
             throw exception;
         }
 
