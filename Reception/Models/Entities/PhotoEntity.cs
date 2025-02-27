@@ -1,6 +1,7 @@
+using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
 
 namespace Reception.Models.Entities;
 
@@ -12,8 +13,14 @@ public class PhotoEntity
     public string? Summary { get; set; }
     public string? Description { get; set; }
     public int? UploadedBy { get; set; }
+
+    [Column("uploaded_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UploadedAt { get; set; }
+
+    [Column("updated_at", TypeName = "TIMESTAMPTZ")]
     public DateTime UpdatedAt { get; set; }
+
+    [Column("created_at", TypeName = "TIMESTAMP")]
     public DateTime CreatedAt { get; set; }
 
     // Navigation Properties
@@ -51,7 +58,8 @@ public class PhotoEntity
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                .HasColumnName("created_at");
+                .HasColumnName("created_at")
+                .HasColumnType("TIMESTAMP");
             entity.Property(e => e.UploadedBy).HasColumnName("uploaded_by");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.Slug)
@@ -65,10 +73,12 @@ public class PhotoEntity
                 .HasColumnName("title");
             entity.Property(e => e.UploadedAt)
                 .HasDefaultValueSql("now()")
-                .HasColumnName("uploaded_at");
+                .HasColumnName("uploaded_at")
+                .HasColumnType("TIMESTAMPTZ");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("now()")
-                .HasColumnName("updated_at");
+                .HasColumnName("updated_at")
+                .HasColumnType("TIMESTAMPTZ");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Photos)
                 .HasForeignKey(d => d.UploadedBy)

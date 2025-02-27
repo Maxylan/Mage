@@ -891,7 +891,9 @@ public class PhotoService(
                     });
                 });
 
-          		alternatePath = Path.Combine(mediumPath, filename);
+                mediumDimensions.Width = medium.Width;
+                mediumDimensions.Height = medium.Height;
+                alternatePath = Path.Combine(mediumPath, filename);
 
                 using (var mediumFile = File.Create(alternatePath)) {
                     await medium.SaveAsync(mediumFile, imageEncoder);
@@ -916,6 +918,8 @@ public class PhotoService(
                     });
                 });
 
+                thumbnailDimensions.Width = thumbnail.Width;
+                thumbnailDimensions.Height = thumbnail.Height;
                 alternatePath = Path.Combine(thumbnailPath, filename);
 
                 using (var thumbnailFile = File.Create(alternatePath)) {
