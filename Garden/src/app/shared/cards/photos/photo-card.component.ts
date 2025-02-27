@@ -1,15 +1,18 @@
 import { Component, Input, inject, signal, effect, computed, ElementRef, afterRender } from '@angular/core';
-import { MatCard } from '@angular/material/card';
+import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatRipple } from '@angular/material/core';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { Dimension, Photo } from '../../../core/types/photos.types';
 import { BlobResponse } from '../../../core/types/generic.types';
+import { Observable } from 'rxjs';
 
 @Component({
     selector: 'shared-photo-card',
     imports: [
         MatCard,
+        MatCardContent,
+        MatCardSubtitle,
         /* MatRipple, */
         MatProgressBar
     ],
@@ -17,58 +20,57 @@ import { BlobResponse } from '../../../core/types/generic.types';
     styleUrl: 'photo-card.component.css'
 })
 export class PhotoCardComponent {
-    @Input()
+    private photoService = inject(PhotosService);
+
+    @Input({ required: true })
     photo!: Photo;
 
+    imageEncoded: string|null = null;
     imageContentType: string|null = null;
     imageContentLength: number|null = null;
     imageIsLoading = signal<boolean>(false);
-    imageEncoded: string|null = null;
 
-    private currentPhotoId: number = this.photo?.photoId ?? 0;
-    private photoService = inject(PhotosService);
-    logger = effect(
-        () => console.log('lemme see', this.imageIsLoading(), this.imageEncoded, this.imageContentType, this.imageContentLength)
-    );
+    @Input({ required: true })
+    isHandset!: Observable<boolean>;
+
+    imageMaxWidth = signal<6|8>(6);
+    imageMaxHeight = signal<6|8>(6);
+
+    cardInlineStyling = computed<string>(() => `width: ${this.imageMaxWidth()}rem; height: ${this.imageMaxHeight() + 2}rem;`);
+    imageInlineStyling = computed<string>(() => `object-fit: contain; min-width: ${this.imageMaxWidth()}rem; min-height: ${this.imageMaxHeight()}rem;`);
+
     ngOnInit() {
-        // try {
-            this.imageIsLoading.set(true);
-            this.photoService
-                .getPhotoBlob(this.photo.photoId, 'thumbnail')
-                .then(blobResponse => {
-                    this.imageContentType = blobResponse.contentType ?? 'application/octet-stream';
-                    this.imageContentLength = blobResponse.file?.size ?? 0;
-                    
-                        console.log('???');
-                    if (!this.imageContentType.startsWith('image')) {
-                        console.log('huh');
-                        return Promise.reject('Response is not an image!');
-                    }
-                    if (!blobResponse.file) {
-                        console.log('bruhv', blobResponse);
-                        return Promise.reject('Response is not an image!');
-                    }
+        this.imageIsLoading.set(true);
+        this.photoService
+            .getPhotoBlob(this.photo.photoId, 'thumbnail')
+            .then(blobResponse => {
+                this.imageContentType = blobResponse.contentType ?? 'application/octet-stream';
+                this.imageContentLength = blobResponse.file?.size ?? 0;
 
-                    return blobResponse.file.arrayBuffer();
-                })
-                .then(buffer => { // ..i wonder, at what point is @ts-ignore acceptable :p
-                    let encoded = (
-                        `data:${this.imageContentType};base64,` +
-                        (new Uint8Array(buffer) as Uint8Array & { toBase64: () => string|null}).toBase64()
-                    );
+                if (!this.imageContentType.startsWith('image')) {
+                    return Promise.reject('Response is not an image!');
+                }
+                if (!blobResponse.file) {
+                    return Promise.reject('Response is not an image!');
+                }
 
-                    console.log('lemme have a looksie', encoded);
-                    this.imageEncoded = encoded;
-                    return Promise.resolve(encoded);
-                })
-                .finally(() => this.imageIsLoading.set(false));
-        /* }
-        catch (err) {
-            console.error('[PhotoCardComponent.onLoad] Error!', err);
-            this.imageIsLoading.set(false);
-        }
-        finally {
-            this.currentPhotoId = this.photo.photoId;
-        } */
+                return blobResponse.file.arrayBuffer();
+            })
+            .then(buffer => {
+                this.imageEncoded = (
+                    `data:${this.imageContentType};base64,` + // ..i wonder, at what point is @ts-ignore acceptable :p
+                    (new Uint8Array(buffer) as Uint8Array & { toBase64: () => string|null}).toBase64()
+                );
+            })
+            .catch(err => {
+                console.error('[PhotoCardComponent.onLoad] Error!', err);
+                this.imageIsLoading.set(false);
+            })
+            .finally(() => this.imageIsLoading.set(false));
+
+        this.isHandset.subscribe(isHandset => {
+            this.imageMaxWidth.set(isHandset ? 6 : 8);
+            this.imageMaxHeight.set(isHandset ? 6 : 8);
+        });
     };
 }

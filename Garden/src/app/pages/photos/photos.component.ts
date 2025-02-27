@@ -3,6 +3,9 @@ import { PhotosService } from '../../core/api/photos.service';
 import { PhotoCollection } from '../../core/types/photos.types';
 import { PhotoCardComponent } from '../../shared/cards/photos/photo-card.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { map, Observable, shareReplay } from 'rxjs';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'page-list-photos',
@@ -17,6 +20,7 @@ import { PaginationComponent } from '../../shared/pagination/pagination.componen
     styleUrl: 'photos.component.css'
 })
 export class PhotosComponent {
+    private breakpointObserver = inject(BreakpointObserver);
     private photoService = inject(PhotosService);
 
     photos: PhotoCollection[] = [];
@@ -26,25 +30,28 @@ export class PhotosComponent {
     
     isLoading = signal(false);
     getPhotos = (): void => {
-        // try {
-            this.isLoading.set(true);
-            this.photoService
-                .getPhotos({
-                    offset: this.page,
-                    limit: this.pageSize
-                })
-                .then(data => this.photos = data)
-                .finally(() => this.isLoading.set(false));
-        /* }
-        catch (err) {
-            console.error('[getPhotos] Error!', err);
-            this.isLoading.set(false);
-            this.photos = [];
-        } */
+        this.isLoading.set(true);
+        this.photoService
+            .getPhotos({
+                offset: this.page,
+                limit: this.pageSize
+            })
+            .then(data => this.photos = data)
+            .catch(err => {
+                console.error('[getPhotos] Error!', err);
+                this.photos = [];
+            })
+            .finally(() => this.isLoading.set(false));
     }
 
     constructor() {
         this.getPhotos();
-
     }
+
+    isHandset$: Observable<boolean> = this.breakpointObserver
+        .observe(Breakpoints.Handset)
+        .pipe(
+            map(result => result.matches),
+            shareReplay()
+        );
 }
