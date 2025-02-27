@@ -1,5 +1,10 @@
 -- Create the `magedb` database schema.
 CREATE SCHEMA IF NOT EXISTS magedb;
+SET search_path TO 'magedb';
+
+-- Timezone of the `magedb` database schema.
+SET timezone TO 'Europe/Stockholm';
+SET datestyle TO 'Euro';
 
 -- The `accounts` table keeps track of valid accounts.
 CREATE TABLE IF NOT EXISTS accounts (

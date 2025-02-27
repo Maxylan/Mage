@@ -1,3 +1,6 @@
+-- Select the `magedb` database schema.
+SET search_path TO 'magedb';
+
 -- Truncate tables (in case they already existed..)
 TRUNCATE TABLE accounts CASCADE;
 TRUNCATE TABLE sessions CASCADE;
