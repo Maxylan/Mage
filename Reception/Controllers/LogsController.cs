@@ -26,7 +26,7 @@ public class LogsController(ILoggingService handler) : ControllerBase
         await handler.GetEvent(id);
 
     /// <summary>
-    /// Get all <see cref="LogEntry"/>-instances, optionally filtered and paginated by a wide range of query parameters.
+    /// Get all <see cref="LogEntry"/>-instances, optionally filtered and/or paginated by a wide range of query parameters.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models.Entities;
 
@@ -14,6 +15,7 @@ public class Account
 
     public string Username { get; set; } = null!;
 
+    [JsonIgnore, SwaggerIgnore]
     public string Password { get; set; } = null!;
 
     public string? FullName { get; set; }

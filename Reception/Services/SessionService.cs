@@ -69,7 +69,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
     {
         Session? session = await db.Sessions
             .Include(session => session.User)
-            .FirstOrDefaultAsync(log => log.Id == id);
+            .FirstOrDefaultAsync(session => session.Id == id);
 
         if (session is null)
         {
