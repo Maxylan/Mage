@@ -6,6 +6,8 @@ import { RefreshCredentials, Session } from '../types/generic.types';
 })
 export class AuthService {
     private apiUrl: string = '/reception';
+    private stored_user_key = 'mage-stored-usr';
+    private stored_cred_key = 'mage-stored-creds';
     private isAuthLoading = signal<boolean>(true);
     private storedCredentials: RefreshCredentials|null = null;
     private storedSession: Session|null = null;
@@ -23,7 +25,7 @@ export class AuthService {
         this.consumeToken();
 
         if (this.code === null || this.storedSession === null) {
-            const localStorageSession = localStorage.getItem('mage-stored-usr');
+            const localStorageSession = localStorage.getItem(this.stored_user_key);
             if (localStorageSession) {
                 this.storedSession = JSON.parse(localStorageSession);
             }
@@ -39,15 +41,14 @@ export class AuthService {
         if (!location.hash) {
             return;
         }
+        const [
+            url,
+            token
+        ] = location.href.split('#');
 
-        if (location.hash.startsWith('#@') && location.hash.length === 38) {
-            this.code = location.hash.substring(2);
-            // location.hash = '';
-            window.history.replaceState(
-                {},
-                document.title,
-                location.href.split('#')[0]
-            );
+        if (token) {
+            this.code = token.replace(/^#?@?/, '');
+            window.history.replaceState(null, '', url);
         }
     }
 
@@ -58,7 +59,7 @@ export class AuthService {
         this.isAuthLoading.set(true);
 
         if (!this.storedCredentials) {
-            const storedCredentials = localStorage.getItem('mage-stored-creds');
+            const storedCredentials = localStorage.getItem(this.stored_cred_key);
             if (storedCredentials) {
                 this.storedCredentials = JSON.parse(storedCredentials);
             }
@@ -66,9 +67,7 @@ export class AuthService {
 
         if (!this.storedCredentials) {
             this.fallbackToAuth();
-            return Promise.resolve(
-                this.getToken()
-            );
+            return Promise.resolve(null);
         }
 
         console.debug('[AuthService] Attempting auto-refresh (remember me)');
@@ -120,7 +119,7 @@ export class AuthService {
     /**
      * Fallback on a redirect to 'Guard' to have the user re-authorize (login)
      */
-    public fallbackToAuth = (failedResponse?: Response|any) => {
+    public fallbackToAuth = (failedResponse?: Response) => {
         console.debug('[AuthService] Falling-back to \'Guard\'..');
         this.isAuthLoading.set(true);
 
