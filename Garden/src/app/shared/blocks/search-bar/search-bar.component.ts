@@ -28,28 +28,29 @@ export class SearchBarComponent<TSupported extends object, TResult extends objec
     public searchFormName!: string;
 
     @Input({required: true})
-    public callback!: SearchCallback<TSupported, TResult>;
+    // public callback!: SearchCallback<TSupported, TResult>;
+    public callback!: SearchCallback;
 
     public searchControl = new FormControl<string>('', { disable: false } as FormControlOptions);
     public loginForm = new FormGroup({
         keyword: this.searchControl,
     });
 
-    private searchResults: TResult[] = [];
-    public getSearchResults: TResult[] = this.searchResults;
+    // private searchResults: TResult[] = [];
+    // public getSearchResults: TResult[] = this.searchResults;
 
     public parseSearchForm = () => {
         let parameters: SearchParameters<{[key: string]: string|number|undefined}> = {
             query: this.searchControl.value ?? undefined
         };
 
-        this.callback(parameters as SearchParameters<TSupported>)
-            .then(result => {
+        this.callback(parameters as SearchParameters<TSupported>);
+            /* .then(result => {
                 this.searchResults = result;
-                return this.results.emit(this.searchResults);
-            });
+                return this.results.emit(result);
+            }); */
     };
 
-    @Output()
-    public results: EventEmitter<TResult[]> = new EventEmitter<TResult[]>();
+    /* @Output()
+    public results: EventEmitter<TResult[]> = new EventEmitter<TResult[]>(); */
 }

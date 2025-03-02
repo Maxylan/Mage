@@ -84,6 +84,21 @@ export enum Dimension {
     THUMBNAIL = 'THUMBNAIL'
 };
 
+export type PhotoPage = {
+    page: number,
+    set: Set<PhotoCollection>
+};
+export interface PhotoPageStore {
+    currentPage: number,
+    pageSize: number,
+    store: PhotoPage[]
+};
+export const defaultPhotoPageContainer: PhotoPageStore = {
+    currentPage: 0,
+    pageSize: 32,
+    store: []
+};
+
 export interface IPhotoSearchParameters {
     slug?: string,
     title?: string,

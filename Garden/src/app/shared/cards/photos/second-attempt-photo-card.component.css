@@ -1,0 +1,65 @@
+a {
+    text-decoration: unset;
+}
+
+article.photo-card {
+    display: block;
+    overflow: hidden; 
+    padding-top: 0.32rem;
+    border: 1px solid rgba(0,0,0,0);
+    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
+}
+article:hover {
+    border-color: rgba(127,127,127,0.16);
+    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+}
+
+article.desktop-photo-card {
+    max-height: 8rem;
+    max-width: 7.2rem;
+}
+article.handset-photo-card {
+    max-height: 7.2rem;
+    max-width: 6.4rem;
+}
+
+div.photo-card-image {
+    margin: auto;
+    min-width: 0;
+}
+div.desktop-image {
+    height: 5.6rem;
+    width: 6.4rem;
+}
+div.handset-image {
+    height: 4.8rem;
+    width: 5.6rem;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+p {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    padding: 0.32rem;
+    margin: unset;
+    user-select: none;
+    -ms-user-select: none;      
+    -moz-user-select: none;    
+    -webkit-user-select: none;  
+}
+p.desktop-photo-card-title {
+    font-size: 12px;
+    font-weight: bold;
+}
+p.handset-photo-card-title {
+    font-size: 11px;
+    font-weight: bold;
+}

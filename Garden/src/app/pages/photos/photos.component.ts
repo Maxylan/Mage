@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, Signal, signal } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
-import { IPhotoQueryParameters, IPhotoSearchParameters, PhotoCollection } from '../../core/types/photos.types';
+import { defaultPhotoPageContainer, IPhotoQueryParameters, IPhotoSearchParameters, PhotoCollection, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
 import { PhotoCardComponent } from '../../shared/cards/photos/photo-card.component';
 import { SearchBarComponent } from '../../shared/blocks/search-bar/search-bar.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
@@ -30,26 +30,48 @@ import { NavbarControllerService } from '../../layout/navbar/navbar-controller.s
     styleUrl: 'photos.component.css'
 })
 export class PhotosComponent {
-    private navbarController = inject(NavbarControllerService);
-    private breakpointObserver = inject(BreakpointObserver);
     private photoService = inject(PhotosService);
+    private breakpointObserver = inject(BreakpointObserver);
+    private navbarController = inject(NavbarControllerService);
+
+    private photoStore = signal(defaultPhotoPageContainer);
+    public photos = computed<number>(() => {
+        const pageStore = this.photoStore();
+        return pageStore.store.reduce(
+            (prev, val) => prev += val.set.size,
+            0
+        );
+    });
+
+    public pageIndex = computed<number>(() => this.photoStore().currentPage);
+    public pageSize = computed<number>(() => this.photoStore().pageSize);
+    public page = computed<PhotoPage|null>(() => {
+        const { store, currentPage } = this.photoStore();
+        const pageIndex = store.findIndex(p => p.page === currentPage);
+        if (pageIndex === -1) {
+            console.warn(`Page not found! (${currentPage})`, store);
+            return null;
+        }
+
+        return store[currentPage];
+    });
 
     public getNavbar = this.navbarController.getNavbar;
+    public isLoading = signal(false);
 
-    photos: PhotoCollection[] = [];
-
-    public page = 0;
-    public pageSize = 32;
-    
-    isLoading = signal(false);
-    public searchForPhotos: SearchCallback<IPhotoSearchParameters, PhotoCollection> = (params) => {
+    public searchForPhotos: SearchCallback = (params) => {
         this.isLoading.set(true);
+        const {
+            currentPage,
+            pageSize
+        } = this.photoStore();
 
-        const fetchLimit = this.pageSize * 3;
-        const offsetStart = this.page < 1 ? 0 : this.page - 1;
+        const fetchLimit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
+        const fetchOffset = currentPage > 1 ? fetchLimit * currentPage - pageSize : 0;
+
         const searchQuery: IPhotoQueryParameters = {
             limit: fetchLimit,
-            offset: offsetStart,
+            offset: fetchOffset,
             slug: params?.query,
             title: params?.query,
             summary: params?.query
@@ -59,18 +81,44 @@ export class PhotosComponent {
             .getPhotos(searchQuery)
             .then(data => {
                 console.debug('[searchForPhotos] Search Result', data);
-                this.photos = data;
+                let newStore: PhotoPageStore = {
+                    ...this.photoStore()
+                };
+
+                let iteration = 0;
+                while(data.length > 0 && ++iteration < 3) {
+                    const sliceLength = data.length < pageSize
+                        ? data.length
+                        : pageSize;
+
+                    const slice = new Set(data.splice(0, sliceLength));
+
+                    const pageNumber = currentPage && currentPage - iteration;
+                    const pageIndex = newStore.store.findIndex(p => p.page === pageNumber);
+                    if (pageIndex === -1) {
+                        newStore.store.push({
+                            page: pageNumber,
+                            set: slice
+                        });
+                    }
+                    else {
+                        newStore.store[pageIndex] = {
+                            page: pageNumber,
+                            set: slice
+                        };
+                    }
+                }
+                
+                this.photoStore.set(newStore);
             })
             .catch(err => {
                 console.error('[searchForPhotos] Error!', err);
-                this.photos = [];
+                /* this.photoStore.set({
+                    ...this.photoStore(),
+                    store: []
+                }); */
             })
-            .then(() => this.photos)
             .finally(() => this.isLoading.set(false));
-    }
-
-    constructor() {
-        this.searchForPhotos();
     }
 
     isHandset$: Observable<boolean> = this.breakpointObserver
@@ -79,4 +127,8 @@ export class PhotosComponent {
             map(result => result.matches),
             shareReplay()
         );
+
+    constructor() {
+        this.searchForPhotos();
+    }
 }

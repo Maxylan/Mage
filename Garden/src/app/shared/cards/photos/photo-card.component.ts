@@ -1,5 +1,4 @@
-import { Component, Input, inject, signal, effect, computed, ElementRef, afterRender, EventEmitter, Output } from '@angular/core';
-import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle, MatCardTitleGroup } from '@angular/material/card';
+import { Component, Input, inject, signal, computed } from '@angular/core';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatRipple } from '@angular/material/core';
 import { MatProgressBar } from '@angular/material/progress-bar';
@@ -12,13 +11,12 @@ import { Observable } from 'rxjs';
     selector: 'shared-photo-card',
     imports: [
         NgClass,
-        MatCard,
         MatRipple,
         MatProgressBar,
         AsyncPipe
     ],
     templateUrl: 'photo-card.component.html',
-    styleUrl: 'photo-card.component.css'
+    styleUrl: 'second-attempt-photo-card.component.css'
 })
 export class PhotoCardComponent {
     private photoService = inject(PhotosService);

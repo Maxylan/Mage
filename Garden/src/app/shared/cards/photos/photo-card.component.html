@@ -1,28 +1,17 @@
-<div 
-    matRipple
-    [ngClass]="'photo-card-container ' + (!!(isHandset | async) ? 'handset-photo-card-container' : 'desktop-photo-card-container')">
-    <a [href]="link()">
-        <mat-card
-            [ngClass]="!!(isHandset | async) ? 'handset-photo-card-image' : 'desktop-photo-card-image'"
-            appearance="raised" 
-            role="listitem">
+<a [href]="link()">
+    <article matRipple [ngClass]="'photo-card ' + (!!(isHandset | async) ? 'handset-photo-card' : 'desktop-photo-card')">
+        <div [ngClass]="'photo-card-image ' + (!!(isHandset | async) ? 'handset-image' : 'desktop-image')">
             @if(imageIsLoading()) {
                 <mat-progress-bar [mode]="'buffer'" />
             }
             @else {
                 <img mat-card-sm-image 
-                    ngClass="photo-card"
-                    [src]=imageEncoded
-                    [alt]=photo.slug >
+                    [src]="imageEncoded"
+                    [alt]="photo.slug" >
             }
-        </mat-card>
-        <div>
-            <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
-                {{ photo.title }}
-            </p>
-            <p>
-                <ng-content/>
-            </p>
         </div>
-    </a>
-</div>
+        <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
+            <ng-content/>
+        </p>
+    </article>
+</a>
