@@ -53,16 +53,10 @@ export default class ApiBase {
                     }
                 },
                 write: function(key: string, item: ApiCacheItem|Response) {
-                    if (!('cachedAt' in item)) {
-                        item = {
-                            ...item,
-                            cachedAt: Date.now() / 1000
-                        };
-                    }
-
-                    this.store[key] = (
-                        item.clone() as ApiCacheItem
-                    );
+                    this.store[key] = {
+                        ...item,
+                        cachedAt: Date.now() / 1000
+                    } as ApiCacheItem;
                 },
                 read: function(key: string) {
                     if (!(key in this.store)) {
@@ -82,7 +76,8 @@ export default class ApiBase {
             };
         }
 
-        return true;
+        this.initialized = true;
+        return this.initialized;
     }
 
     /**
@@ -160,7 +155,7 @@ export default class ApiBase {
                 }
 
                 if (res && res.status > 199 && res.status < 300) {
-                    this.cache!.write(callsign, res);
+                    this.cache!.write(callsign, res.clone());
                 }
 
                 return res;

@@ -9,9 +9,20 @@ import ApiBase from './base_api.class';
     imports: [AuthService] */
 })
 export class PhotosService extends ApiBase {
-
     constructor(auth: AuthService) {
         super();
+        this.Init({
+            auth,
+            basePath: '/photos',
+            caching: {
+                enabled: true,
+                checkInterval: 120,
+                lifetime: 32
+            }
+        });
+    }
+
+    ngInit(auth: AuthService) {
         this.Init({
             auth,
             basePath: '/photos',
@@ -40,17 +51,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a single `Photo` (source) by its `slug` (unique, string)
      */
-    public getSourcePhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/source/slug/' + slug, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getSourcePhotoBySlug(slug: string): Promise<Photo> {
+        return await this.get('/source/slug/' + slug)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getSourcePhotoBySlug] Error!', err);
                     return err;
@@ -61,17 +65,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a single `Photo` (medium) by its `photoId` (PK, uint)
      */
-    public getMediumPhoto(photoId: number): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/medium/' + photoId, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getMediumPhoto(photoId: number): Promise<Photo> {
+        return await this.get('/medium/' + photoId)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getMediumPhoto] Error!', err);
                     return err;
@@ -82,17 +79,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a single `Photo` (medium) by its `slug` (unique, string)
      */
-    public getMediumPhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/medium/slug/' + slug, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getMediumPhotoBySlug(slug: string): Promise<Photo> {
+        return await this.get('/medium/slug/' + slug)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getMediumPhotoBySlug] Error!', err);
                     return err;
@@ -103,17 +93,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a single `Photo` (thumbnail) by its `photoId` (PK, uint)
      */
-    public getThumbnailPhoto(photoId: number): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/thumbnail/' + photoId, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getThumbnailPhoto(photoId: number): Promise<Photo> {
+        return await this.get('/thumbnail/' + photoId)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getThumbnailPhoto] Error!', err);
                     return err;
@@ -124,17 +107,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a single `Photo` (thumbnail) by its `slug` (unique, string)
      */
-    public getThumbnailPhotoBySlug(slug: string): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/thumbnail/slug/' + slug, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getThumbnailPhotoBySlug(slug: string): Promise<Photo> {
+        return await this.get('/thumbnail/slug/' + slug)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getThumbnailPhotoBySlug] Error!', err);
                     return err;
@@ -145,17 +121,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a `PhotoCollection` (all sizes) of the Photo with `photoId` (PK, uint)
      */
-    public getPhoto(photoId: number): Promise<PhotoCollection> {
-        return fetch(this.authService.getApiUrl() + '/photos/' + photoId, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getPhoto(photoId: number): Promise<PhotoCollection> {
+        return await this.get('/' + photoId)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getPhoto] Error!', err);
                     return err;
@@ -166,17 +135,10 @@ export class PhotosService extends ApiBase {
     /**
      * Get a `PhotoCollection` (all sizes) of the Photo with `slug` (unique, string)
      */
-    public getPhotoBySlug(slug: string): Promise<PhotoCollection> {
-        return fetch(this.authService.getApiUrl() + '/photos/slug/' + slug, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+    public async getPhotoBySlug(slug: string): Promise<PhotoCollection> {
+        return await this.get('/slug/' + slug)
+            .then(res => res.json())
+            .catch(
                 err => {
                     console.error('[getPhotoBySlug] Error!', err);
                     return err;
@@ -187,7 +149,7 @@ export class PhotosService extends ApiBase {
     /**
      * Query for all `PhotoCollection`'s that match all criterias passed as URL/Query Parameters.
      */
-    public getPhotos(params: IPhotoQueryParameters): Promise<PhotoCollection[]> {
+    public async getPhotos(params: IPhotoQueryParameters): Promise<PhotoCollection[]> {
         let parameters = Array.from(Object.entries(params))
             .filter(kvp => !(
                 kvp[0] === null ||
@@ -201,18 +163,11 @@ export class PhotosService extends ApiBase {
             ? '?' + parameters.join('&')
             : '';
 
-        return fetch(this.authService.getApiUrl() + '/photos' + queryParameters, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+        return await this.get(queryParameters)
+            .then(res => res.json())
+            .catch(
                 err => {
-                    console.error('[getThumbnailPhotoBySlug] Error!', err);
+                    console.error('[getPhotos] Error!', err);
                     return err;
                 }
             );
@@ -221,20 +176,20 @@ export class PhotosService extends ApiBase {
     /**
      * Query for all Source `Photo`'s that match all criterias passed as URL/Query Parameters.
      */
-    public getSourcePhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
-        return this._queryForSingleDimensionPhotos(params, 'source');
+    public async getSourcePhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
+        return await this._queryForSingleDimensionPhotos(params, 'source');
     }
     /**
      * Query for all Medium `Photo`'s that match all criterias passed as URL/Query Parameters.
      */
-    public getMediumPhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
-        return this._queryForSingleDimensionPhotos(params, 'medium');
+    public async getMediumPhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
+        return await this._queryForSingleDimensionPhotos(params, 'medium');
     }
     /**
      * Query for all Thumbnail `Photo`'s that match all criterias passed as URL/Query Parameters.
      */
-    public getThumbnailPhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
-        return this._queryForSingleDimensionPhotos(params, 'thumbnail');
+    public async getThumbnailPhotos(params: IPhotoQueryParameters): Promise<Photo[]> {
+        return await this._queryForSingleDimensionPhotos(params, 'thumbnail');
     }
 
     private _queryForSingleDimensionPhotos(params: IPhotoQueryParameters, dimension: 'source'|'medium'|'thumbnail'): Promise<Photo[]> {
@@ -255,18 +210,11 @@ export class PhotosService extends ApiBase {
             ? '?' + parameters.join('&')
             : '';
 
-        return fetch(this.authService.getApiUrl() + '/photos/' + dimension + queryParameters, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            ).catch(
+        return this.get('/' + dimension + queryParameters)
+            .then(res => res.json())
+            .catch(
                 err => {
-                    console.error('[_queryForSingleDimensionPhotos] Error!', err);
+                    console.error(`[_queryForSingleDimensionPhotos] (${dimension}) Error!`, err);
                     return err;
                 }
             );
@@ -276,40 +224,31 @@ export class PhotosService extends ApiBase {
     /**
      * Get the Image `File` (blob) of the Photo with the given `photoId` (PK, uint)
      */
-    public getPhotoBlob(photoId: number, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
-        let url = this.authService.getApiUrl() + '/photos';
+    public async getPhotoBlob(photoId: number, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
+        let dimensionParameter = '';
         switch(dimension) {
             case 'source':
             case Dimension.SOURCE:
-                url += '/source';
+                dimensionParameter += 'source';
                 break;
             case 'medium':
             case Dimension.MEDIUM:
-                url += '/medium';
+                dimensionParameter += 'medium';
                 break;
             case 'thumbnail':
             case Dimension.THUMBNAIL:
-                url += '/thumbnail';
+                dimensionParameter += 'thumbnail';
                 break;
         }
-
-        const requestInit: RequestInit = {
-            ...this.generateRequestInit('GET'),
-            
-        };
 
         var blobResponse: BlobResponse = {
             contentType: null,
             contentLength: null
         };
 
-        return fetch(`${url}/${photoId}/blob`, this.generateRequestInit('GET'))
+        return await this.get(`/${dimensionParameter}/${photoId}/blob`)
             .then(
                 res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
                     blobResponse.contentType = 
                         res.headers.get('Content-Type') || res.headers.get('content-type');
                     blobResponse.contentLength =
@@ -319,7 +258,7 @@ export class PhotosService extends ApiBase {
                 }
             )
             .then(blob => {
-                blobResponse.file = new File([blob], 'thumbnail_'+photoId);
+                blobResponse.file = new File([blob], `${dimensionParameter}_${photoId}`);
                 return blobResponse;
             })
             .catch(
@@ -333,40 +272,31 @@ export class PhotosService extends ApiBase {
     /**
      * Get the Image `File` (blob) of the Photo with the given `slug` (unique, string)
      */
-    public getPhotoBlobBySlug(slug: string, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
-        let url = this.authService.getApiUrl() + '/photos';
+    public async getPhotoBlobBySlug(slug: string, dimension: Dimension|'source'|'medium'|'thumbnail' = 'source'): Promise<BlobResponse> {
+        let dimensionParameter = '';
         switch(dimension) {
             case 'source':
             case Dimension.SOURCE:
-                url += '/source';
+                dimensionParameter += 'source';
                 break;
             case 'medium':
             case Dimension.MEDIUM:
-                url += '/medium';
+                dimensionParameter += 'medium';
                 break;
             case 'thumbnail':
             case Dimension.THUMBNAIL:
-                url += '/thumbnail';
+                dimensionParameter += 'thumbnail';
                 break;
         }
-
-        const requestInit: RequestInit = {
-            ...this.generateRequestInit('GET'),
-            
-        };
 
         var blobResponse: BlobResponse = {
             contentType: null,
             contentLength: null
         };
 
-        return fetch(url + '/slug/' + slug + '/blob', requestInit)
+        return await this.get(`/${dimensionParameter}/slug/${slug}/blob`)
             .then(
                 res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
                     blobResponse.contentType = 
                         res.headers.get('Content-Type') || res.headers.get('content-type');
                     blobResponse.contentLength =
@@ -376,7 +306,7 @@ export class PhotosService extends ApiBase {
                 }
             )
             .then(blob => {
-                blobResponse.file = new File([blob], 'thumbnail_'+slug);
+                blobResponse.file = new File([blob], `${dimensionParameter}_${slug}`);
                 return blobResponse;
             })
             .catch(
@@ -386,5 +316,4 @@ export class PhotosService extends ApiBase {
                 }
             );
     }
-
 }
