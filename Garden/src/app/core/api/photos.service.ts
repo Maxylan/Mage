@@ -2,42 +2,33 @@ import { Injectable } from '@angular/core';
 import { Dimension, IPhotoQueryParameters, Photo, PhotoCollection } from '../types/photos.types';
 import { BlobResponse, Methods } from '../types/generic.types';
 import { AuthService } from './auth.service';
+import ApiBase from './base_api.class';
 
 @Injectable({
     providedIn: 'root' /* ,
     imports: [AuthService] */
 })
-export class PhotosService {
-    private authService!: AuthService;
-    private generateRequestInit = (method: Methods): RequestInit => {
-        const token: string = this.authService.getToken() ?? '';
-        return {
-            method: method,
-            headers: { // TODO! Create auth - get token from there. 
-                // -- Don't worry, the fact this is not gitignored is intentional, its just a random GUID :p
-                "x-mage-token": token
-            }
-        }
-    };
+export class PhotosService extends ApiBase {
 
     constructor(auth: AuthService) {
-        this.authService = auth;
+        super();
+        this.Init({
+            auth,
+            basePath: '/photos',
+            caching: {
+                enabled: true,
+                checkInterval: 120,
+                lifetime: 32
+            }
+        });
     }
 
     /**
      * Get a single `Photo` (source) by its `photoId` (PK, uint)
      */
-    public getSourcePhoto(photoId: number): Promise<Photo> {
-        return fetch(this.authService.getApiUrl() + '/photos/source/' + photoId, this.generateRequestInit('GET'))
-            .then(
-                res => {
-                    if (res?.status === 401) {
-                        this.authService.fallbackToAuth(res);
-                    }
-
-                    return res.json();
-                }
-            )
+    public async getSourcePhoto(photoId: number): Promise<Photo> {
+        return await this.get('/source/' + photoId)
+            .then(res => res.json())
             .catch(
                 err => {
                     console.error('[getSourcePhoto] Error!', err);
