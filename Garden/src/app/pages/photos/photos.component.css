@@ -3,13 +3,13 @@
     flex-wrap: wrap;
     flex-direction: row;
     justify-content: space-evenly;
+    padding: 0.64rem 0;
 }
 
 .mat-toolbar.mat-primary {
     position: sticky;
     z-index: 1;
     top: 0;
-    margin-bottom: 0.64rem;
 }
 
 mat-icon.mat-icon {
