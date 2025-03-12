@@ -48,13 +48,6 @@
 a {
     overflow: clip;
 } 
-.mat-mdc-card {
-    overflow: clip;
-    margin: auto;
-} 
-.photo-card {
-    object-fit: contain;
-}
 
 .handset-photo-card-image {
     max-width: 5.6rem;
@@ -63,6 +56,12 @@ a {
 .desktop-photo-card-image {
     max-width: 6.4rem;
     max-height: 7.2rem;
+}
+
+img {
+    object-fit: contain;
+    overflow: clip;
+    margin: auto;
 }
 
 p.desktop-photo-card-title {

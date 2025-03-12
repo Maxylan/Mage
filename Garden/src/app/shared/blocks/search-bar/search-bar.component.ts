@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormControl, FormControlOptions, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormControlOptions, FormGroup, FormSubmittedEvent, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
@@ -31,8 +31,8 @@ export class SearchBarComponent<TSupported extends object, TResult extends objec
     // public callback!: SearchCallback<TSupported, TResult>;
     public callback!: SearchCallback;
 
-    public searchControl = new FormControl<string>('', { disable: false } as FormControlOptions);
-    public loginForm = new FormGroup({
+    public searchControl = new FormControl<string>('');
+    public searchForm = new FormGroup({
         keyword: this.searchControl,
     });
 

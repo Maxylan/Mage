@@ -1,0 +1,32 @@
+<a [href]="link" [ariaDisabled]="!!link" [style]="!link && 'pointer-events: none;'">
+    <article matRipple [ngClass]="'photo-card ' + (!!(isHandset | async) ? 'handset-photo-card' : 'desktop-photo-card')">
+        @if (!isHandset) {
+            <button mat-button [matMenuTriggerFor]="menu">
+                <mat-icon [ariaLabel]="key + '  Kebab Menu'">more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+                <button mat-menu-item (click)="selected()">
+                    <mat-icon>dialpad</mat-icon>
+                    <span>Select</span>
+                </button>
+                <button mat-menu-item [disabled]="!link" (click)="copied()">
+                    <mat-icon>link</mat-icon>
+                    <span>Copy Link</span>
+                </button>
+                <button mat-menu-item [disabled]="!shareLink" (click)="shared()">
+                    <mat-icon>share</mat-icon>
+                    <span>Share</span>
+                </button>
+            </mat-menu>
+        }
+
+        @if (showSelect || isSelected()) {
+            <mat-checkbox [ariaChecked]="isSelected() ? '' : ''" [checked]="isSelected()"/>
+        }
+        <div [ngClass]="'photo-card-image ' + (!!(isHandset | async) ? 'handset-image' : 'desktop-image')">
+            <ng-content/>
+        </div>
+        <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
+        </p>
+    </article>
+</a>
