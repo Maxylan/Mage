@@ -1,40 +1,33 @@
-import { Component, Input, inject, signal, computed } from '@angular/core';
+import { Component, Input, inject, signal, effect } from '@angular/core';
 import { PhotosService } from '../../../core/api/photos.service';
-import { MatRipple } from '@angular/material/core';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import { Dimension, Photo } from '../../../core/types/photos.types';
-import { BlobResponse } from '../../../core/types/generic.types';
-import { AsyncPipe, NgClass } from '@angular/common';
-import { Observable } from 'rxjs';
+import { MatCardImage } from '@angular/material/card';
 
 @Component({
-    selector: 'shared-photo-card',
+    selector: 'shared-photo-thumbnail',
     imports: [
-        NgClass,
-        MatRipple,
-        MatProgressBar,
-        AsyncPipe
+        MatCardImage,
+        MatProgressBar
     ],
-    templateUrl: 'photo-card.component.html',
-    styleUrl: 'second-attempt-photo-card.component.css'
+    templateUrl: 'photo-thumbnail.component.html',
+    styleUrl: 'photo-thumbnail.component.css'
 })
-export class PhotoCardWrapperComponent {
+export class PhotoThumbnailComponent {
     private photoService = inject(PhotosService);
 
-    private imageEncoded: string|null = null;
     private imageContentType: string|null = null;
     private imageContentLength: string|null = null;
-    private imageIsLoading = signal<boolean>(false);
+
+    public imageIsLoading = signal<boolean>(false);
+    public imageEncoded: string|null = null;
+
+    @Input()
+    public alt?: string;
 
     @Input()
     public link = '#';
 
     public getPhotoBlob = () => {
-        var blobResponse: BlobResponse = {
-            contentType: null,
-            contentLength: null
-        };
-
         this.imageIsLoading.set(true);
         this.photoService
             .get(this.link)
@@ -72,7 +65,5 @@ export class PhotoCardWrapperComponent {
             .finally(() => this.imageIsLoading.set(false));
     }
 
-    ngOnInit() {
-        this.getPhotoBlob();
-    };
+    public linkEffect = effect(this.getPhotoBlob);
 }

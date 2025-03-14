@@ -1,0 +1,8 @@
+@if(imageIsLoading()) {
+    <mat-progress-bar [mode]="'buffer'" />
+}
+@else {
+    <img mat-card-sm-image 
+        [src]="imageEncoded"
+        [alt]="alt" >
+}
