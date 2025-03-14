@@ -14,11 +14,20 @@
     }
 
     @for (photo of page()?.set ?? []; track photo.source.photoId) {
-        <shared-photo-card
-            [photo]=photo.thumbnail!
+        <shared-card-with-thumbnail
+            [key]="photo.thumbnail?.slug || photo.source.slug"
+            [title]="photo.thumbnail?.filename || photo.source.filename"
+            [summary]="photo.thumbnail?.summary || photo.source.summary"
+            [link]="'/garden/photos/single' + photo.source.photoId"
+            [shareLink]="'/garden/photos/single' + photo.source.photoId"
+            [showSelect]="false"
+            [initialIsFavorite]="false"
+            [initialIsSelected]="false"
             [isHandset]="isHandset$">
-            {{ photo.source.slug }} #{{ photo.source.photoId }}
-        </shared-photo-card>
+            <shared-photo-thumbnail
+                [alt]="photo.source.slug + ' #' + photo.source.photoId"
+                [photoId]="photo.source.photoId" />
+        </shared-card-with-thumbnail>
     }
 </div>
 <shared-paginator

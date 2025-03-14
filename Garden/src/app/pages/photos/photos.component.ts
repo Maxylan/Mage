@@ -1,7 +1,8 @@
 import { Component, computed, inject, Signal, signal } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, IPhotoSearchParameters, PhotoCollection, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
-import { PhotoCardComponent } from '../../shared/cards/photos/photo-thumbnail.component';
+import { ThumbnailCardComponent } from '../../shared/cards/with-thumbnail/card-with-thumbnail.component';
+import { PhotoThumbnailComponent } from '../../shared/cards/with-thumbnail/photo/photo-thumbnail.component';
 import { SearchBarComponent } from '../../shared/blocks/search-bar/search-bar.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
@@ -17,7 +18,8 @@ import { NavbarControllerService } from '../../layout/navbar/navbar-controller.s
     selector: 'page-list-photos',
     imports: [
         SearchBarComponent,
-        PhotoCardComponent,
+        ThumbnailCardComponent,
+        PhotoThumbnailComponent,
         PaginationComponent,
         MatToolbarModule,
         MatButtonModule,

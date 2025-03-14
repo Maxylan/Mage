@@ -1,19 +1,21 @@
 import { Component, EventEmitter, Input, Output, Signal, signal } from '@angular/core';
 import { MatRipple } from '@angular/material/core';
-import { MatProgressBar } from '@angular/material/progress-bar';
 import { AsyncPipe, NgClass } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
-import { CardDetails, CardLinkDetails, CardSelectDetails } from './card-with-thumbnail.types';
+import {
+    CardDetails,
+    CardLinkDetails,
+    CardSelectDetails
+} from './card-with-thumbnail.types';
 
 @Component({
-    selector: 'shared-card-thumbnail',
+    selector: 'shared-card-with-thumbnail',
     imports: [
         NgClass,
         MatRipple,
-        MatProgressBar,
         MatCheckboxModule,
         MatMenuModule,
         MatIconModule,

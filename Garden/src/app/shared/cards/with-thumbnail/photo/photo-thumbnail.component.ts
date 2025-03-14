@@ -1,5 +1,5 @@
 import { Component, Input, inject, signal, effect } from '@angular/core';
-import { PhotosService } from '../../../core/api/photos.service';
+import { PhotosService } from '../../../../core/api/photos.service';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatCardImage } from '@angular/material/card';
 
@@ -24,33 +24,27 @@ export class PhotoThumbnailComponent {
     @Input()
     public alt?: string;
 
-    @Input()
-    public link = '#';
+    /**
+     * Used to fetch the image thumbnail from our backend.
+     */
+    @Input({ required: true })
+    public photoId!: number;
 
     public getPhotoBlob = () => {
         this.imageIsLoading.set(true);
         this.photoService
-            .get(this.link)
-            .then(
-                res => {
-                    this.imageContentType = 
-                        res.headers.get('Content-Type') || res.headers.get('content-type');
-                    this.imageContentLength =
-                        res.headers.get('Content-Length') || res.headers.get('content-length');
-                    
-                    return res.blob();
-                }
-            )
-            .then(blob => {/*
+            .getPhotoBlob(this.photoId, 'thumbnail')
+            .then(blob => {
                 this.imageContentType = blob.contentType ?? 'application/octet-stream';
 
                 if (!this.imageContentType.startsWith('image')) {
                     return Promise.reject('Bad content type!');
                 }
-                if (!blobResponse.file) {
+                if (!blob.file) {
                     return Promise.reject('Response is not an image!');
-                } */
-                return blob.arrayBuffer();
+                }
+
+                return blob.file.arrayBuffer();
             })
             .then(buffer => {
                 this.imageEncoded = (
