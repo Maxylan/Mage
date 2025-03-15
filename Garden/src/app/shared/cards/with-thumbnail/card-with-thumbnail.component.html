@@ -1,32 +1,67 @@
-<a [href]="link" [ariaDisabled]="!!link" [style]="!link && 'pointer-events: none;'">
-    <article matRipple [ngClass]="'photo-card ' + (!!(isHandset | async) ? 'handset-photo-card' : 'desktop-photo-card')">
-        @if (!isHandset) {
-            <button mat-button [matMenuTriggerFor]="menu">
-                <mat-icon [ariaLabel]="key + '  Kebab Menu'">more_vert</mat-icon>
+<article
+    matRipple
+    [ngClass]="'thumbnail-card'+((isHandset | async) ? ' handset':'')">
+    @if (!(isHandset | async)) {
+        <div class="card-kebab-wrapper">
+            <button
+                mat-mini-fab
+                aria-label="Toggle sidenav"
+                [matMenuTriggerFor]="menu">
+                <mat-icon
+                    fontSet="hack"
+                    [ariaLabel]="key + ' Kebab Menu'">
+                    
+                </mat-icon>
             </button>
-            <mat-menu #menu="matMenu">
-                <button mat-menu-item (click)="selected()">
-                    <mat-icon>dialpad</mat-icon>
-                    <span>Select</span>
-                </button>
-                <button mat-menu-item [disabled]="!link" (click)="copied()">
-                    <mat-icon>link</mat-icon>
-                    <span>Copy Link</span>
-                </button>
-                <button mat-menu-item [disabled]="!shareLink" (click)="shared()">
-                    <mat-icon>share</mat-icon>
-                    <span>Share</span>
-                </button>
-            </mat-menu>
-        }
-
-        @if (showSelect || isSelected()) {
-            <mat-checkbox [ariaChecked]="isSelected() ? '' : ''" [checked]="isSelected()"/>
-        }
-        <div [ngClass]="'photo-card-image ' + (!!(isHandset | async) ? 'handset-image' : 'desktop-image')">
-            <ng-content/>
         </div>
-        <p [ngClass]="!!(isHandset | async) ? 'handset-photo-card-title' : 'desktop-photo-card-title'">
+        <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="selected()">
+                <mat-icon
+                    fontSet="hack"
+                    [ariaLabel]="key + ' Select Icon'">
+                    {{ isSelected() ? '󰒉' : '󰒇' }}
+                </mat-icon>
+                <span>
+                    {{ isSelected() ? 'Deselect' : 'Select' }}
+                </span>
+            </button>
+            <button mat-menu-item [disabled]="!link" (click)="copied()">
+                <mat-icon
+                    fontSet="hack"
+                    [ariaLabel]="key + ' Copy Icon'">
+                    {{ isSelected() ? '󱊁' : '' }}
+                </mat-icon>
+                <span>
+                    {{ isSelected() ? 'Copy Selected' : 'Copy' }}
+                </span>
+            </button>
+            <button mat-menu-item [disabled]="!shareLink" (click)="shared()">
+                <mat-icon
+                    fontSet="hack"
+                    [ariaLabel]="key + ' Share Icon'">
+                    {{ isSelected() ? '󱇴' : '󰒖' }}
+                </mat-icon>
+                <span>
+                    {{ isSelected() ? 'Share Selected' : 'Share' }}
+                </span>
+            </button>
+        </mat-menu>
+    }
+
+    @if (showSelect || isSelected()) {
+        <mat-checkbox
+            [ariaChecked]="isSelected() ? 'selected' : 'not selected'"
+            [checked]="isSelected()"/>
+    }
+    <div [ngClass]="'card-image'+((isHandset | async) ? ' handset':'')">
+        <ng-content/>
+    </div>
+    <p [ngClass]="'card-title'+((isHandset | async) ? ' handset':'')">
+        {{ title }}
+    </p>
+    @if (summary && !(isHandset | async)) {
+        <p [ngClass]="'card-summary'+((isHandset | async) ? ' handset':'')">
+            {{ summary }}
         </p>
-    </article>
-</a>
+    }
+</article>

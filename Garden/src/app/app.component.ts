@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { UploadFormComponent } from './layout/upload-form/upload-form.component';
 import { LayoutNavbarComponent } from './layout/navbar/navbar.component';
+import { MatIconRegistry } from '@angular/material/icon';
 
 @Component({
   selector: 'app-root',
@@ -19,4 +20,10 @@ import { LayoutNavbarComponent } from './layout/navbar/navbar.component';
   styles: [],
 })
 
-export class AppComponent {}
+export class AppComponent {
+    private matIconsRegistry = inject(MatIconRegistry);
+
+    constructor() {
+        this.matIconsRegistry.registerFontClassAlias('hack', 'hack-icons mat-ligature-font');
+    }
+}

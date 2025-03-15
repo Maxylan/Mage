@@ -1,8 +1,4 @@
-a {
-    text-decoration: unset;
-}
-
-article.photo-card {
+article.thumbnail-card {
     display: block;
     overflow: hidden; 
     padding-top: 0.32rem;
@@ -14,32 +10,33 @@ article:hover {
     box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
 }
 
-article.desktop-photo-card {
+.thumbnail-card {
     max-height: 8rem;
     max-width: 7.2rem;
 }
-article.handset-photo-card {
+.thumbnail-card.handset {
     max-height: 7.2rem;
     max-width: 6.4rem;
 }
 
-div.photo-card-image {
+.card-kebab-wrapper {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    right: 0.32rem;
+}
+
+div.card-image {
     margin: auto;
     min-width: 0;
 }
-div.desktop-image {
+.card-image {
     height: 5.6rem;
     width: 6.4rem;
 }
-div.handset-image {
+.card-image.handset {
     height: 4.8rem;
     width: 5.6rem;
-}
-
-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
 }
 
 p {
@@ -55,11 +52,23 @@ p {
     -moz-user-select: none;    
     -webkit-user-select: none;  
 }
-p.desktop-photo-card-title {
+.card-title {
     font-size: 12px;
     font-weight: bold;
 }
-p.handset-photo-card-title {
+.card-title.handset {
     font-size: 11px;
     font-weight: bold;
+}
+.card-summary {
+    font-size: 11px;
+}
+.card-summary.handset {
+    font-size: 10px;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }

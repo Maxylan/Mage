@@ -10,6 +10,7 @@ import {
     CardLinkDetails,
     CardSelectDetails
 } from './card-with-thumbnail.types';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
     selector: 'shared-card-with-thumbnail',
@@ -17,8 +18,9 @@ import {
         NgClass,
         MatRipple,
         MatCheckboxModule,
-        MatMenuModule,
+        MatButtonModule,
         MatIconModule,
+        MatMenuModule,
         AsyncPipe
     ],
     templateUrl: 'card-with-thumbnail.component.html',
