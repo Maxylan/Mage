@@ -1,0 +1,6 @@
+<button mat-icon-button type="button" aria-label="Toggle sidenav" (click)="getNavbar()?.toggle()">
+    <mat-icon fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
+</button>
+<shared-search-bar
+    searchFormName="photos"
+    (onSearch$)="searchForPhotos()"/>

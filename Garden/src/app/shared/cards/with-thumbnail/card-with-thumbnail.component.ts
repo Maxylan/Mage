@@ -28,7 +28,7 @@ import { MatButtonModule } from '@angular/material/button';
 })
 export class ThumbnailCardComponent {
     @Input({ required: true })
-    public isHandset!: Observable<boolean>;
+    public isHandsetObservable!: Observable<boolean>;
 
     @Input({ required: true })
     public key!: string;
@@ -46,15 +46,36 @@ export class ThumbnailCardComponent {
     public shareLink?: string;
 
     @Input()
-    public showSelect: boolean = false;
+    public isSelected?: boolean;
+    @Input()
+    public isInSelectMode?: boolean;
+    @Input()
+    public select?: () => void;
+
+    /**
+     * Compute if we should show the 'select' checkbox.
+     * Only determines checbox visibility, not 'checked' status.
+     */
+    public showSelect: boolean = !!(
+        this.select !== undefined &&
+        this.isSelected !== undefined &&
+        this.isInSelectMode !== undefined && (
+            this.isSelected || 
+            this.isInSelectMode
+        )
+    );
+    /* public showSelect = (): boolean => !!(
+        this.select !== undefined &&
+        this.isSelected !== undefined &&
+        this.isInSelectMode !== undefined && (
+            this.isSelected || 
+            this.isInSelectMode
+        )
+    ); */
 
     @Input()
     public initialIsFavorite: boolean = false;
     public isFavorite: Signal<boolean> = signal(this.initialIsFavorite);
-
-    @Input()
-    public initialIsSelected: boolean = false;
-    public isSelected: Signal<boolean> = signal(this.initialIsSelected);
 
     private isKebabOpen: Signal<boolean> = signal(false);
 
@@ -69,44 +90,40 @@ export class ThumbnailCardComponent {
     });
 
     /**
-     * Selects this card.
-     */
-    @Output()
-    public select = (): CardSelectDetails => this.selected();
-    /**
      * Emits when `{selected}`
      */
     @Output()
-    public selectedEvent = new EventEmitter();
+    public onSelect$ = new EventEmitter();
     /**
      * Callback firing when this card gets selected/de-selected
      */
-    public selected = (): CardSelectDetails => {
-        const cardDetails: CardSelectDetails = {
-            selected: this.isSelected(),
-            card: this.getCardDetails()
-        };
+    public selected = (): CardDetails|null => {
+        if (this.select === undefined ||
+            this.isSelected === undefined ||
+            this.isInSelectMode === undefined) {
+            return null;
+        }
 
-        this.selectedEvent.emit(cardDetails);
+        if (!this.isSelected) {
+            this.select();
+        }
+
+        const cardDetails = this.getCardDetails();
+        this.onSelect$.emit(cardDetails);
         return cardDetails;
     }
 
     /**
-     * Copies (returns) this card's link
-     */
-    @Output()
-    public copy = (): string|null => this.copied();
-    /**
      * Emits when `{copied}`
      */
     @Output()
-    public copiedEvent = new EventEmitter();
+    public onCopy$ = new EventEmitter();
     /**
      * Callback firing when this card gets copied.
      */
     public copied = (): string|null => {
         if (this.link) {
-            this.copiedEvent.emit({
+            this.onCopy$.emit({
                 link: this.link,
                 card: this.getCardDetails()
             } as CardLinkDetails);
@@ -118,21 +135,16 @@ export class ThumbnailCardComponent {
     }
 
     /**
-     * Copies (returns) a link used to *share* this card
-     */
-    @Output()
-    public share = (): string|null => this.shared();
-    /**
      * Emits when `{shared}`
      */
     @Output()
-    public shareEvent = new EventEmitter();
+    public onShare$ = new EventEmitter();
     /**
      * Callback firing when this card gets shared.
      */
     public shared = (): string|null => {
         if (this.shareLink) {
-            this.copiedEvent.emit({
+            this.onShare$.emit({
                 link: this.shareLink,
                 card: this.getCardDetails()
             } as CardLinkDetails);
@@ -140,40 +152,4 @@ export class ThumbnailCardComponent {
 
         return null;
     }
-
-    /*
-    imageEncoded: string|null = null;
-    imageContentType: string|null = null;
-    imageContentLength: number|null = null;
-    imageIsLoading = signal<boolean>(false);
-
-    private getPhoto = effect(() => {
-        this.imageIsLoading.set(true);
-        this.photoService
-            .getPhotoBlob(this.photo.photoId, 'thumbnail')
-            .then(blobResponse => {
-                this.imageContentType = blobResponse.contentType ?? 'application/octet-stream';
-                this.imageContentLength = blobResponse.file?.size ?? 0;
-
-                if (!this.imageContentType.startsWith('image')) {
-                    return Promise.reject('Response is not an image!');
-                }
-                if (!blobResponse.file) {
-                    return Promise.reject('Response is not an image!');
-                }
-
-                return blobResponse.file.arrayBuffer();
-            })
-            .then(buffer => {
-                this.imageEncoded = (
-                    `data:${this.imageContentType};base64,` + // ..i wonder, at what point is @ts-ignore acceptable :p
-                    (new Uint8Array(buffer) as Uint8Array & { toBase64: () => string|null}).toBase64()
-                );
-            })
-            .catch(err => {
-                console.error('[PhotoCardComponent.onLoad] Error!', err);
-                this.imageIsLoading.set(false);
-            })
-            .finally(() => this.imageIsLoading.set(false));
-    }); */
 }

@@ -7,7 +7,7 @@
         <input
             matInput
             [formControl]="searchControl"
-            placeholder="Search for {{searchFormName}}"
+            [placeholder]="placeholder ?? ''"
             color="secondary"/>
         <mat-icon fontSet="hack" aria-label="Search bar icon"></mat-icon>
     </mat-form-field>

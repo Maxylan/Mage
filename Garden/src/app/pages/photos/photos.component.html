@@ -1,34 +1,37 @@
 <mat-toolbar color="primary">
-    <button mat-icon-button type="button" aria-label="Toggle sidenav" (click)="getNavbar()?.toggle()">
-        <mat-icon style="font-family: 'hack-nerd-regular'" fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
-    </button>
-    <shared-search-bar
-        searchFormName="photos"
-        [callback]="searchForPhotos"/>
+    <photos-toolbar
+        [selectionState]="selectionState"
+        [setSelectionMode]="setSelectionMode" />
 </mat-toolbar>
-<div [className]="'photos-container'">
+<div class="photos-container">
     @if (!isLoading() && (!page()?.set?.size)) {
         <p>
           photos works but no photos was fetched!
         </p>
     }
-
-    @for (photo of page()?.set ?? []; track photo.source.photoId) {
-        <shared-card-with-thumbnail
-            [key]="photo.thumbnail?.slug || photo.source.slug"
-            [title]="photo.thumbnail?.filename || photo.source.filename"
-            [summary]="photo.thumbnail?.summary || photo.source.summary"
-            [link]="'/garden/photos/single' + photo.source.photoId"
-            [shareLink]="'/garden/photos/single' + photo.source.photoId"
-            [showSelect]="false"
-            [initialIsFavorite]="false"
-            [initialIsSelected]="false"
-            [isHandset]="isHandset$">
-            <shared-photo-thumbnail
-                [alt]="photo.source.slug + ' #' + photo.source.photoId"
-                [photoId]="photo.source.photoId" />
-        </shared-card-with-thumbnail>
-    }
+    <mat-grid-list
+        [cols]="(isHandset$ | async) ? 4 : 8"
+        rowHeight="fit">
+        @for (photo of page()?.set ?? []; track photo.source.photoId) {
+            <mat-grid-tile>
+                <shared-card-with-thumbnail
+                    [key]="photo.thumbnail?.slug || photo.source.slug"
+                    [title]="photo.thumbnail?.filename || photo.source.filename"
+                    [summary]="photo.thumbnail?.summary || photo.source.summary"
+                    [link]="'/garden/photos/single/' + photo.source.photoId"
+                    [shareLink]="'/garden/photos/single/' + photo.source.photoId"
+                    [isSelected]="selectionState().selection.includes(photo?.thumbnail || photo.source)"
+                    [isInSelectMode]="selectionState().selectModeActive"
+                    [select]="selectPhoto(photo?.thumbnail || photo.source)"
+                    [isHandsetObservable]="isHandset$"
+                    [initialIsFavorite]="false">
+                    <shared-photo-thumbnail
+                        [alt]="photo.source.slug + ' #' + photo.source.photoId"
+                        [photoId]="photo.source.photoId" />
+                </shared-card-with-thumbnail>
+            </mat-grid-tile>
+        }
+    </mat-grid-list>
 </div>
 <shared-paginator
     [length]="photos()"

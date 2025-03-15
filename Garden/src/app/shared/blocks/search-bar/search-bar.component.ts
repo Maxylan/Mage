@@ -23,34 +23,27 @@ import { SearchCallback, SearchParameters } from './search-bar.types';
         style: "display: inline-block; margin: 0px auto;"
     }
 })
-export class SearchBarComponent<TSupported extends object, TResult extends object> {
-    @Input({required: true})
+export class SearchBarComponent {
+    @Input({ required: true })
     public searchFormName!: string;
 
-    @Input({required: true})
-    // public callback!: SearchCallback<TSupported, TResult>;
-    public callback!: SearchCallback;
+    @Input()
+    public placeholder?: string = 'Search for ' + this.searchFormName;
+
+    @Output()
+    public onSearch$: EventEmitter<SearchParameters> = new EventEmitter<SearchParameters>();
 
     public searchControl = new FormControl<string>('');
     public searchForm = new FormGroup({
         keyword: this.searchControl,
     });
 
-    // private searchResults: TResult[] = [];
-    // public getSearchResults: TResult[] = this.searchResults;
-
     public parseSearchForm = () => {
-        let parameters: SearchParameters<{[key: string]: string|number|undefined}> = {
+        // TODO: Feels like there's loads missing here?
+        let parameters: SearchParameters = {
             query: this.searchControl.value ?? undefined
         };
 
-        this.callback(parameters as SearchParameters<TSupported>);
-            /* .then(result => {
-                this.searchResults = result;
-                return this.results.emit(result);
-            }); */
+        this.onSearch$.emit(parameters);
     };
-
-    /* @Output()
-    public results: EventEmitter<TResult[]> = new EventEmitter<TResult[]>(); */
 }

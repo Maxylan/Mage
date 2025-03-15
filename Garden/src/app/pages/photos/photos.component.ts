@@ -1,29 +1,33 @@
-import { Component, computed, inject, Signal, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
-import { defaultPhotoPageContainer, IPhotoQueryParameters, IPhotoSearchParameters, PhotoCollection, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
+import { defaultPhotoPageContainer, IPhotoQueryParameters, IPhotoSearchParameters, Photo, PhotoCollection, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
 import { ThumbnailCardComponent } from '../../shared/cards/with-thumbnail/card-with-thumbnail.component';
 import { PhotoThumbnailComponent } from '../../shared/cards/with-thumbnail/photo/photo-thumbnail.component';
-import { SearchBarComponent } from '../../shared/blocks/search-bar/search-bar.component';
+import { NavbarControllerService } from '../../layout/navbar/navbar-controller.service';
+import { SelectionObserver, SelectState } from './toolbar/selection-observer.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
+import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { MatGridListModule } from '@angular/material/grid-list';
 import { map, Observable, shareReplay } from 'rxjs';
 import { MatDivider } from '@angular/material/divider';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { SearchCallback, SearchParameters } from '../../shared/blocks/search-bar/search-bar.types';
-import { NavbarControllerService } from '../../layout/navbar/navbar-controller.service';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'page-list-photos',
     imports: [
-        SearchBarComponent,
         ThumbnailCardComponent,
         PhotoThumbnailComponent,
+        PhotoToolbarComponent,
         PaginationComponent,
+        MatGridListModule,
         MatToolbarModule,
         MatButtonModule,
         MatIconModule,
+        AsyncPipe
     ],
     providers: [
         PhotosService,
@@ -32,9 +36,9 @@ import { NavbarControllerService } from '../../layout/navbar/navbar-controller.s
     styleUrl: 'photos.component.css'
 })
 export class PhotosComponent {
-    private photoService = inject(PhotosService);
     private breakpointObserver = inject(BreakpointObserver);
-    private navbarController = inject(NavbarControllerService);
+    private selectionObserver = inject(SelectionObserver);
+    private photoService = inject(PhotosService);
 
     private photoStore = signal(defaultPhotoPageContainer);
     public photos = computed<number>(() => {
@@ -58,77 +62,17 @@ export class PhotosComponent {
         return store[currentPage];
     });
 
-    public getNavbar = this.navbarController.getNavbar;
-    public isLoading = signal(false);
 
-    public searchForPhotos: SearchCallback = (params) => {
-        this.isLoading.set(true);
-        const {
-            currentPage,
-            pageSize
-        } = this.photoStore();
-
-        const fetchLimit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
-        const fetchOffset = currentPage > 1 ? fetchLimit * currentPage - pageSize : 0;
-
-        const searchQuery: IPhotoQueryParameters = {
-            limit: fetchLimit,
-            offset: fetchOffset,
-            slug: params?.query,
-            title: params?.query,
-            summary: params?.query
-        };
-
-        return this.photoService
-            .getPhotos(searchQuery)
-            .then(data => {
-                console.debug('[searchForPhotos] Search Result', data);
-                let newStore: PhotoPageStore = {
-                    ...this.photoStore()
-                };
-
-                let iteration = 0;
-                while(data.length > 0 && ++iteration < 3) {
-                    const sliceLength = data.length < pageSize
-                        ? data.length
-                        : pageSize;
-
-                    const slice = new Set(data.splice(0, sliceLength));
-
-                    const pageNumber = currentPage && currentPage - iteration;
-                    const pageIndex = newStore.store.findIndex(p => p.page === pageNumber);
-                    if (pageIndex === -1) {
-                        newStore.store.push({
-                            page: pageNumber,
-                            set: slice
-                        });
-                    }
-                    else {
-                        newStore.store[pageIndex] = {
-                            page: pageNumber,
-                            set: slice
-                        };
-                    }
-                }
-                
-                this.photoStore.set(newStore);
-            })
-            .catch(err => {
-                console.error('[searchForPhotos] Error!', err);
-                /* this.photoStore.set({
-                    ...this.photoStore(),
-                    store: []
-                }); */
-            })
-            .finally(() => this.isLoading.set(false));
-    }
-
-    isHandset$: Observable<boolean> = this.breakpointObserver
+    public isHandset$: Observable<boolean> = this.breakpointObserver
         .observe(Breakpoints.Handset)
         .pipe(
             map(result => result.matches),
             shareReplay()
         );
+
+    public selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
+    public setSelectionMode = this.selectionObserver.setSelectionMode;
+    public selectionState = this.selectionObserver.State;
 
     constructor() {
         this.searchForPhotos();

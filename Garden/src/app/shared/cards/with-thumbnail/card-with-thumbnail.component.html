@@ -1,7 +1,7 @@
 <article
     matRipple
-    [ngClass]="'thumbnail-card'+((isHandset | async) ? ' handset':'')">
-    @if (!(isHandset | async)) {
+    [ngClass]="'thumbnail-card'+((isHandsetObservable | async) ? ' handset':'')">
+    @if (!(isHandsetObservable | async)) {
         <div class="card-kebab-wrapper">
             <button
                 mat-mini-fab
@@ -19,48 +19,48 @@
                 <mat-icon
                     fontSet="hack"
                     [ariaLabel]="key + ' Select Icon'">
-                    {{ isSelected() ? '󰒉' : '󰒇' }}
+                    {{ isSelected ? '󰒉' : '󰒇' }}
                 </mat-icon>
                 <span>
-                    {{ isSelected() ? 'Deselect' : 'Select' }}
+                    {{ isSelected ? 'Deselect' : 'Select' }}
                 </span>
             </button>
             <button mat-menu-item [disabled]="!link" (click)="copied()">
                 <mat-icon
                     fontSet="hack"
                     [ariaLabel]="key + ' Copy Icon'">
-                    {{ isSelected() ? '󱊁' : '' }}
+                    {{ isSelected ? '󱊁' : '' }}
                 </mat-icon>
                 <span>
-                    {{ isSelected() ? 'Copy Selected' : 'Copy' }}
+                    {{ isSelected ? 'Copy Selected' : 'Copy' }}
                 </span>
             </button>
             <button mat-menu-item [disabled]="!shareLink" (click)="shared()">
                 <mat-icon
                     fontSet="hack"
                     [ariaLabel]="key + ' Share Icon'">
-                    {{ isSelected() ? '󱇴' : '󰒖' }}
+                    {{ isSelected ? '󱇴' : '󰒖' }}
                 </mat-icon>
                 <span>
-                    {{ isSelected() ? 'Share Selected' : 'Share' }}
+                    {{ isSelected ? 'Share Selected' : 'Share' }}
                 </span>
             </button>
         </mat-menu>
     }
 
-    @if (showSelect || isSelected()) {
+    @if (showSelect) {
         <mat-checkbox
-            [ariaChecked]="isSelected() ? 'selected' : 'not selected'"
-            [checked]="isSelected()"/>
+            [ariaChecked]="isSelected ? 'selected' : 'not selected'"
+            [checked]="isSelected"/>
     }
-    <div [ngClass]="'card-image'+((isHandset | async) ? ' handset':'')">
+    <div [ngClass]="'card-image'+((isHandsetObservable | async) ? ' handset':'')">
         <ng-content/>
     </div>
-    <p [ngClass]="'card-title'+((isHandset | async) ? ' handset':'')">
+    <p [ngClass]="'card-title'+((isHandsetObservable | async) ? ' handset':'')">
         {{ title }}
     </p>
-    @if (summary && !(isHandset | async)) {
-        <p [ngClass]="'card-summary'+((isHandset | async) ? ' handset':'')">
+    @if (summary && !(isHandsetObservable | async)) {
+        <p [ngClass]="'card-summary'+((isHandsetObservable | async) ? ' handset':'')">
             {{ summary }}
         </p>
     }
