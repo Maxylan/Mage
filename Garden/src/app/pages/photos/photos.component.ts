@@ -1,9 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
-import { defaultPhotoPageContainer, IPhotoQueryParameters, IPhotoSearchParameters, Photo, PhotoCollection, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
+import { Photo, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
 import { ThumbnailCardComponent } from '../../shared/cards/with-thumbnail/card-with-thumbnail.component';
 import { PhotoThumbnailComponent } from '../../shared/cards/with-thumbnail/photo/photo-thumbnail.component';
-import { NavbarControllerService } from '../../layout/navbar/navbar-controller.service';
 import { SelectionObserver, SelectState } from './toolbar/selection-observer.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
@@ -11,9 +10,6 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { map, Observable, shareReplay } from 'rxjs';
 import { MatDivider } from '@angular/material/divider';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { AsyncPipe } from '@angular/common';
 
 @Component({
@@ -24,13 +20,7 @@ import { AsyncPipe } from '@angular/common';
         PhotoToolbarComponent,
         PaginationComponent,
         MatGridListModule,
-        MatToolbarModule,
-        MatButtonModule,
-        MatIconModule,
         AsyncPipe
-    ],
-    providers: [
-        PhotosService,
     ],
     templateUrl: 'photos.component.html',
     styleUrl: 'photos.component.css'
@@ -38,30 +28,38 @@ import { AsyncPipe } from '@angular/common';
 export class PhotosComponent {
     private breakpointObserver = inject(BreakpointObserver);
     private selectionObserver = inject(SelectionObserver);
-    private photoService = inject(PhotosService);
 
-    private photoStore = signal(defaultPhotoPageContainer);
-    public photos = computed<number>(() => {
-        const pageStore = this.photoStore();
-        return pageStore.store.reduce(
-            (prev, val) => prev += val.set.size,
-            0
-        );
-    });
+    public selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
+    public setSelectionMode = this.selectionObserver.setSelectionMode;
+    public selectionState = this.selectionObserver.State;
 
-    public pageIndex = computed<number>(() => this.photoStore().currentPage);
-    public pageSize = computed<number>(() => this.photoStore().pageSize);
-    public page = computed<PhotoPage|null>(() => {
-        const { store, currentPage } = this.photoStore();
+    public page?: PhotoPage|null;
+    public pageIndex?: number;
+    public pageSize?: number;
+    public photoCount?: number;
+    public isLoading: boolean = false;
+
+    public computePhotoStoreValues = (pageStore: PhotoPageStore): void => {
+        const {
+            store,
+            pageSize,
+            currentPage,
+            isLoading
+        } = pageStore;
         const pageIndex = store.findIndex(p => p.page === currentPage);
         if (pageIndex === -1) {
             console.warn(`Page not found! (${currentPage})`, store);
-            return null;
+            return;
         }
 
-        return store[currentPage];
-    });
-
+        this.page = store[currentPage];
+        this.pageIndex = currentPage;
+        this.pageSize = pageSize;
+        this.isLoading = isLoading;
+        this.photoCount = store.reduce(
+            (prev, val) => prev += val.set.size, 0
+        );
+    }
 
     public isHandset$: Observable<boolean> = this.breakpointObserver
         .observe(Breakpoints.Handset)
@@ -69,12 +67,4 @@ export class PhotosComponent {
             map(result => result.matches),
             shareReplay()
         );
-
-    public selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
-    public setSelectionMode = this.selectionObserver.setSelectionMode;
-    public selectionState = this.selectionObserver.State;
-
-    constructor() {
-        this.searchForPhotos();
-    }
 }

@@ -1,9 +1,3 @@
 .photos-container {
     height: 100%;
 }
-
-.mat-toolbar.mat-primary {
-    position: sticky;
-    z-index: 1;
-    top: 0;
-}

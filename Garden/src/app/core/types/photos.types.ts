@@ -89,11 +89,13 @@ export type PhotoPage = {
     set: Set<PhotoCollection>
 };
 export interface PhotoPageStore {
+    isLoading: boolean,
     currentPage: number,
     pageSize: number,
     store: PhotoPage[]
 };
 export const defaultPhotoPageContainer: PhotoPageStore = {
+    isLoading: false,
     currentPage: 0,
     pageSize: 32,
     store: []

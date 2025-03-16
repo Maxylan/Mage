@@ -6,7 +6,6 @@ import { MatCardImage } from '@angular/material/card';
 @Component({
     selector: 'shared-photo-thumbnail',
     imports: [
-        MatCardImage,
         MatProgressBar
     ],
     templateUrl: 'photo-thumbnail.component.html',

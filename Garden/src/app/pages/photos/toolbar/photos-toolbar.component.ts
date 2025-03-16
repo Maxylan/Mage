@@ -1,22 +1,37 @@
-import { Component, effect, EventEmitter, inject, Input, Output, signal, Signal } from '@angular/core';
-import { SelectionObserver, SelectState } from './selection-observer.component';
+import { Component, Input, Output, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
+import { SelectionObserver, SelectState } from './selection-observer.component';
+import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore } from '../../../core/types/photos.types';
+import { SearchCallback, SearchParameters } from '../../../shared/blocks/search-bar/search-bar.types';
 import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
-import {
-    SearchCallback,
-    SearchParameters
-} from '../../../shared/blocks/search-bar/search-bar.types';
+import { PhotosService } from '../../../core/api/photos.service';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
     selector: 'photos-toolbar',
     imports: [
-        SearchBarComponent
+        SearchBarComponent,
+        MatToolbarModule,
+        MatButtonModule,
+        MatIconModule
     ],
-    styleUrl: 'photos-toolbar.component.css',
-    templateUrl: 'photos-toolbar.component.html'
+    providers: [
+        PhotosService,
+    ],
+    templateUrl: 'photos-toolbar.component.html',
+    styleUrl: 'photos-toolbar.component.scss'
 })
 export class PhotoToolbarComponent {
     private navbarController = inject(NavbarControllerService);
+    private photoService = inject(PhotosService);
+
+    public getNavbar = this.navbarController.getNavbar;
+    public isLoading: WritableSignal<boolean> = signal(false);
+    public photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
 
     @Input()
     public selectionState?: Signal<SelectState>;
@@ -24,8 +39,8 @@ export class PhotoToolbarComponent {
     @Input()
     public setSelectionMode?: SelectionObserver['setSelectionMode'];
 
-    public getNavbar = this.navbarController.getNavbar;
-    public isLoading = signal(false);
+    @Output()
+    public onPhotosChange$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 
     public searchForPhotos: SearchCallback = (params) => {
         this.isLoading.set(true);

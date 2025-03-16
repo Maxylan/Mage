@@ -2,14 +2,13 @@
 
 mat-form-field {
   @include mat.form-field-overrides((
+    focus-state-layer-opacity: 0.16,
     filled-container-color: rgba(0,0,0,0),
-    focus-state-layer-opacity: 0.08,
     container-vertical-padding: 0.48rem,
     container-height: 32px,
   ));
 }
 
 mat-icon.mat-icon {
-  height: unset;
-  width: unset;
+    scale: 0.75;
 }

@@ -1,10 +1,9 @@
-<mat-toolbar color="primary">
-    <photos-toolbar
-        [selectionState]="selectionState"
-        [setSelectionMode]="setSelectionMode" />
-</mat-toolbar>
+<photos-toolbar
+    [selectionState]="selectionState"
+    [setSelectionMode]="setSelectionMode"
+    (onPhotosChange$)="computePhotoStoreValues($event)" />
 <div class="photos-container">
-    @if (!isLoading() && (!page()?.set?.size)) {
+    @if (!isLoading && (!page?.set?.size)) {
         <p>
           photos works but no photos was fetched!
         </p>
@@ -12,7 +11,7 @@
     <mat-grid-list
         [cols]="(isHandset$ | async) ? 4 : 8"
         rowHeight="fit">
-        @for (photo of page()?.set ?? []; track photo.source.photoId) {
+        @for (photo of page?.set ?? []; track photo.source.photoId) {
             <mat-grid-tile>
                 <shared-card-with-thumbnail
                     [key]="photo.thumbnail?.slug || photo.source.slug"
@@ -34,8 +33,8 @@
     </mat-grid-list>
 </div>
 <shared-paginator
-    [length]="photos()"
-    [disabled]="isLoading()"
-    [pageSize]="pageSize()"
-    [pageIndex]="pageIndex()"
+    [length]="photoCount ?? 0"
+    [pageSize]="pageSize || 32"
+    [pageIndex]="pageIndex ?? 0"
+    [disabled]="isLoading"
     color="primary" />
