@@ -6,6 +6,17 @@ mat-toolbar {
   ));
 }
 
+mat-form-field {
+  @include mat.form-field-overrides((
+    focus-state-layer-opacity: 0.16,
+    filled-container-color: rgba(0,0,0,0),
+    container-vertical-padding: 0.48rem,
+    container-height: 32px,
+  ));
+
+  margin-right: 2rem;
+}
+
 /* .mat-toolbar.mat-primary {
     position: sticky;
     z-index: 1;

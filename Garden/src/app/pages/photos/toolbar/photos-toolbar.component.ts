@@ -10,14 +10,24 @@ import { Observable } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 
 @Component({
     selector: 'photos-toolbar',
     imports: [
+        ReactiveFormsModule,
+        MatFormFieldModule,
         SearchBarComponent,
         MatToolbarModule,
         MatButtonModule,
-        MatIconModule
+        MatFormFieldModule,
+        MatChipsModule,
+        FormsModule,
+        MatIconModule,
+        MatInput
     ],
     providers: [
         PhotosService,
@@ -32,6 +42,40 @@ export class PhotoToolbarComponent {
     public getNavbar = this.navbarController.getNavbar;
     public isLoading: WritableSignal<boolean> = signal(false);
     public photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
+    
+    public tagsControl = new FormControl<string>('');
+    readonly photoTags = signal<string[]>([]);
+
+    removeTag(keyword: string) {
+        this.photoTags.update(tags => {
+            const index = tags.indexOf(keyword);
+            if (index < 0) {
+                return tags;
+            }
+
+            tags.splice(index, 1);
+            return [...tags];
+        });
+    }
+
+    completeTag(event: MatChipInputEvent): void {
+        if (!event.value) {
+            event.chipInput?.clear();
+            return; 
+        }
+
+        const value = event.value
+            .normalize()
+            .trim();
+
+        if (value) {
+            this.photoTags.update(
+                keywords => [...keywords, value]
+            );
+        }
+
+        event.chipInput!.clear();
+    }
 
     @Input()
     public selectionState?: Signal<SelectState>;
