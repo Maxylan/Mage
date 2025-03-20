@@ -8,13 +8,16 @@
         (onSearch$)="searchForPhotos($event)"/>
     <mat-form-field
         appearance="fill"
+        class="tags-chips-input"
         subscriptSizing="dynamic">
-        <mat-chip-grid #tagChipGrid aria-label="Enter photo tags" [(ngModel)]="photoTags">
+        <mat-chip-grid #tagChipGrid
+            class="tags-chips-grid"
+            aria-label="Enter photo tags" [(ngModel)]="photoTags">
             @for (tag of photoTags(); track tag) {
               <mat-chip-row (removed)="removeTag(tag)">
                 {{tag}}
               <button matChipRemove aria-label="'remove photo tag ' + tag">
-                <mat-icon fontSet="hack">cancel</mat-icon>
+                <mat-icon fontSet="hack">󰅚</mat-icon>
               </button>
               </mat-chip-row>
             }

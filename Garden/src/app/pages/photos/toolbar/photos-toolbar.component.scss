@@ -7,18 +7,19 @@ mat-toolbar {
 }
 
 mat-form-field {
+  margin-right: 2rem;
+  width: 100%;
+
   @include mat.form-field-overrides((
     focus-state-layer-opacity: 0.16,
     filled-container-color: rgba(0,0,0,0),
     container-vertical-padding: 0.48rem,
     container-height: 32px,
   ));
-
-  margin-right: 2rem;
 }
 
-/* .mat-toolbar.mat-primary {
-    position: sticky;
-    z-index: 1;
-    top: 0;
-} */
+mat-chip-grid {
+  @include mat.chips-overrides((
+    container-height: 32px,
+  ));
+}

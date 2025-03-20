@@ -39,3 +39,28 @@ body.dark {
 a {
     color: unset;
 }
+
+mat-chip-grid.tags-chips-grid {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    display: inline-flex;
+    scrollbar-width: thin;
+    max-height: var(--mat-form-field-container-height);
+    max-width: 75%;
+
+    div {
+      flex-flow: unset
+    }
+}
+
+.tags-chips-input {
+    overflow: clip;
+
+    /* div.mat-mdc-form-field-infix {
+        padding: auto;
+    } */
+
+    input.mat-mdc-chip-input {
+        display: inline-flex;
+    }
+}
