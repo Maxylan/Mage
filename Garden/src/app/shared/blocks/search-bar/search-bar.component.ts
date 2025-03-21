@@ -1,4 +1,4 @@
-import { Component, effect, EventEmitter, Input, Output, signal, WritableSignal } from '@angular/core';
+import { Component, effect, EventEmitter, Input, Output, Signal, signal, WritableSignal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -25,18 +25,16 @@ export class SearchBarComponent {
     public formName!: string;
 
     @Input()
-    public placeholder?: string = 'Search for ' + this.formName;
+    public placeholder: string = 'Search for ' + this.formName;
 
     @Input()
-    public value: WritableSignal<string> = signal('');
+    public value: string = '';
 
     @Output()
     public onSearch$: EventEmitter<SubmitEvent> = new EventEmitter<SubmitEvent>();
 
-    public searchControl = new FormControl<string>(this.value() || '');
+    public searchControl = new FormControl<string>(this.value);
     public searchForm = new FormGroup({
         keyword: this.searchControl,
     });
-
-    
 }

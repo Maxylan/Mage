@@ -5,36 +5,44 @@
     <shared-search-bar
         formName="photos"
         placeholder="Search for Photos!"
-        (onSearch$)="searchForPhotos($event)"/>
-    <mat-form-field
-        appearance="fill"
-        class="tags-chips-input"
-        subscriptSizing="dynamic">
-        <mat-chip-grid #tagChipGrid
-            class="tags-chips-grid"
-            aria-label="Enter photo tags" [(ngModel)]="photoTags">
-            @for (tag of photoTags(); track tag) {
-              <mat-chip-row (removed)="removeTag(tag)">
-                {{tag}}
-              <button matChipRemove aria-label="'remove photo tag ' + tag">
-                <mat-icon fontSet="hack">󰅚</mat-icon>
-              </button>
-              </mat-chip-row>
-            }
-        </mat-chip-grid>
-        <input
-            matInput
-            color="secondary"
-            placeholder="Tags.."
-            [formControl]="tagsControl"
-            [matChipInputFor]="tagChipGrid"
-            (matChipInputTokenEnd)="completeTag($event)"
+        (onSearch$)="searchForPhotos($event)"
+    >
+        <mat-form-field
+            appearance="fill"
+            class="tags-chips-input"
+            subscriptSizing="dynamic"
+        >
+            <mat-chip-grid
+                #tagChipGrid
+                class="tags-chips-grid"
+                aria-label="Enter photo tags"
+                [(ngModel)]="photoTags"
             >
-        <mat-icon
-            matSuffix
-            fontSet="hack"
-            aria-label="'Search photo tags icon'">
-            
-        </mat-icon>
-    </mat-form-field>
+                @for (tag of photoTags(); track tag) {
+                  <mat-chip-row (removed)="removeTag(tag)">
+                    {{tag}}
+                  <button matChipRemove aria-label="'remove photo tag ' + tag">
+                    <mat-icon fontSet="hack">󰅚</mat-icon>
+                  </button>
+                  </mat-chip-row>
+                }
+            </mat-chip-grid>
+            <input
+                matInput
+                color="secondary"
+                placeholder="Tags.."
+                [formControl]="tagsControl"
+                [matChipInputFor]="tagChipGrid"
+                (matChipInputTokenEnd)="completeTag($event)">
+            <mat-icon
+                matSuffix
+                fontSet="hack"
+                aria-label="'Search photo tags icon'">
+                
+            </mat-icon>
+        </mat-form-field>
+        <button mat-icon-button type="submit" aria-label="Icon submit search button">
+          <mat-icon class="search-submit-button-icon" fontSet="hack"></mat-icon>
+        </button>
+    </shared-search-bar>
 </mat-toolbar>

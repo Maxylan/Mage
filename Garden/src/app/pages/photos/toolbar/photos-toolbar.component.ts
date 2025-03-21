@@ -2,13 +2,12 @@ import { Component, Input, Output, Signal, WritableSignal, computed, inject, sig
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
 import { SelectionObserver, SelectState } from './selection-observer.component';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore } from '../../../core/types/photos.types';
-import { SearchCallback, SearchParameters } from '../../../shared/blocks/search-bar/search-bar.types';
 import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Observable } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { MatButtonModule } from '@angular/material/button';
+import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -21,10 +20,11 @@ import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
         ReactiveFormsModule,
         MatFormFieldModule,
         SearchBarComponent,
+        MatFormFieldModule,
         MatToolbarModule,
         MatButtonModule,
-        MatFormFieldModule,
         MatChipsModule,
+        MatIconButton,
         FormsModule,
         MatIconModule,
         MatInput
@@ -86,8 +86,10 @@ export class PhotoToolbarComponent {
     @Output()
     public onPhotosChange$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 
-    public searchForPhotos: SearchCallback = (params) => {
+    public searchForPhotos = (event: SubmitEvent) => {
         this.isLoading.set(true);
+        event.preventDefault();
+
         const {
             currentPage,
             pageSize
@@ -96,12 +98,18 @@ export class PhotoToolbarComponent {
         const fetchLimit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
         const fetchOffset = currentPage > 1 ? fetchLimit * currentPage - pageSize : 0;
 
+        const searchValue = (event.target as HTMLFormElement).nodeValue;
+        if (!searchValue) {
+            console.warn('Skipping an empty search value!', event);
+            return;
+        }
+
         const searchQuery: IPhotoQueryParameters = {
             limit: fetchLimit,
             offset: fetchOffset,
-            slug: params?.query,
-            title: params?.query,
-            summary: params?.query
+            slug: searchValue,
+            title: searchValue,
+            summary: searchValue
         };
 
         return this.photoService

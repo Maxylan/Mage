@@ -8,6 +8,7 @@ mat-toolbar {
 
 mat-form-field {
   margin-right: 2rem;
+  max-width: 48rem;
   width: 100%;
 
   @include mat.form-field-overrides((
@@ -21,5 +22,17 @@ mat-form-field {
 mat-chip-grid {
   @include mat.chips-overrides((
     container-height: 32px,
+  ));
+}
+
+button {
+  mat-icon {
+    scale: 0.88;
+    text-align: justify;
+    vertical-align: middle;
+  }
+  @include mat.icon-button-overrides((
+    state-layer-size: 12px,
+    icon-size: 12px
   ));
 }

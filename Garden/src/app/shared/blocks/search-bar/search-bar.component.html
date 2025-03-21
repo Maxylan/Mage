@@ -9,7 +9,7 @@
         <input
             matInput
             [formControl]="searchControl"
-            [placeholder]="placeholder ?? ''"
+            [placeholder]="placeholder"
             color="secondary">
         <mat-icon
             matSuffix
@@ -18,4 +18,5 @@
             
         </mat-icon>
     </mat-form-field>
+    <ng-content/>
 </form>
