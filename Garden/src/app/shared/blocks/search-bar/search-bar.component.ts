@@ -1,10 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, effect, EventEmitter, Input, Output, signal, WritableSignal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { SearchParameters } from './search-bar.types';
 
 @Component({
     selector: 'shared-search-bar',
@@ -26,31 +25,18 @@ export class SearchBarComponent {
     public formName!: string;
 
     @Input()
-    public initialSearch: string|false = false;
-
-    @Input()
     public placeholder?: string = 'Search for ' + this.formName;
 
-    @Output()
-    public onSearch$: EventEmitter<SearchParameters> = new EventEmitter<SearchParameters>();
+    @Input()
+    public value: WritableSignal<string> = signal('');
 
-    public searchControl = new FormControl<string>(this.initialSearch || '');
+    @Output()
+    public onSearch$: EventEmitter<SubmitEvent> = new EventEmitter<SubmitEvent>();
+
+    public searchControl = new FormControl<string>(this.value() || '');
     public searchForm = new FormGroup({
         keyword: this.searchControl,
     });
 
-    public parseSearchForm = () => {
-        // TODO: Feels like there's loads missing here?
-        let parameters: SearchParameters = {
-            query: this.searchControl.value ?? undefined
-        };
-
-        this.onSearch$.emit(parameters);
-    };
     
-    public ngOnInit() {
-        if (this.initialSearch) {
-            this.parseSearchForm();
-        }
-    }
 }
