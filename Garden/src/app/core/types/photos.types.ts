@@ -111,6 +111,7 @@ export interface IPhotoQueryParameters {
     limit: number,
     offset: number,
     dimension?: Dimension,
+    tags?: string[],
     slug?: string,
     title?: string,
     summary?: string,

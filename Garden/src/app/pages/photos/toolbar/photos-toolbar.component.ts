@@ -1,8 +1,7 @@
-import { Component, Input, Output, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Component, Input, Output, Signal, WritableSignal, computed, effect, inject, signal } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
 import { SelectionObserver, SelectState } from './selection-observer.component';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore } from '../../../core/types/photos.types';
-import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Observable } from 'rxjs';
@@ -13,13 +12,14 @@ import { MatInput } from '@angular/material/input';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
+import { SearchBarComponent, SearchQueryParameters } from '../../../shared/blocks/search-bar/search-bar.component';
 
 @Component({
     selector: 'photos-toolbar',
     imports: [
         ReactiveFormsModule,
-        MatFormFieldModule,
         SearchBarComponent,
+        MatFormFieldModule,
         MatFormFieldModule,
         MatToolbarModule,
         MatButtonModule,
@@ -45,7 +45,7 @@ export class PhotoToolbarComponent {
     
     public tagsControl = new FormControl<string>('');
     readonly photoTags = signal<string[]>([]);
-
+    
     removeTag(keyword: string) {
         this.photoTags.update(tags => {
             const index = tags.indexOf(keyword);
@@ -77,6 +77,47 @@ export class PhotoToolbarComponent {
         event.chipInput!.clear();
     }
 
+    public readonly onPhotoTags = effect(() => {
+        const tags = this.photoTags();
+        const [
+            baseUrl,
+            baseQuery
+        ] = location.href.split('?');
+        let parameters = '';
+
+        if (baseQuery) {
+            parameters += '?' + baseQuery.replaceAll(/[\&\?]t=[\[\w\d -_\]]*/, '');
+        }
+
+        if (!tags.length) {
+            console.debug('!tags.length', parameters);
+            window.history.replaceState(null, '', new URL(parameters, baseUrl));
+            return;
+        }
+
+        const sanitizedTags = tags
+            .filter(tag => !!tag)
+            .map(tag => {
+                let urlEncodedBuffer;
+                try {
+                    urlEncodedBuffer = Buffer.from(
+                        tag.normalize().trim(),
+                        "base64"
+                    );
+                }
+                catch(err) {
+                    console.error(`Cought an error cleaning up & encoding tag '${tag}'!`, err);
+                }
+
+                return urlEncodedBuffer?.toString() || '';
+            });
+
+        parameters = parameters ? parameters + '&' : '?';
+        parameters += `t=${sanitizedTags.join('&t=')}`;
+        console.debug('parameters', parameters);
+        window.history.replaceState(null, '', new URL(parameters, baseUrl));
+    });
+
     @Input()
     public selectionState?: Signal<SelectState>;
 
@@ -86,10 +127,8 @@ export class PhotoToolbarComponent {
     @Output()
     public onPhotosChange$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 
-    public searchForPhotos = (event: SubmitEvent) => {
+    public searchForPhotos = (searchQuery: SearchQueryParameters) => {
         this.isLoading.set(true);
-        event.preventDefault();
-
         const {
             currentPage,
             pageSize
@@ -98,22 +137,22 @@ export class PhotoToolbarComponent {
         const fetchLimit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
         const fetchOffset = currentPage > 1 ? fetchLimit * currentPage - pageSize : 0;
 
-        const searchValue = (event.target as HTMLFormElement).nodeValue;
-        if (!searchValue) {
-            console.warn('Skipping an empty search value!', event);
+        if (!searchQuery || !Object.keys(searchQuery).length) {
+            console.warn('Skipping an empty search query!', searchQuery);
             return;
         }
 
-        const searchQuery: IPhotoQueryParameters = {
+        const queryParameters: IPhotoQueryParameters = {
             limit: fetchLimit,
             offset: fetchOffset,
-            slug: searchValue,
-            title: searchValue,
-            summary: searchValue
+            tags: searchQuery['t'] || this.photoTags().join(''),
+            slug: searchQuery.search,
+            title: searchQuery.search,
+            summary: searchQuery.search
         };
 
         return this.photoService
-            .getPhotos(searchQuery)
+            .getPhotos(queryParameters)
             .then(data => {
                 console.debug('[searchForPhotos] Search Result', data);
                 let newStore: PhotoPageStore = {
