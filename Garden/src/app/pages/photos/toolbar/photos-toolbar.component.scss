@@ -27,10 +27,14 @@ mat-chip-grid {
 
 button {
   mat-icon {
-    scale: 0.88;
     text-align: justify;
     vertical-align: middle;
+    padding-left: 2px;
   }
+  mat-icon.search-submit-button-icon {
+    font-size: 26px;
+  }
+
   @include mat.icon-button-overrides((
     state-layer-size: 12px,
     icon-size: 12px

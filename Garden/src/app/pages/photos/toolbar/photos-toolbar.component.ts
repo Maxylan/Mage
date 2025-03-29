@@ -13,6 +13,8 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { SearchBarComponent, SearchQueryParameters } from '../../../shared/blocks/search-bar/search-bar.component';
+import { Buffer } from 'buffer';
+import { HttpUrlEncodingCodec } from '@angular/common/http';
 
 @Component({
     selector: 'photos-toolbar',
@@ -31,22 +33,100 @@ import { SearchBarComponent, SearchQueryParameters } from '../../../shared/block
     ],
     providers: [
         PhotosService,
+        HttpUrlEncodingCodec
     ],
     templateUrl: 'photos-toolbar.component.html',
     styleUrl: 'photos-toolbar.component.scss'
 })
 export class PhotoToolbarComponent {
-    private navbarController = inject(NavbarControllerService);
-    private photoService = inject(PhotosService);
+    private readonly navbarController = inject(NavbarControllerService);
+    private readonly urlEncoder = inject(HttpUrlEncodingCodec);
+    private readonly photoService = inject(PhotosService);
 
     public getNavbar = this.navbarController.getNavbar;
     public isLoading: WritableSignal<boolean> = signal(false);
     public photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
     
     public tagsControl = new FormControl<string>('');
-    readonly photoTags = signal<string[]>([]);
+
+    /**
+     * Photo-tags signal..
+     */
+    public readonly photoTags = signal<string[]>((
+        // Calculates *Initial* `photoTags` state..
+        () => {
+            const [_, baseQuery] = location.href.split('?');
+            if (!baseQuery) {
+                return [];
+            }
+            return baseQuery
+                .split('&')
+                .filter(param => {
+                    let tag = param.trim();
+                    return !!(
+                        tag
+                        && tag.length > 2
+                        && tag.startsWith('t=')
+                    );
+                })
+                .map(param => {
+                    let tag = param.trim().substring(2)
+                    return this.urlEncoder.decodeValue(tag);
+                });
+        }
+    )());
+
+    /**
+     * Effect that triggers every time `this.photoTags()` gets updated..
+     * Keeps the Query Parameters in the URL up-to-date..
+     */
+    public readonly onPhotoTags = effect(() => {
+        const tags = this.photoTags();
+        const [
+            baseUrl,
+            baseQuery
+        ] = location.href.split('?');
+        let parameters = '?';
+
+        if (baseQuery) {
+            parameters += baseQuery
+                .split('&')
+                .filter(_ => !_.startsWith('t='))
+                .join('&');
+        }
+
+        const sanitizedTags = tags
+            .map(unsanitizedTag => {
+                let tag = unsanitizedTag?.normalize()?.trim();
+                if (!tag) {
+                    return '';
+                }
+
+                return this.urlEncoder.encodeValue(tag);
+            })
+            .filter(tag => !!tag);
+
+        if (!tags.length) {
+            console.debug('!tags.length', parameters);
+            if (parameters === '?') {
+                parameters = '';
+            }
+            
+            window.history.replaceState(null, '', new URL(parameters, baseUrl));
+            return;
+        }
+
+        parameters = parameters.length > 1 ? parameters + '&' : '?';
+        parameters += `t=${sanitizedTags.join('&t=')}`;
+
+        console.debug('parameters', parameters);
+        window.history.replaceState(null, '', new URL(parameters, baseUrl));
+    });
     
-    removeTag(keyword: string) {
+    /**
+     * Callback triggered by pressing the (X) to remove a tag..
+     */
+    public readonly removeTag = (keyword: string) => {
         this.photoTags.update(tags => {
             const index = tags.indexOf(keyword);
             if (index < 0) {
@@ -57,8 +137,11 @@ export class PhotoToolbarComponent {
             return [...tags];
         });
     }
-
-    completeTag(event: MatChipInputEvent): void {
+    
+    /**
+     * Callback triggered when finished typing/creating a tag..
+     */
+    public readonly completeTag = (event: MatChipInputEvent): void => {
         if (!event.value) {
             event.chipInput?.clear();
             return; 
@@ -77,46 +160,6 @@ export class PhotoToolbarComponent {
         event.chipInput!.clear();
     }
 
-    public readonly onPhotoTags = effect(() => {
-        const tags = this.photoTags();
-        const [
-            baseUrl,
-            baseQuery
-        ] = location.href.split('?');
-        let parameters = '';
-
-        if (baseQuery) {
-            parameters += '?' + baseQuery.replaceAll(/[\&\?]t=[\[\w\d -_\]]*/, '');
-        }
-
-        if (!tags.length) {
-            console.debug('!tags.length', parameters);
-            window.history.replaceState(null, '', new URL(parameters, baseUrl));
-            return;
-        }
-
-        const sanitizedTags = tags
-            .filter(tag => !!tag)
-            .map(tag => {
-                let urlEncodedBuffer;
-                try {
-                    urlEncodedBuffer = Buffer.from(
-                        tag.normalize().trim(),
-                        "base64"
-                    );
-                }
-                catch(err) {
-                    console.error(`Cought an error cleaning up & encoding tag '${tag}'!`, err);
-                }
-
-                return urlEncodedBuffer?.toString() || '';
-            });
-
-        parameters = parameters ? parameters + '&' : '?';
-        parameters += `t=${sanitizedTags.join('&t=')}`;
-        console.debug('parameters', parameters);
-        window.history.replaceState(null, '', new URL(parameters, baseUrl));
-    });
 
     @Input()
     public selectionState?: Signal<SelectState>;
