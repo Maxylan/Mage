@@ -1,10 +1,11 @@
-import { Component, EventEmitter, Input, Output, signal, ViewChild, WritableSignal } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
 import { FormControl, FormGroup, NgForm, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Params } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 
 export type SearchQueryParameters = Params & { search: string }; 
@@ -25,6 +26,8 @@ export type SearchQueryParameters = Params & { search: string };
     } */
 })
 export class SearchBarComponent {
+    private route: ActivatedRoute = inject(ActivatedRoute);
+
     @Input({ required: true })
     public formName!: string;
 
@@ -41,39 +44,34 @@ export class SearchBarComponent {
     public onSearch$: EventEmitter<SearchQueryParameters> = new EventEmitter<SearchQueryParameters>();
 
     @Output()
-    public onQueryChange$: Observable<Params>;
-    public queryParameters$: WritableSignal<Params> = signal({});
+    public onQueryChange$: Observable<Params> = this.route.queryParams;
+    public readonly queryParameters$ = toSignal(this.onQueryChange$);
 
     public submitHandler = (event?: SubmitEvent) => {
         if (event) {
             event.preventDefault();
         }
 
-        if (!this.searchControl.value) {
+        if (!this.searchForm.controls.search.value) {
             return;
         }
 
         const params: SearchQueryParameters = {
             ...this.queryParameters$(),
-            search: this.searchControl.value
+            search: this.searchForm.controls.search.value
         };
 
         this.onSearch$.emit(params);
     }
 
-    public searchControl = new FormControl<string>(this.initialValue);
-    public searchForm = new FormGroup({ search: this.searchControl });
+    public searchForm = new FormGroup({
+        search: new FormControl<string>(this.queryParameters$()?.['search'] || this.initialValue)
+    });
 
-    @ViewChild('f')
-    private formRef!: NgForm;
-
-    constructor(private route: ActivatedRoute) {
-        this.onQueryChange$ = this.route.queryParams;
-        this.onQueryChange$.subscribe(params => {
-            this.queryParameters$.set(params);
-
+    ngOnInit() {
+        this.onQueryChange$.subscribe(_ => {
             if (this.searchOnQueryChange) {
-                this.formRef.ngSubmit.emit();
+                this.submitHandler();
             }
         })
     }

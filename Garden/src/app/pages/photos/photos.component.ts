@@ -8,9 +8,11 @@ import { PaginationComponent } from '../../shared/pagination/pagination.componen
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatGridListModule } from '@angular/material/grid-list';
-import { map, Observable, shareReplay } from 'rxjs';
+import { filter, first, map, Observable, shareReplay, take } from 'rxjs';
 import { MatDivider } from '@angular/material/divider';
 import { AsyncPipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'page-list-photos',
@@ -22,16 +24,24 @@ import { AsyncPipe } from '@angular/common';
         MatGridListModule,
         AsyncPipe
     ],
+    /* providers: [
+        ActivatedRoute
+    ], */
     templateUrl: 'photos.component.html',
     styleUrl: 'photos.component.css'
 })
 export class PhotosComponent {
-    private breakpointObserver = inject(BreakpointObserver);
-    private selectionObserver = inject(SelectionObserver);
+    private readonly breakpointObserver = inject(BreakpointObserver);
+    private readonly selectionObserver = inject(SelectionObserver);
+    private readonly route = inject(ActivatedRoute);
 
-    public selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
-    public setSelectionMode = this.selectionObserver.setSelectionMode;
-    public selectionState = this.selectionObserver.State;
+    public readonly queryParameters$ = this.route.queryParamMap;
+    public readonly queryParameters = toSignal(this.queryParameters$);
+    // public readonly initialSearch = this.route.queryParamMap.pipe(filter(p => p.has('search')), take(1));
+
+    public readonly selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
+    public readonly setSelectionMode = this.selectionObserver.setSelectionMode;
+    public readonly selectionState = this.selectionObserver.State;
 
     public page?: PhotoPage|null;
     public pageIndex?: number;
@@ -61,7 +71,7 @@ export class PhotosComponent {
         );
     }
 
-    public isHandset$: Observable<boolean> = this.breakpointObserver
+    public readonly isHandset$: Observable<boolean> = this.breakpointObserver
         .observe(Breakpoints.Handset)
         .pipe(
             map(result => result.matches),

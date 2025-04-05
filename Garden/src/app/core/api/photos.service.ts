@@ -3,6 +3,7 @@ import { Dimension, IPhotoQueryParameters, Photo, PhotoCollection } from '../typ
 import { BlobResponse, Methods } from '../types/generic.types';
 import { AuthService } from './auth.service';
 import ApiBase from './base_api.class';
+import { SearchQueryParameters } from '../../shared/blocks/search-bar/search-bar.component';
 
 @Injectable({
     providedIn: 'root' /* ,
@@ -147,21 +148,49 @@ export class PhotosService extends ApiBase {
     }
 
     /**
+     * Parse incomming `SearchQueryParameters` URL/Query Parameters into a supported `IPhotoQueryParameters` collection.
+     */
+    public parseSearchQueryParameters(params: SearchQueryParameters, { offset, limit }: {
+        offset: IPhotoQueryParameters['offset'],
+        limit: IPhotoQueryParameters['limit']
+    }): IPhotoQueryParameters {
+        let supportedParameters: IPhotoQueryParameters = {
+            summary: params.search,
+            title: params.search,
+            slug: params.search,
+            offset,
+            limit
+        }
+
+        if ('t' in params && Array.isArray(params['t'])) {
+            supportedParameters.tags = params['t'];
+        }
+
+        return supportedParameters;
+    }
+
+    /**
      * Query for all `PhotoCollection`'s that match all criterias passed as URL/Query Parameters.
      */
-    public async getPhotos(params: IPhotoQueryParameters): Promise<PhotoCollection[]> {
-        let parameters = Array.from(Object.entries(params))
-            .filter(kvp => !(
-                kvp[0] === null ||
-                kvp[1] === null ||
-                kvp[0] === undefined ||
-                kvp[1] === undefined
-            ))
-            .map(kvp => `${kvp[0]}=${kvp[1].toString().trim()}`);
+    public async getPhotos(params: string|IPhotoQueryParameters): Promise<PhotoCollection[]> {
+        let queryParameters: string = '';
+        if (typeof params === 'string' && params.startsWith('?')) {
+            queryParameters = params;
+        }
+        else {
+            let parameters = Array.from(Object.entries(params))
+                .filter(kvp => !(
+                    kvp[0] === null ||
+                    kvp[1] === null ||
+                    kvp[0] === undefined ||
+                    kvp[1] === undefined
+                ))
+                .map(kvp => `${kvp[0]}=${kvp[1].toString().trim()}`);
 
-        let queryParameters = parameters.length > 0
-            ? '?' + parameters.join('&')
-            : '';
+            queryParameters = parameters.length > 0
+                ? '?' + parameters.join('&')
+                : '';
+        }
 
         return await this.get(queryParameters)
             .then(res => res.json())

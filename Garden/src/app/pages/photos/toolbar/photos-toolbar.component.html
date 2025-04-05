@@ -5,6 +5,7 @@
     <shared-search-bar
         formName="photos"
         placeholder="Search for Photos!"
+        [initialValue]="queryParameters?.get('search') ?? ''"
         (onSearch$)="searchForPhotos($event)"
     >
         <mat-form-field

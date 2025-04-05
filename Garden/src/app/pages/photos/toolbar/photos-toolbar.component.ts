@@ -4,7 +4,6 @@ import { SelectionObserver, SelectState } from './selection-observer.component';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore } from '../../../core/types/photos.types';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Observable } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,8 +12,9 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { SearchBarComponent, SearchQueryParameters } from '../../../shared/blocks/search-bar/search-bar.component';
-import { Buffer } from 'buffer';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
+import { ParamMap } from '@angular/router';
+import { Observable } from 'rxjs';
 
 @Component({
     selector: 'photos-toolbar',
@@ -27,8 +27,8 @@ import { HttpUrlEncodingCodec } from '@angular/common/http';
         MatButtonModule,
         MatChipsModule,
         MatIconButton,
-        FormsModule,
         MatIconModule,
+        FormsModule,
         MatInput
     ],
     providers: [
@@ -43,6 +43,9 @@ export class PhotoToolbarComponent {
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly photoService = inject(PhotosService);
 
+    @Input({ required: true })
+    public queryParameters: ParamMap|null = null;
+
     public getNavbar = this.navbarController.getNavbar;
     public isLoading: WritableSignal<boolean> = signal(false);
     public photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
@@ -54,6 +57,7 @@ export class PhotoToolbarComponent {
      */
     public readonly photoTags = signal<string[]>((
         // Calculates *Initial* `photoTags` state..
+        // TODO - Use injected route instead of using `location.href.split(..)`?
         () => {
             const [_, baseQuery] = location.href.split('?');
             if (!baseQuery) {
@@ -107,7 +111,6 @@ export class PhotoToolbarComponent {
             .filter(tag => !!tag);
 
         if (!tags.length) {
-            console.debug('!tags.length', parameters);
             if (parameters === '?') {
                 parameters = '';
             }
@@ -119,14 +122,13 @@ export class PhotoToolbarComponent {
         parameters = parameters.length > 1 ? parameters + '&' : '?';
         parameters += `t=${sanitizedTags.join('&t=')}`;
 
-        console.debug('parameters', parameters);
         window.history.replaceState(null, '', new URL(parameters, baseUrl));
     });
     
     /**
      * Callback triggered by pressing the (X) to remove a tag..
      */
-    public readonly removeTag = (keyword: string) => {
+    public readonly removeTag = (keyword: string): void => {
         this.photoTags.update(tags => {
             const index = tags.indexOf(keyword);
             if (index < 0) {
@@ -160,6 +162,73 @@ export class PhotoToolbarComponent {
         event.chipInput!.clear();
     }
 
+    /**
+     * Effect that triggers every time `this.searchForPhotos(..)` gets invoked..
+     * Keeps the Query Parameters in the URL up-to-date..
+     */
+    public readonly updatePageParameters = (searchQuery: SearchQueryParameters): void => {
+        const [
+            baseUrl,
+            _baseQuery
+        ] = location.href.split('?');
+
+        const sanitized = Array.from(Object.entries(searchQuery))
+            .flatMap(unsanitized => {
+                let key = unsanitized[0]?.normalize()?.trim();
+                const skipKeyIf = [
+                    'limit',
+                    'offset'
+                ];
+
+                if (!key || skipKeyIf.includes(key)) {
+                    return null;
+                }
+
+                let values: any[];
+                if (Array.isArray(unsanitized[1])) {
+                    values = unsanitized[1]
+                        .filter(value => !!value);
+
+                    if (!values.length) {
+                        return null;
+                    }
+                }
+                else {
+                    values = [unsanitized[1]];
+
+                    if (!values[0]) {
+                        return null;
+                    }
+                }
+
+                return values.map(value => {
+                    if (typeof value === 'string') {
+                        value = value.normalize().trim();
+                    }
+                
+                    if (!value) {
+                        return null;
+                    }
+
+                    return [
+                        this.urlEncoder.encodeKey(key),
+                        this.urlEncoder.encodeValue(value)
+                    ];
+                });
+            })
+            .filter(kvp => !!kvp)    
+            .map(kvp => `${kvp[0]}=${kvp[1]}`);
+
+        if (!sanitized.length) {
+            window.history.replaceState(null, '', baseUrl);
+            return;
+        }
+
+        const parameters = `?${sanitized.join('&')}`;
+        console.debug('search parameters', new URL(parameters, baseUrl));
+        window.history.replaceState(null, '', new URL(parameters, baseUrl));
+    }
+
 
     @Input()
     public selectionState?: Signal<SelectState>;
@@ -170,6 +239,10 @@ export class PhotoToolbarComponent {
     @Output()
     public onPhotosChange$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 
+    /**
+     * Callback invoked when a search-query is triggered.
+     * Performs the GET-Request to search for photos.
+     */
     public searchForPhotos = (searchQuery: SearchQueryParameters) => {
         this.isLoading.set(true);
         const {
@@ -185,14 +258,18 @@ export class PhotoToolbarComponent {
             return;
         }
 
-        const queryParameters: IPhotoQueryParameters = {
-            limit: fetchLimit,
-            offset: fetchOffset,
-            tags: searchQuery['t'] || this.photoTags().join(''),
-            slug: searchQuery.search,
-            title: searchQuery.search,
-            summary: searchQuery.search
+        searchQuery = {
+            ...searchQuery,
+            t: this.photoTags()
         };
+
+        this.updatePageParameters(searchQuery);
+
+        const queryParameters = this.photoService
+            .parseSearchQueryParameters(searchQuery, {
+                offset: fetchOffset,
+                limit: fetchLimit
+            });
 
         return this.photoService
             .getPhotos(queryParameters)
