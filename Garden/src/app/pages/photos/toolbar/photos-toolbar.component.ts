@@ -13,7 +13,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { SearchBarComponent, SearchQueryParameters } from '../../../shared/blocks/search-bar/search-bar.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
-import { ParamMap } from '@angular/router';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -42,50 +42,68 @@ export class PhotoToolbarComponent {
     private readonly navbarController = inject(NavbarControllerService);
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly photoService = inject(PhotosService);
+    private readonly route = inject(ActivatedRoute);
 
-    @Input({ required: true })
-    public queryParameters: ParamMap|null = null;
+    @Input()
+    public readonly offset: IPhotoQueryParameters['offset'] = 0;
 
-    public getNavbar = this.navbarController.getNavbar;
-    public isLoading: WritableSignal<boolean> = signal(false);
-    public photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
+    @Input()
+    public readonly limit: IPhotoQueryParameters['limit'] = 32;
+
+    @Input()
+    public selectionState?: Signal<SelectState>;
+
+    @Input()
+    public setSelectionMode?: SelectionObserver['setSelectionMode'];
+
+    public readonly getNavbar = this.navbarController.getNavbar;
+    public readonly isLoading: WritableSignal<boolean> = signal(true);
+    public readonly photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
     
-    public tagsControl = new FormControl<string>('');
+    public readonly queryParameters$ = this.route.queryParamMap;
+    public readonly photoQuery: WritableSignal<IPhotoQueryParameters> = signal({
+        offset: this.offset,
+        limit: this.limit
+    });
+
+    public readonly tagsControl = new FormControl<string>('');
 
     /**
-     * Photo-tags signal..
+     * Parse incomming `ParamMap` URL/Query Parameters into a supported `IPhotoQueryParameters` collection.
      */
-    public readonly photoTags = signal<string[]>((
-        // Calculates *Initial* `photoTags` state..
-        // TODO - Use injected route instead of using `location.href.split(..)`?
-        () => {
-            const [_, baseQuery] = location.href.split('?');
-            if (!baseQuery) {
-                return [];
+    public ngOnInit() {
+        this.queryParameters$.subscribe(
+            params => {
+                console.debug('Query params updating..');
+                const query = {
+                    search: params.get('search') || undefined,
+                    summary: params.get('summary') || undefined,
+                    title: params.get('title') || undefined,
+                    slug: params.get('slug') || undefined,
+                    tags: params.getAll('t') || undefined,
+                    offset: this.offset,
+                    limit: this.limit
+                };
+                console.debug('Query params:', query);
+                this.photoQuery.set(query);
+                /* this.photoQuery.set({
+                    search: params.get('search') || undefined,
+                    summary: params.get('summary') || undefined,
+                    title: params.get('title') || undefined,
+                    slug: params.get('slug') || undefined,
+                    tags: params.getAll('t') || undefined,
+                    offset: this.offset,
+                    limit: this.limit
+                }); */
             }
-            return baseQuery
-                .split('&')
-                .filter(param => {
-                    let tag = param.trim();
-                    return !!(
-                        tag
-                        && tag.length > 2
-                        && tag.startsWith('t=')
-                    );
-                })
-                .map(param => {
-                    let tag = param.trim().substring(2)
-                    return this.urlEncoder.decodeValue(tag);
-                });
-        }
-    )());
+        );
+    }
 
     /**
-     * Effect that triggers every time `this.photoTags()` gets updated..
+     * Effect that triggers every time tags are mutated..
      * Keeps the Query Parameters in the URL up-to-date..
      */
-    public readonly onPhotoTags = effect(() => {
-        const tags = this.photoTags();
+    public readonly updateTagParameters = (tags: string[]) => {
         const [
             baseUrl,
             baseQuery
@@ -123,21 +141,24 @@ export class PhotoToolbarComponent {
         parameters += `t=${sanitizedTags.join('&t=')}`;
 
         window.history.replaceState(null, '', new URL(parameters, baseUrl));
-    });
+    }
     
     /**
      * Callback triggered by pressing the (X) to remove a tag..
      */
     public readonly removeTag = (keyword: string): void => {
-        this.photoTags.update(tags => {
-            const index = tags.indexOf(keyword);
-            if (index < 0) {
-                return tags;
-            }
+        let tags = this.photoQuery().tags;
+        if (!Array.isArray(tags) || !tags.length) {
+            return;
+        }
 
-            tags.splice(index, 1);
-            return [...tags];
-        });
+        const index = tags.indexOf(keyword);
+        if (index < 0) {
+            return;
+        }
+
+        tags.splice(index, 1);
+        this.updateTagParameters(tags);
     }
     
     /**
@@ -154,127 +175,54 @@ export class PhotoToolbarComponent {
             .trim();
 
         if (value) {
-            this.photoTags.update(
-                keywords => [...keywords, value]
-            );
+            let tags = this.photoQuery().tags;
+            if (!Array.isArray(tags)) {
+                tags = [];
+            }
+
+            tags.push(value);
         }
 
         event.chipInput!.clear();
     }
 
     /**
-     * Effect that triggers every time `this.searchForPhotos(..)` gets invoked..
-     * Keeps the Query Parameters in the URL up-to-date..
-     */
-    public readonly updatePageParameters = (searchQuery: SearchQueryParameters): void => {
-        const [
-            baseUrl,
-            _baseQuery
-        ] = location.href.split('?');
-
-        const sanitized = Array.from(Object.entries(searchQuery))
-            .flatMap(unsanitized => {
-                let key = unsanitized[0]?.normalize()?.trim();
-                const skipKeyIf = [
-                    'limit',
-                    'offset'
-                ];
-
-                if (!key || skipKeyIf.includes(key)) {
-                    return null;
-                }
-
-                let values: any[];
-                if (Array.isArray(unsanitized[1])) {
-                    values = unsanitized[1]
-                        .filter(value => !!value);
-
-                    if (!values.length) {
-                        return null;
-                    }
-                }
-                else {
-                    values = [unsanitized[1]];
-
-                    if (!values[0]) {
-                        return null;
-                    }
-                }
-
-                return values.map(value => {
-                    if (typeof value === 'string') {
-                        value = value.normalize().trim();
-                    }
-                
-                    if (!value) {
-                        return null;
-                    }
-
-                    return [
-                        this.urlEncoder.encodeKey(key),
-                        this.urlEncoder.encodeValue(value)
-                    ];
-                });
-            })
-            .filter(kvp => !!kvp)    
-            .map(kvp => `${kvp[0]}=${kvp[1]}`);
-
-        if (!sanitized.length) {
-            window.history.replaceState(null, '', baseUrl);
-            return;
-        }
-
-        const parameters = `?${sanitized.join('&')}`;
-        // console.debug('search parameters', new URL(parameters, baseUrl));
-        window.history.replaceState(null, '', new URL(parameters, baseUrl));
-    }
-
-
-    @Input()
-    public selectionState?: Signal<SelectState>;
-
-    @Input()
-    public setSelectionMode?: SelectionObserver['setSelectionMode'];
-
-    @Output()
-    public photos$: Observable<PhotoPageStore> = toObservable(this.photoStore);
-
-    /**
      * Callback invoked when a search-query is triggered.
      * Performs the GET-Request to search for photos.
      */
     public searchForPhotos = (searchQuery: SearchQueryParameters) => {
-        this.isLoading.set(true);
+        console.debug('searchForPhotos searchQuery', {...searchQuery}, {...this.photoQuery()});
+        if (!searchQuery || !Object.keys(searchQuery).length) {
+            console.warn('Skipping an empty search query!', searchQuery);
+
+            if (this.isLoading()) {
+                this.isLoading.set(false);
+            }
+
+            return;
+        }
+
+        if (this.isLoading() === false) {
+            this.isLoading.set(true);
+        }
+
         const {
             currentPage,
             pageSize
         } = this.photoStore();
 
-        const fetchLimit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
-        const fetchOffset = currentPage > 1 ? fetchLimit * currentPage - pageSize : 0;
-
-        if (!searchQuery || !Object.keys(searchQuery).length) {
-            console.warn('Skipping an empty search query!', searchQuery);
-            return;
+        const limit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
+        const offset = currentPage > 1 ? limit * currentPage - pageSize : 0;
+        const photoQuery = {
+            ...this.photoQuery(),
+            offset: offset,
+            limit: limit
         }
 
-        searchQuery = {
-            ...searchQuery,
-            t: this.photoTags()
-        };
-
-        this.updatePageParameters(searchQuery);
-
-        const queryParameters = this.photoService
-            .parseSearchQueryParameters(searchQuery, {
-                offset: fetchOffset,
-                limit: fetchLimit
-            });
-
         return this.photoService
-            .getPhotos(queryParameters)
+            .getPhotos(photoQuery)
             .then(data => {
-                console.debug('[searchForPhotos] Search Result', data);
+                console.debug('[searchForPhotos] Search Result', { ...data });
                 let newStore: PhotoPageStore = {
                     ...this.photoStore()
                 };
@@ -315,4 +263,7 @@ export class PhotoToolbarComponent {
             })
             .finally(() => this.isLoading.set(false));
     }
+
+    @Output()
+    public photos$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 }

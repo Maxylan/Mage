@@ -11,7 +11,6 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { filter, first, map, Observable, shareReplay, take } from 'rxjs';
 import { MatDivider } from '@angular/material/divider';
 import { AsyncPipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
 
 @Component({
     selector: 'page-list-photos',
@@ -29,9 +28,7 @@ import { ActivatedRoute } from '@angular/router';
 export class PhotosComponent {
     private readonly breakpointObserver = inject(BreakpointObserver);
     private readonly selectionObserver = inject(SelectionObserver);
-    private readonly route = inject(ActivatedRoute);
 
-    public readonly queryParameters$ = this.route.queryParamMap;
     public readonly setSelectionMode = this.selectionObserver.setSelectionMode;
     public readonly selectionState = this.selectionObserver.State;
     public readonly selectPhoto = (photo: Photo): ((isSelected: boolean) => void) => (
@@ -45,8 +42,7 @@ export class PhotosComponent {
     public photoCount?: number;
     public isLoading: boolean = false;
     public page: PhotoPage|null = null;
-
-    public computePhotoStoreValues = (pageStore: PhotoPageStore): void => {
+    public readonly computePhotoStoreValues = (pageStore: PhotoPageStore): void => {
         const {
             store,
             pageSize,

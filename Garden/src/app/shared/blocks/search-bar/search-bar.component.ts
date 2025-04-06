@@ -38,6 +38,9 @@ export class SearchBarComponent {
     public initialValue: string = '';
 
     @Input()
+    public initialSearch: boolean = true;
+
+    @Input()
     public searchOnQueryChange: boolean = false;
 
     @Output()
@@ -47,28 +50,30 @@ export class SearchBarComponent {
     public onQueryChange$: Observable<Params> = this.route.queryParams;
     public readonly queryParameters$ = toSignal(this.onQueryChange$);
 
-    public submitHandler = (event?: SubmitEvent) => {
-        if (event) {
-            event.preventDefault();
-        }
+    public searchForm = new FormGroup({
+        search: new FormControl<string>(this.queryParameters$()?.['search'] || this.initialValue)
+    });
 
-        if (!this.searchForm.controls.search.value) {
-            return;
+    public readonly submitHandler = (event?: SubmitEvent) => {
+        if (event && 'preventDefault' in event) {
+            event.preventDefault();
         }
 
         const params: SearchQueryParameters = {
             ...this.queryParameters$(),
-            search: this.searchForm.controls.search.value
+            search: this.searchForm.controls.search.value || ''
         };
 
         this.onSearch$.emit(params);
     }
 
-    public searchForm = new FormGroup({
-        search: new FormControl<string>(this.queryParameters$()?.['search'] || this.initialValue)
-    });
+    public ngOnInit() {
+        // Initial Search
+        if(this.initialSearch) {
+            this.submitHandler();
+        }
 
-    ngOnInit() {
+        // Subscribe to query-parameter changes..
         this.onQueryChange$.subscribe(_ => {
             if (this.searchOnQueryChange) {
                 this.submitHandler();

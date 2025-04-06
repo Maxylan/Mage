@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Dimension, IPhotoQueryParameters, Photo, PhotoCollection } from '../types/photos.types';
-import { BlobResponse, Methods } from '../types/generic.types';
+import { SearchQueryParameters } from '../../shared/blocks/search-bar/search-bar.component';
+import { BlobResponse } from '../types/generic.types';
 import { AuthService } from './auth.service';
 import ApiBase from './base_api.class';
-import { SearchQueryParameters } from '../../shared/blocks/search-bar/search-bar.component';
 
 @Injectable({
     providedIn: 'root' /* ,
@@ -148,29 +148,6 @@ export class PhotosService extends ApiBase {
     }
 
     /**
-     * Parse incomming `SearchQueryParameters` URL/Query Parameters into a supported `IPhotoQueryParameters` collection.
-     */
-    public parseSearchQueryParameters(params: SearchQueryParameters, { offset, limit }: {
-        offset: IPhotoQueryParameters['offset'],
-        limit: IPhotoQueryParameters['limit']
-    }): IPhotoQueryParameters {
-        let supportedParameters: IPhotoQueryParameters = {
-            search: params.search,
-            summary: params.search,
-            title: params.search,
-            slug: params.search,
-            offset,
-            limit
-        }
-
-        if ('t' in params && Array.isArray(params['t'])) {
-            supportedParameters.tags = params['t'];
-        }
-
-        return supportedParameters;
-    }
-
-    /**
      * Query for all `PhotoCollection`'s that match all criterias passed as URL/Query Parameters.
      */
     public async getPhotos(params: string|IPhotoQueryParameters): Promise<PhotoCollection[]> {
@@ -186,8 +163,6 @@ export class PhotosService extends ApiBase {
                     || kvp[0] === undefined
                     || kvp[1] === undefined
                 ))
-                // 2025-04-05 - TODO: Ugly hack, only use 'search', other params are "filters". Remove & Fix this.
-                .filter(kvp => ['search', 'offset', 'limit'].includes(kvp[0]))
                 .map(kvp => `${kvp[0]}=${kvp[1].toString().trim()}`);
 
             queryParameters = parameters.length > 0
