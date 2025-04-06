@@ -5,8 +5,8 @@
     <shared-search-bar
         formName="photos"
         placeholder="Search for Photos!"
-        [initialValue]="(photoQuery$ | async)?.search ?? ''"
-        (onSearch$)="searchForPhotos($event)"
+        [initialValue]="initial.search ?? ''"
+        (onSearch$)="onSearch($event)"
     >
         <mat-form-field
             appearance="fill"
@@ -17,8 +17,9 @@
                 #tagChipGrid
                 class="tags-chips-grid"
                 aria-label="Enter photo tags"
+                [(ngModel)]="tags"
             >
-                @for (tag of (photoQuery$ | async)?.tags; track tag) {
+                @for (tag of tags(); track tag) {
                   <mat-chip-row (removed)="removeTag(tag)">
                     {{tag}}
                   <button matChipRemove aria-label="'remove photo tag ' + tag">

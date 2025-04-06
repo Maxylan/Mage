@@ -1,3 +1,5 @@
+import { Params } from "@angular/router";
+
 export type PhotoCollection = {
     source: Photo,
     medium?: Photo,
@@ -92,13 +94,13 @@ export interface PhotoPageStore {
     isLoading: boolean,
     currentPage: number,
     pageSize: number,
-    store: PhotoPage[]
+    page: PhotoPage[]
 };
 export const defaultPhotoPageContainer: PhotoPageStore = {
     isLoading: false,
     currentPage: 0,
     pageSize: 32,
-    store: []
+    page: []
 };
 
 export interface IPhotoSearchParameters {
@@ -122,3 +124,5 @@ export interface IPhotoQueryParameters {
     createdBefore?: Date,
     createdAfter?: Date
 };
+
+export type SearchQueryParameters = Omit<IPhotoQueryParameters, 'offset'|'limit'> & Params; 

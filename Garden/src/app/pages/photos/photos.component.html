@@ -1,7 +1,4 @@
-<photos-toolbar
-    [selectionState]="selectionState"
-    [setSelectionMode]="setSelectionMode"
-    (photos$)="computePhotoStoreValues($event)" />
+<photos-toolbar [initial]="initialQueryParameters$ | async" (photos$)="onPhotoSearch($event)" />
 <div class="photos-container">
     @if (!isLoading && !(page?.set?.size)) {
         <p>

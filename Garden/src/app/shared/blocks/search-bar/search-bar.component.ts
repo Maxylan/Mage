@@ -1,14 +1,13 @@
-import { Component, EventEmitter, inject, Input, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
-import { FormControl, FormGroup, NgForm, ReactiveFormsModule } from '@angular/forms';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
+import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
+import { MatInput } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Params } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
-
-export type SearchQueryParameters = Params & { search: string }; 
 
 @Component({
     selector: 'shared-search-bar',
@@ -26,7 +25,8 @@ export type SearchQueryParameters = Params & { search: string };
     } */
 })
 export class SearchBarComponent {
-    private route: ActivatedRoute = inject(ActivatedRoute);
+    private readonly urlEncoder = inject(HttpUrlEncodingCodec);
+    private readonly route = inject(ActivatedRoute);
 
     @Input({ required: true })
     public formName!: string;
@@ -40,11 +40,8 @@ export class SearchBarComponent {
     @Input()
     public initialSearch: boolean = true;
 
-    @Input()
-    public searchOnQueryChange: boolean = false;
-
     @Output()
-    public onSearch$: EventEmitter<SearchQueryParameters> = new EventEmitter<SearchQueryParameters>();
+    public onSearch$: EventEmitter<Params> = new EventEmitter<Params>();
 
     @Output()
     public onQueryChange$: Observable<Params> = this.route.queryParams;
@@ -59,25 +56,38 @@ export class SearchBarComponent {
             event.preventDefault();
         }
 
-        const params: SearchQueryParameters = {
-            ...this.queryParameters$(),
-            search: this.searchForm.controls.search.value || ''
-        };
+        const url = new URL(location.href);
+        let queryParameters = url.search.replace('?', '').split('&');
+        let search = this.searchForm.controls.search.value;
+        if (search && search.length < 1024) {
+            search = 'search=' + this.urlEncoder.encodeValue(
+                search.normalize().trim()
+            );
 
-        this.onSearch$.emit(params);
+            let index = queryParameters.indexOf(search);
+            if (index === -1) {
+                queryParameters.push(search);
+            }
+            else {
+                queryParameters[index] = search;
+            }
+        }
+        else {
+            let index = queryParameters.findIndex(p => p.startsWith('search='));
+            if (index !== -1) {
+                queryParameters.splice(index, 1);
+            }
+        }
+        
+        window.history.replaceState(null, '', new URL(`?${queryParameters.join('&')}`, url));
     }
 
     public ngOnInit() {
-        // Initial Search
-        if(this.initialSearch) {
-            this.submitHandler();
-        }
-
         // Subscribe to query-parameter changes..
         this.onQueryChange$.subscribe(_ => {
-            if (this.searchOnQueryChange) {
-                this.submitHandler();
-            }
-        })
+            this.onSearch$.emit({
+                ..._, search: this.searchForm.controls.search.value || ''
+            })
+        });
     }
 }
