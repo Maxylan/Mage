@@ -234,6 +234,7 @@ public class PhotosController(
     public async Task<ActionResult<IEnumerable<Photo>>> GetSourceSingles(
         [Required] int limit = 99,
         [Required] int offset = 0,
+        [FromQuery] string? search = null,
         [FromQuery] string? slug = null,
         [FromQuery] string? title = null,
         [FromQuery] string? summary = null,
@@ -244,7 +245,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts =>
+        await handler.GetSingles(search, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;
@@ -283,6 +284,7 @@ public class PhotosController(
     public async Task<ActionResult<IEnumerable<Photo>>> GetMediumSingles(
         [Required] int limit = 99,
         [Required] int offset = 0,
+        [FromQuery] string? search = null,
         [FromQuery] string? slug = null,
         [FromQuery] string? title = null,
         [FromQuery] string? summary = null,
@@ -292,7 +294,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts =>
+        await handler.GetSingles(search, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;
@@ -330,6 +332,7 @@ public class PhotosController(
     public async Task<ActionResult<IEnumerable<Photo>>> GetThumbnailSingles(
         [Required] int limit = 99,
         [Required] int offset = 0,
+        [FromQuery] string? search = null,
         [FromQuery] string? slug = null,
         [FromQuery] string? title = null,
         [FromQuery] string? summary = null,
@@ -339,7 +342,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetSingles(opts =>
+        await handler.GetSingles(search, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;
@@ -377,6 +380,7 @@ public class PhotosController(
     public async Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(
         [Required] int limit = 99,
         [Required] int offset = 0,
+        [FromQuery] string? search = null,
         [FromQuery] Dimension? dimension = null,
         [FromQuery] string? slug = null,
         [FromQuery] string? title = null,
@@ -387,7 +391,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.GetPhotos(opts =>
+        await handler.GetPhotos(search, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;

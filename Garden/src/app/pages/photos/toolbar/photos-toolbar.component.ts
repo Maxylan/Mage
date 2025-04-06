@@ -99,7 +99,7 @@ export class PhotoToolbarComponent {
                 .join('&');
         }
 
-        const sanitizedTags = tags
+        let sanitizedTags = tags
             .map(unsanitizedTag => {
                 let tag = unsanitizedTag?.normalize()?.trim();
                 if (!tag) {

@@ -155,6 +155,7 @@ export class PhotosService extends ApiBase {
         limit: IPhotoQueryParameters['limit']
     }): IPhotoQueryParameters {
         let supportedParameters: IPhotoQueryParameters = {
+            search: params.search,
             summary: params.search,
             title: params.search,
             slug: params.search,
@@ -180,11 +181,13 @@ export class PhotosService extends ApiBase {
         else {
             let parameters = Array.from(Object.entries(params))
                 .filter(kvp => !(
-                    kvp[0] === null ||
-                    kvp[1] === null ||
-                    kvp[0] === undefined ||
-                    kvp[1] === undefined
+                    kvp[0] === null
+                    || kvp[1] === null
+                    || kvp[0] === undefined
+                    || kvp[1] === undefined
                 ))
+                // 2025-04-05 - TODO: Ugly hack, only use 'search', other params are "filters". Remove & Fix this.
+                .filter(kvp => ['search', 'offset', 'limit'].includes(kvp[0]))
                 .map(kvp => `${kvp[0]}=${kvp[1].toString().trim()}`);
 
             queryParameters = parameters.length > 0

@@ -16,6 +16,7 @@ using System.Globalization;
 using System.Text;
 using System.Net;
 using Reception.Constants;
+using System.Linq.Expressions;
 
 namespace Reception.Services;
 
@@ -323,18 +324,18 @@ public class PhotoService(
     /// <summary>
     /// Get all <see cref="Reception.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public Task<ActionResult<IEnumerable<Photo>>> GetSingles(Action<FilterPhotosOptions> opts)
+    public Task<ActionResult<IEnumerable<Photo>>> GetSingles(string? search, Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
 
-        return GetSingles(filtering);
+        return GetSingles(search, filtering);
     }
 
     /// <summary>
     /// Get all <see cref="Reception.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public async Task<ActionResult<IEnumerable<Photo>>> GetSingles(FilterPhotosOptions filter)
+    public async Task<ActionResult<IEnumerable<Photo>>> GetSingles(string? search, FilterPhotosOptions filter)
     {
         filter.Dimension ??= Dimension.SOURCE;
 
@@ -345,11 +346,22 @@ public class PhotoService(
             .Include(photo => photo.Tags)
             .Where(photo => photo.Filepaths.Any(path => path.Dimension == filter.Dimension));
 
-        // Filtering
+        // Searching (OR)
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            photoQuery = photoQuery
+                .Where(photo => (
+                    photo.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || photo.Slug.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || photo.Summary.Contains(search, StringComparison.OrdinalIgnoreCase)
+                ));
+        }
+
+        // Filtering (AND)
         if (!string.IsNullOrWhiteSpace(filter.Slug))
         {
             photoQuery = photoQuery
-                .Where(photo => photo.Slug.StartsWith(filter.Slug) || photo.Slug.EndsWith(filter.Slug));
+                .Where(photo => photo.Slug.Contains(filter.Slug));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Title))
@@ -363,7 +375,7 @@ public class PhotoService(
 
             photoQuery = photoQuery
                 .Where(photo => !string.IsNullOrWhiteSpace(photo.Title))
-                .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
+                .Where(photo => photo.Title!.Contains(filter.Title));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Summary))
@@ -377,7 +389,7 @@ public class PhotoService(
 
             photoQuery = photoQuery
                 .Where(photo => !string.IsNullOrWhiteSpace(photo.Summary))
-                .Where(photo => photo.Summary!.StartsWith(filter.Summary) || photo.Summary.EndsWith(filter.Summary));
+                .Where(photo => photo.Summary!.Contains(filter.Summary));
         }
 
         if (filter.UploadedBy is not null)
@@ -470,19 +482,19 @@ public class PhotoService(
     /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(Action<FilterPhotosOptions> opts)
+    public Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
 
-        return GetPhotos(filtering);
+        return GetPhotos(search, filtering);
     }
 
     /// <summary>
     /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public async Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(FilterPhotosOptions filter)
+    public async Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, FilterPhotosOptions filter)
     {
         IQueryable<PhotoEntity> photoQuery = db.Photos
             .OrderByDescending(photo => photo.CreatedAt)
@@ -490,7 +502,36 @@ public class PhotoService(
             .Include(photo => photo.Links)
             .Include(photo => photo.Tags);
 
-        // Filtering
+        // Searching (OR)
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // Default search predicate/expression..
+            Expression<Func<PhotoEntity, bool>> predicate = (PhotoEntity photo) => (
+                photo.Title.StartsWith(search)
+                || photo.Title.EndsWith(search)
+                || photo.Slug.StartsWith(search)
+                || photo.Slug.EndsWith(search)
+                || photo.Filepaths.Any(path => (
+                    path.Filename.StartsWith(search)
+                    || path.Filename.EndsWith(search)
+                ))
+            );
+
+            if (search.Length > 2) {
+                // Permissive search predicate/expression (..used by search-queries exceeding two characters)..
+                predicate = photo => (
+                    photo.Title.ToUpper().Contains(search.ToUpper())
+                    || photo.Slug.ToUpper().Contains(search.ToUpper())
+                    || string.IsNullOrWhiteSpace(photo.Summary)
+                    || photo.Summary.ToUpper().Contains(search.ToUpper())
+                    || photo.Filepaths.Any(path => path.Filename.ToUpper().Contains(search.ToUpper()))
+                );
+            }
+
+            photoQuery = photoQuery.Where(predicate);
+        }
+
+        // Filtering (AND)
         if (filter.Dimension is not null)
         {
             photoQuery = photoQuery
@@ -500,14 +541,14 @@ public class PhotoService(
         if (!string.IsNullOrWhiteSpace(filter.Slug))
         {
             photoQuery = photoQuery
-                .Where(photo => photo.Slug.StartsWith(filter.Slug) || photo.Slug.EndsWith(filter.Slug));
+                .Where(photo => photo.Slug.Contains(filter.Slug));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Title))
         {
             photoQuery = photoQuery
                 .Where(photo => !string.IsNullOrWhiteSpace(photo.Title))
-                .Where(photo => photo.Title!.StartsWith(filter.Title) || photo.Title.EndsWith(filter.Title));
+                .Where(photo => photo.Title!.Contains(filter.Title));
         }
 
         if (filter.UploadedBy is not null)
@@ -756,7 +797,8 @@ public class PhotoService(
                 if (sectionName == "title")
                 {
                     string extractedTitle = await section!.ReadAsStringAsync();
-                    if (!string.IsNullOrWhiteSpace(extractedTitle)) {
+                    if (!string.IsNullOrWhiteSpace(extractedTitle))
+                    {
                         options.Title = extractedTitle;
                     }
 
@@ -766,7 +808,8 @@ public class PhotoService(
                 if (sectionName == "slug")
                 {
                     string extractedSlug = await section!.ReadAsStringAsync();
-                    if (!string.IsNullOrWhiteSpace(extractedSlug)) {
+                    if (!string.IsNullOrWhiteSpace(extractedSlug))
+                    {
                         options.Slug = extractedSlug;
                     }
 
@@ -848,7 +891,8 @@ public class PhotoService(
             || trustedFilename.Contains("..")
             || trustedFilename.Contains(Path.DirectorySeparatorChar)
             || trustedFilename.Length > 127
-        ) {
+        )
+        {
             throw new NotImplementedException("Suspicious upload? " + trustedFilename); // TODO! Handle!!
         }
 
@@ -1109,7 +1153,8 @@ public class PhotoService(
                 options.Slug = options.Slug[..extensionIndex];
             }
 
-            if (options.Slug.Length > 123) { // Limit length, to avoid hitting the limit of 128 with the auto-generated slug.
+            if (options.Slug.Length > 123)
+            { // Limit length, to avoid hitting the limit of 128 with the auto-generated slug.
                 options.Slug = options.Slug.Subsmart(0, 120) + "_" + options.Slug.Length;
             }
 
@@ -1171,7 +1216,8 @@ public class PhotoService(
             {
                 options.Summary += $"{sourceDimensions.Width}x{sourceDimensions.Height}, {sourceFilesizeFormatted}.";
             }
-            else {
+            else
+            {
                 options.Summary += $"{sourceFilesizeFormatted}.";
             }
         }
@@ -1184,7 +1230,7 @@ public class PhotoService(
 
         if (options.Summary.Length > 255)
         {   // Think this is the better option for summaries, since they're optional..
-            options.Summary = options.Summary.Subsmart(0, 253)+"..";
+            options.Summary = options.Summary.Subsmart(0, 253) + "..";
         }
 
         StringBuilder formattedDescription = new();
@@ -1577,7 +1623,8 @@ public class PhotoService(
             string message = $"Parameter '{nameof(mut.Id)}' has to be a non-zero positive integer! (Album ID)";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1592,7 +1639,8 @@ public class PhotoService(
             string message = $"{nameof(Album)} with ID #{mut.Id} could not be found!";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1600,9 +1648,10 @@ public class PhotoService(
             return new NotFoundObjectResult(message);
         }
 
-        foreach(var navigation in db.Entry(existingPhoto).Navigations)
+        foreach (var navigation in db.Entry(existingPhoto).Navigations)
         {
-            if (!navigation.IsLoaded) {
+            if (!navigation.IsLoaded)
+            {
                 await navigation.LoadAsync();
             }
         }
@@ -1612,7 +1661,8 @@ public class PhotoService(
             string message = $"Parameter '{nameof(mut.Slug)}' may not be null/empty!";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1631,7 +1681,8 @@ public class PhotoService(
             string message = $"{nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1647,12 +1698,14 @@ public class PhotoService(
                 string message = $"{nameof(PhotoEntity.Slug)} was already taken!";
                 await logging
                     .Action(nameof(UpdatePhotoEntity))
-                    .InternalDebug(message, opts => {
+                    .InternalDebug(message, opts =>
+                    {
                         opts.SetUser(user);
                     })
                     .SaveAsync();
 
-                return new ObjectResult(message) {
+                return new ObjectResult(message)
+                {
                     StatusCode = StatusCodes.Status409Conflict
                 };
             }
@@ -1663,7 +1716,8 @@ public class PhotoService(
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1682,7 +1736,8 @@ public class PhotoService(
             string message = $"{nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
             await logging
                 .Action(nameof(UpdatePhotoEntity))
-                .InternalDebug(message, opts => {
+                .InternalDebug(message, opts =>
+                {
                     opts.SetUser(user);
                 })
                 .SaveAsync();
@@ -1703,7 +1758,8 @@ public class PhotoService(
                 string message = $"{nameof(PhotoEntity.Summary)} exceeds maximum allowed length of 255.";
                 await logging
                     .Action(nameof(UpdatePhotoEntity))
-                    .InternalDebug(message, opts => {
+                    .InternalDebug(message, opts =>
+                    {
                         opts.SetUser(user);
                     })
                     .SaveAsync();
@@ -1732,7 +1788,8 @@ public class PhotoService(
         existingPhoto.Description = mut.Description;
         existingPhoto.UpdatedAt = DateTime.UtcNow;
 
-        if (mut.Tags is not null) {
+        if (mut.Tags is not null)
+        {
             existingPhoto.Tags = validTags ?? [];
         }
 
@@ -1840,7 +1897,8 @@ public class PhotoService(
         Tag? tagToRemove = existingPhoto.Tags
             .FirstOrDefault(t => t.Name == tag);
 
-        if (tagToRemove is null) {
+        if (tagToRemove is null)
+        {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
@@ -1941,18 +1999,20 @@ public class PhotoService(
     {
         ArgumentNullException.ThrowIfNull(entity, nameof(entity));
 
-        foreach(var navigation in db.Entry(entity).Navigations)
+        foreach (var navigation in db.Entry(entity).Navigations)
         {
-            if (!navigation.IsLoaded) {
+            if (!navigation.IsLoaded)
+            {
                 await navigation.LoadAsync();
             }
         }
 
-        foreach(var path in entity.Filepaths)
+        foreach (var path in entity.Filepaths)
         {
             var deleteBlobResult = await DeletePhotoBlob(path);
 
-            if (deleteBlobResult is not NoContentResult) {
+            if (deleteBlobResult is not NoContentResult)
+            {
                 return deleteBlobResult;
             }
         }
@@ -1983,12 +2043,13 @@ public class PhotoService(
         {
             string message = string.Empty;
 
-            if (!fullPath.StartsWith(FILE_STORAGE_NAME) || !fullPath.EndsWith(entity.Filename))
+            if (!fullPath.Contains(FILE_STORAGE_NAME))
             {
                 message = $"Suspicious! Attempt was made to delete missing File '{fullPath}'! Is there a broken database entry, or did someone manage to escape a path string?";
                 logging.Action(nameof(DeletePhotoBlob));
             }
-            else {
+            else
+            {
                 message = $"Attempt to delete File '{fullPath}' failed (file missing)! Assuming there's a dangling database entry..";
                 logging.Action("Dangle -" + nameof(DeletePhotoBlob));
                 // TODO! Automatically delete dangling entity?
@@ -1999,7 +2060,8 @@ public class PhotoService(
                 .ExternalSuspicious(message)
                 .SaveAsync();
 
-            if (Program.IsProduction) {
+            if (Program.IsProduction)
+            {
                 return new NotFoundResult();
             }
 
