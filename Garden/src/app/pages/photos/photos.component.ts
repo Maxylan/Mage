@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
 import { Photo, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
 import { ThumbnailCardComponent } from '../../shared/cards/with-thumbnail/card-with-thumbnail.component';
@@ -12,7 +12,6 @@ import { filter, first, map, Observable, shareReplay, take } from 'rxjs';
 import { MatDivider } from '@angular/material/divider';
 import { AsyncPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'page-list-photos',
@@ -24,9 +23,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
         MatGridListModule,
         AsyncPipe
     ],
-    /* providers: [
-        ActivatedRoute
-    ], */
     templateUrl: 'photos.component.html',
     styleUrl: 'photos.component.css'
 })
@@ -36,18 +32,19 @@ export class PhotosComponent {
     private readonly route = inject(ActivatedRoute);
 
     public readonly queryParameters$ = this.route.queryParamMap;
-    public readonly queryParameters = toSignal(this.queryParameters$);
-    // public readonly initialSearch = this.route.queryParamMap.pipe(filter(p => p.has('search')), take(1));
-
-    public readonly selectPhoto = (photo: Photo) => (() => this.selectionObserver.selectItems(photo));
     public readonly setSelectionMode = this.selectionObserver.setSelectionMode;
     public readonly selectionState = this.selectionObserver.State;
+    public readonly selectPhoto = (photo: Photo): ((isSelected: boolean) => void) => (
+        (isSelected: boolean) => isSelected
+            ? this.selectionObserver.deselectItems(photo)
+            : this.selectionObserver.selectItems(photo)
+    );
 
-    public page?: PhotoPage|null;
     public pageIndex?: number;
     public pageSize?: number;
     public photoCount?: number;
     public isLoading: boolean = false;
+    public page: PhotoPage|null = null;
 
     public computePhotoStoreValues = (pageStore: PhotoPageStore): void => {
         const {
@@ -59,6 +56,7 @@ export class PhotosComponent {
         const pageIndex = store.findIndex(p => p.page === currentPage);
         if (pageIndex === -1) {
             console.warn(`Page not found! (${currentPage})`, store);
+            this.page = null;
             return;
         }
 

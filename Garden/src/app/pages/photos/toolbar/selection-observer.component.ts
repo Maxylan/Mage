@@ -71,6 +71,7 @@ export class SelectionObserver {
     }
 
     public deselectItems = (...items: object[]): void => {
+        console.log('i fire', items);
         if (!items || items.length === 0) {
             return;
         }

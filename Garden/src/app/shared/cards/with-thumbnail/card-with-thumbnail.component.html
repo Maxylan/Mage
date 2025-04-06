@@ -1,6 +1,4 @@
-<article
-    matRipple
-    [ngClass]="'thumbnail-card'+((isHandsetObservable | async) ? ' handset':'')">
+<article matRipple [ngClass]="'thumbnail-card'+((isHandsetObservable | async) ? ' handset':'')+(isSelected ? ' selected':'')">
     @if (!(isHandsetObservable | async)) {
         <div class="card-kebab-wrapper">
             <button
@@ -53,15 +51,17 @@
             [ariaChecked]="isSelected ? 'selected' : 'not selected'"
             [checked]="isSelected"/>
     }
-    <div [ngClass]="'card-image'+((isHandsetObservable | async) ? ' handset':'')">
-        <ng-content/>
-    </div>
-    <p [ngClass]="'card-title'+((isHandsetObservable | async) ? ' handset':'')">
-        {{ title }}
-    </p>
-    @if (summary && !(isHandsetObservable | async)) {
-        <p [ngClass]="'card-summary'+((isHandsetObservable | async) ? ' handset':'')">
-            {{ summary }}
+    <span (click)="clicked($event)">
+        <div [ngClass]="'card-image'+((isHandsetObservable | async) ? ' handset':'')">
+            <ng-content/>
+        </div>
+        <p [ngClass]="'card-title'+((isHandsetObservable | async) ? ' handset':'')">
+            {{ title }}
         </p>
-    }
+        @if (summary && !(isHandsetObservable | async)) {
+            <p [ngClass]="'card-summary'+((isHandsetObservable | async) ? ' handset':'')">
+                {{ summary }}
+            </p>
+        }
+    </span>
 </article>

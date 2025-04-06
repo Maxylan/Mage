@@ -50,13 +50,13 @@ export class ThumbnailCardComponent {
     @Input()
     public isInSelectMode?: boolean;
     @Input()
-    public select?: () => void;
+    public select?: (isSelected: boolean) => void;
 
     /**
      * Compute if we should show the 'select' checkbox.
      * Only determines checbox visibility, not 'checked' status.
      */
-    public showSelect: boolean = !!(
+    public readonly showSelect: boolean = !!(
         this.select !== undefined &&
         this.isSelected !== undefined &&
         this.isInSelectMode !== undefined && (
@@ -64,14 +64,6 @@ export class ThumbnailCardComponent {
             this.isInSelectMode
         )
     );
-    /* public showSelect = (): boolean => !!(
-        this.select !== undefined &&
-        this.isSelected !== undefined &&
-        this.isInSelectMode !== undefined && (
-            this.isSelected || 
-            this.isInSelectMode
-        )
-    ); */
 
     @Input()
     public initialIsFavorite: boolean = false;
@@ -90,6 +82,29 @@ export class ThumbnailCardComponent {
     });
 
     /**
+     * Emits when `{clicked}`
+     */
+    @Output()
+    public onClick$ = new EventEmitter();
+    /**
+     * Callback firing when this card gets clicked
+     */
+    public clicked = (event?: Event): CardDetails|null => {
+        if (event) {
+            if ('preventDefault' in event) {
+                event.preventDefault();
+            }
+
+            console.debug('event', event.bubbles, event.target);
+        }
+
+        const cardDetails = this.getCardDetails();
+        console.debug('Clicked card', cardDetails);
+        this.onClick$.emit(cardDetails);
+        return cardDetails;
+    }
+
+    /**
      * Emits when `{selected}`
      */
     @Output()
@@ -104,9 +119,8 @@ export class ThumbnailCardComponent {
             return null;
         }
 
-        if (!this.isSelected) {
-            this.select();
-        }
+        console.log('selected ', this.isSelected);
+        this.select(this.isSelected);
 
         const cardDetails = this.getCardDetails();
         this.onSelect$.emit(cardDetails);

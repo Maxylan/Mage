@@ -1,21 +1,27 @@
-article.thumbnail-card {
+article {
+    cursor: pointer;
     display: block;
     overflow: hidden; 
     padding-top: 0.32rem;
     border: 1px solid rgba(0,0,0,0);
     border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
 }
+
 article:hover {
     border-color: rgba(127,127,127,0.16);
     box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
 }
+article.selected {
+    border: 2px solid var(--mat-full-pseudo-checkbox-selected-icon-color);
+    border-radius: calc(var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium)) * 1.5);
+}
 
 .thumbnail-card {
-    max-height: 8rem;
+    max-height: 9.2rem;
     max-width: 7.2rem;
 }
 .thumbnail-card.handset {
-    max-height: 7.2rem;
+    max-height: 8rem;
     max-width: 6.4rem;
 }
 

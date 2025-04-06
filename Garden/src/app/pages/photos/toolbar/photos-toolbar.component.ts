@@ -225,7 +225,7 @@ export class PhotoToolbarComponent {
         }
 
         const parameters = `?${sanitized.join('&')}`;
-        console.debug('search parameters', new URL(parameters, baseUrl));
+        // console.debug('search parameters', new URL(parameters, baseUrl));
         window.history.replaceState(null, '', new URL(parameters, baseUrl));
     }
 
@@ -237,7 +237,7 @@ export class PhotoToolbarComponent {
     public setSelectionMode?: SelectionObserver['setSelectionMode'];
 
     @Output()
-    public onPhotosChange$: Observable<PhotoPageStore> = toObservable(this.photoStore);
+    public photos$: Observable<PhotoPageStore> = toObservable(this.photoStore);
 
     /**
      * Callback invoked when a search-query is triggered.
@@ -303,6 +303,7 @@ export class PhotoToolbarComponent {
                     }
                 }
                 
+                console.debug(newStore);
                 this.photoStore.set(newStore);
             })
             .catch(err => {
