@@ -4,7 +4,7 @@ import { SelectionObserver, SelectState } from './selection-observer.component';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore } from '../../../core/types/photos.types';
 import { PhotosService } from '../../../core/api/photos.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -14,7 +14,8 @@ import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { SearchBarComponent, SearchQueryParameters } from '../../../shared/blocks/search-bar/search-bar.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { ActivatedRoute, ParamMap } from '@angular/router';
-import { Observable } from 'rxjs';
+import { last, map, Observable } from 'rxjs';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'photos-toolbar',
@@ -29,6 +30,7 @@ import { Observable } from 'rxjs';
         MatIconButton,
         MatIconModule,
         FormsModule,
+        AsyncPipe,
         MatInput
     ],
     providers: [
@@ -45,35 +47,20 @@ export class PhotoToolbarComponent {
     private readonly route = inject(ActivatedRoute);
 
     @Input()
-    public readonly offset: IPhotoQueryParameters['offset'] = 0;
-
-    @Input()
-    public readonly limit: IPhotoQueryParameters['limit'] = 32;
-
-    @Input()
     public selectionState?: Signal<SelectState>;
 
     @Input()
     public setSelectionMode?: SelectionObserver['setSelectionMode'];
 
+    public readonly tagsControl = new FormControl<string>('');
     public readonly getNavbar = this.navbarController.getNavbar;
     public readonly isLoading: WritableSignal<boolean> = signal(true);
     public readonly photoStore: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
     
-    public readonly queryParameters$ = this.route.queryParamMap;
-    public readonly photoQuery: WritableSignal<IPhotoQueryParameters> = signal({
-        offset: this.offset,
-        limit: this.limit
-    });
-
-    public readonly tagsControl = new FormControl<string>('');
-
-    /**
-     * Parse incomming `ParamMap` URL/Query Parameters into a supported `IPhotoQueryParameters` collection.
-     */
-    public ngOnInit() {
-        this.queryParameters$.subscribe(
-            params => {
+    public readonly photoQuery$: Observable<Omit<IPhotoQueryParameters, 'offset'|'limit'>> =
+        /** Parse incomming `ParamMap` URL/Query Parameters into a supported `IPhotoQueryParameters` collection. */
+        this.route.queryParamMap.pipe(
+            map(params => {
                 console.debug('Query params updating..');
                 const query = {
                     search: params.get('search') || undefined,
@@ -81,23 +68,21 @@ export class PhotoToolbarComponent {
                     title: params.get('title') || undefined,
                     slug: params.get('slug') || undefined,
                     tags: params.getAll('t') || undefined,
-                    offset: this.offset,
-                    limit: this.limit
                 };
                 console.debug('Query params:', query);
-                this.photoQuery.set(query);
-                /* this.photoQuery.set({
-                    search: params.get('search') || undefined,
-                    summary: params.get('summary') || undefined,
-                    title: params.get('title') || undefined,
-                    slug: params.get('slug') || undefined,
-                    tags: params.getAll('t') || undefined,
-                    offset: this.offset,
-                    limit: this.limit
-                }); */
-            }
+                return query;
+            })
         );
-    }
+
+    public readonly photoQuery = toSignal(this.photoQuery$);
+    public readonly query = effect(() => {
+        const _q = this.photoQuery();
+        if (!_q) {
+            return;
+        }
+
+        this.searchForPhotos(_q);
+    });
 
     /**
      * Effect that triggers every time tags are mutated..
@@ -188,10 +173,17 @@ export class PhotoToolbarComponent {
 
     /**
      * Callback invoked when a search-query is triggered.
+     */
+    public onSearch = (searchQuery: SearchQueryParameters) => {
+    }
+
+    /**
+     * Callback subscribed to query-parameters mutating.
      * Performs the GET-Request to search for photos.
      */
-    public searchForPhotos = (searchQuery: SearchQueryParameters) => {
-        console.debug('searchForPhotos searchQuery', {...searchQuery}, {...this.photoQuery()});
+    public searchForPhotos = (searchQuery: Omit<IPhotoQueryParameters, 'offset'|'limit'>) => {
+        console.debug('searchForPhotos searchQuery', { ...searchQuery });
+
         if (!searchQuery || !Object.keys(searchQuery).length) {
             console.warn('Skipping an empty search query!', searchQuery);
 
@@ -213,8 +205,8 @@ export class PhotoToolbarComponent {
 
         const limit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
         const offset = currentPage > 1 ? limit * currentPage - pageSize : 0;
-        const photoQuery = {
-            ...this.photoQuery(),
+        const photoQuery: IPhotoQueryParameters = {
+            ...searchQuery,
             offset: offset,
             limit: limit
         }

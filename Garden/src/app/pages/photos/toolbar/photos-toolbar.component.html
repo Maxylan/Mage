@@ -5,7 +5,7 @@
     <shared-search-bar
         formName="photos"
         placeholder="Search for Photos!"
-        [initialValue]="photoQuery().search ?? ''"
+        [initialValue]="(photoQuery$ | async)?.search ?? ''"
         (onSearch$)="searchForPhotos($event)"
     >
         <mat-form-field
@@ -18,7 +18,7 @@
                 class="tags-chips-grid"
                 aria-label="Enter photo tags"
             >
-                @for (tag of photoQuery().tags; track tag) {
+                @for (tag of (photoQuery$ | async)?.tags; track tag) {
                   <mat-chip-row (removed)="removeTag(tag)">
                     {{tag}}
                   <button matChipRemove aria-label="'remove photo tag ' + tag">
