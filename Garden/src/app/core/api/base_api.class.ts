@@ -11,6 +11,8 @@ import {
 import { AuthService } from './auth.service';
 
 export default class ApiBase {
+    public readonly isLoading = signal<boolean>(false);
+
     private initialized: boolean = false;
     private cache: ApiCache|null = null;
     private authService: AuthService|null = null;
@@ -145,6 +147,10 @@ export default class ApiBase {
             };
         }
 
+        if (this.isLoading() === false) {
+            this.isLoading.set(true);
+        }
+
         const futureResponse = fetch(this.getApiUrl() + endpoint, requestInit);
 
         if (this.cache?.options?.enabled) {
@@ -162,7 +168,11 @@ export default class ApiBase {
             });
         }
 
-        return futureResponse;
+        return futureResponse.finally(() => {
+            if (this.isLoading() === true) {
+                this.isLoading.set(false);
+            }
+        });
     };
 
     /**

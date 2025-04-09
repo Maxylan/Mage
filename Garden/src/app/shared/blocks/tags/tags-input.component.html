@@ -1,0 +1,34 @@
+<mat-form-field
+    appearance="fill"
+    class="tags-chips-input"
+    subscriptSizing="dynamic"
+>
+    <mat-chip-grid
+        #tagChipGrid
+        class="tags-chips-grid"
+        aria-label="Enter photo tags"
+        [(ngModel)]="tags"
+    >
+        @for (tag of tags(); track tag) {
+          <mat-chip-row (removed)="removeTag(tag)">
+            {{tag}}
+          <button matChipRemove aria-label="'remove photo tag ' + tag">
+            <mat-icon fontSet="hack">󰅚</mat-icon>
+          </button>
+          </mat-chip-row>
+        }
+    </mat-chip-grid>
+    <input
+        matInput
+        color="secondary"
+        placeholder="Tags.."
+        [formControl]="control()"
+        [matChipInputFor]="tagChipGrid"
+        (matChipInputTokenEnd)="completeTag($event)">
+    <mat-icon
+        matSuffix
+        fontSet="hack"
+        aria-label="'Search photo tags icon'">
+        
+    </mat-icon>
+</mat-form-field>

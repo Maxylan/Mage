@@ -1,6 +1,9 @@
-<photos-toolbar [initial]="initialQueryParameters$ | async" [(photoStore)]="store" />
+<photos-toolbar
+    [initial]="initialQueryParameters"
+    [(photoStore)]="store"
+/>
 <div class="photos-container">
-    @if (!isLoading && !(page?.set?.size)) {
+    @if (!photoService.isLoading() && !(page?.set?.size)) {
         <p>
           photos works but no photos was fetched!
         </p>
@@ -19,7 +22,7 @@
                         [isSelected]="selectionState().selection.includes(photo?.thumbnail || photo.source)"
                         [isInSelectMode]="selectionState().selectModeActive"
                         [select]="selectPhoto(photo?.thumbnail || photo.source)"
-                        [isHandsetObservable]="isHandset$"
+                        [isHandset]="isHandset"
                         [initialIsFavorite]="false">
                         <shared-photo-thumbnail
                             [alt]="photo.source.slug + ' #' + photo.source.photoId"

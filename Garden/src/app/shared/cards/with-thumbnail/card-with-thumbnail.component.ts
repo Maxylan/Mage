@@ -1,14 +1,12 @@
-import { Component, EventEmitter, Input, Output, Signal, signal } from '@angular/core';
+import { Component, computed, EventEmitter, input, Input, model, output, Output, Signal, signal } from '@angular/core';
 import { MatRipple } from '@angular/material/core';
-import { AsyncPipe, NgClass } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
-import { Observable } from 'rxjs';
+import { NgClass } from '@angular/common';
 import {
     CardDetails,
     CardLinkDetails,
-    CardSelectDetails
 } from './card-with-thumbnail.types';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -20,150 +18,120 @@ import { MatButtonModule } from '@angular/material/button';
         MatCheckboxModule,
         MatButtonModule,
         MatIconModule,
-        MatMenuModule,
-        AsyncPipe
+        MatMenuModule
     ],
     templateUrl: 'card-with-thumbnail.component.html',
     styleUrl: 'card-with-thumbnail.component.css'
 })
 export class ThumbnailCardComponent {
-    @Input({ required: true })
-    public isHandsetObservable!: Observable<boolean>;
+    public readonly isHandset = input.required<boolean>();
+    public readonly key = input.required<string>();
+    public readonly title = input.required<string>();
 
-    @Input({ required: true })
-    public key!: string;
-
-    @Input({ required: true })
-    public title!: string;
-
-    @Input()
-    public summary?: string;
-
-    @Input()
-    public link?: string;
-
-    @Input()
-    public shareLink?: string;
-
-    @Input()
-    public isSelected?: boolean;
-    @Input()
-    public isInSelectMode?: boolean;
-    @Input()
-    public select?: (isSelected: boolean) => void;
+    public readonly summary = input<string>();
+    public readonly link = input<string>();
+    public readonly share = input<string>();
+    public readonly isSelected = input<boolean>();
+    public readonly isInSelectMode = input<boolean>();
+    public readonly select = model<boolean>();
 
     /**
      * Compute if we should show the 'select' checkbox.
      * Only determines checbox visibility, not 'checked' status.
      */
-    public readonly showSelect: boolean = !!(
-        this.select !== undefined &&
-        this.isSelected !== undefined &&
-        this.isInSelectMode !== undefined && (
-            this.isSelected || 
-            this.isInSelectMode
+    public readonly showSelect = computed(() => (
+        this.select() !== undefined &&
+        this.isSelected() !== undefined &&
+        this.isInSelectMode() !== undefined && (
+            this.isSelected() || 
+            this.isInSelectMode()
         )
-    );
+    ));
 
-    @Input()
-    public initialIsFavorite: boolean = false;
-    public isFavorite: Signal<boolean> = signal(this.initialIsFavorite);
-
-    private isKebabOpen: Signal<boolean> = signal(false);
+    public readonly isFavorite = input<boolean>(false);
+    public readonly isKebabOpen = signal<boolean>(false);
 
     /**
-     * Get all the internal properties of this card as an object instance.
+     * Get some of the internal properties of this card as an object instance.
      */
-    public getCardDetails = (): CardDetails => ({
-        key: this.key,
-        title: this.title,
-        summary: this.summary || null,
-        link: this.link || null
-    });
+    public readonly cardDetails = computed<CardDetails>(() => ({
+        key: this.key(),
+        title: this.title(),
+        summary: this.summary() || null,
+        link: this.link() || null
+    }));
 
     /**
      * Emits when `{clicked}`
      */
-    @Output()
-    public onClick$ = new EventEmitter();
+    public readonly onClick = output<CardDetails>();
     /**
      * Callback firing when this card gets clicked
      */
-    public clicked = (event?: Event): CardDetails|null => {
+    public readonly clicked = (event?: Event): void => {
         if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
-
-            console.debug('event', event.bubbles, event.target);
         }
 
-        const cardDetails = this.getCardDetails();
-        console.debug('Clicked card', cardDetails);
-        this.onClick$.emit(cardDetails);
-        return cardDetails;
+        this.onClick.emit(
+            this.cardDetails()
+        );
     }
 
     /**
      * Emits when `{selected}`
      */
-    @Output()
-    public onSelect$ = new EventEmitter();
+    public readonly onSelect = output<CardDetails>();
     /**
      * Callback firing when this card gets selected/de-selected
      */
-    public selected = (): CardDetails|null => {
-        if (this.select === undefined ||
-            this.isSelected === undefined ||
-            this.isInSelectMode === undefined) {
-            return null;
+    public readonly selected = (): void => {
+        if (this.select() === undefined ||
+            this.isSelected() === undefined ||
+            this.isInSelectMode() === undefined) {
+            return;
         }
 
-        console.log('selected ', this.isSelected);
-        this.select(this.isSelected);
+        this.select.update(this.isSelected);
 
-        const cardDetails = this.getCardDetails();
-        this.onSelect$.emit(cardDetails);
-        return cardDetails;
+        this.onSelect.emit(
+            this.cardDetails()
+        );
     }
 
     /**
      * Emits when `{copied}`
      */
-    @Output()
-    public onCopy$ = new EventEmitter();
+    public readonly onCopy = output<CardLinkDetails>();
     /**
      * Callback firing when this card gets copied.
      */
-    public copied = (): string|null => {
-        if (this.link) {
-            this.onCopy$.emit({
-                link: this.link,
-                card: this.getCardDetails()
+    public readonly copied = (): void => {
+        const link = this.link();
+        if (link) {
+            this.onCopy.emit({
+                link: link,
+                card: this.cardDetails()
             } as CardLinkDetails);
-
-            return this.link;
         }
-
-        return null;
     }
 
     /**
      * Emits when `{shared}`
      */
-    @Output()
-    public onShare$ = new EventEmitter();
+    public readonly onShare = output<CardLinkDetails>();
     /**
      * Callback firing when this card gets shared.
      */
-    public shared = (): string|null => {
-        if (this.shareLink) {
-            this.onShare$.emit({
-                link: this.shareLink,
-                card: this.getCardDetails()
+    public readonly shared = (): void => {
+        const share = this.share();
+        if (share) {
+            this.onShare.emit({
+                link: share,
+                card: this.cardDetails()
             } as CardLinkDetails);
         }
-
-        return null;
     }
 }

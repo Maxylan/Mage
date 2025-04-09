@@ -1,103 +1,152 @@
-import { Component, WritableSignal, computed, effect, inject, input, model, signal } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
 import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
-import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore, SearchQueryParameters } from '../../../core/types/photos.types';
+import { TagsInputComponent } from '../../../shared/blocks/tags/tags-input.component';
+import { IPhotoQueryParameters } from '../../../core/types/photos.types';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
-import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { toObservable } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
-import { Observable } from 'rxjs';
+import { SelectionObserver } from '../selection-observer.component';
+import { HttpUrlEncodingCodec } from '@angular/common/http';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { map } from 'rxjs';
 
 @Component({
     selector: 'photos-toolbar',
     imports: [
         ReactiveFormsModule,
         SearchBarComponent,
-        MatFormFieldModule,
-        MatFormFieldModule,
+        TagsInputComponent,
         MatToolbarModule,
         MatButtonModule,
-        MatChipsModule,
         MatIconButton,
         MatIconModule,
-        FormsModule,
-        MatInput
+        FormsModule
     ],
     templateUrl: 'photos-toolbar.component.html',
     styleUrl: 'photos-toolbar.component.scss'
 })
 export class PhotoToolbarComponent {
     private readonly navbarController = inject(NavbarControllerService);
+    private readonly selectionObserver = inject(SelectionObserver);
+    private readonly urlEncoder = inject(HttpUrlEncodingCodec);
+    private readonly route = inject(ActivatedRoute);
+
+    public readonly selectionMode = this.selectionObserver.isSelecting;
+
     public readonly getNavbar = this.navbarController.getNavbar;
-
-    public readonly initial = input.required<IPhotoQueryParameters>();
-    public readonly photos = model<PhotoPageStore>(defaultPhotoPageContainer);
-
-    public readonly tags: WritableSignal<string[]> = signal(this.initial().tags ?? []);
-    public readonly tagsControl = new FormControl<string>('');
-
-    public readonly isLoading = signal<boolean>(true);
-    
-    public ngOnInit() {
-        this.onSearch(this.initial);
-    }
-
-    /**
-     * Callback triggered by pressing the (X) to remove a tag..
-     */
-    public readonly removeTag = (keyword: string): void => {
-        this.tags.update(tags => {
-            if (!Array.isArray(tags) || !tags.length) {
-                return [];
-            }
-
-            const index = tags.indexOf(keyword);
-            if (index > -1) {
-                tags.splice(index, 1);
-            }
-
-            return tags;
-        });
-    }
+    public readonly searchControl = signal(new FormControl<string>('') as FormControl<string>);
+    public readonly tagsControl = signal(new FormControl<string>('') as FormControl<string>);
+    public readonly tags = signal<string[]>([]);
     
     /**
-     * Callback triggered when finished typing/creating a tag..
+     * Parse the `ParamMap` URL/Query Parameters observable into a supported
+     * `IPhotoQueryParameters` collection.
      */
-    public readonly completeTag = (event: MatChipInputEvent): void => {
-        if (!event.value) {
-            event.chipInput?.clear();
-            return; 
-        }
+    public readonly queryParameters = toSignal<IPhotoQueryParameters>(
+        this.route.queryParamMap.pipe(
+            map(params => {
+                let query: IPhotoQueryParameters = {
+                    search: '',
+                    offset: 0,
+                    limit: 32
+                };
 
-        const value = event.value
-            .normalize()
-            .trim();
+                let searchValue = this.searchControl()
+                    .value
+                    ?.trim()
+                    ?.normalize(); 
 
-        if (value) {
-            this.tags.update(tags => {
-                if (!Array.isArray(tags)) {
-                    tags = [];
+                if (searchValue) {
+                    query.search = searchValue;
+                }
+                else if (params.get('search')) {
+                    query.search = this.urlEncoder.encodeValue(params.get('search') || '');
                 }
 
-                const index = tags.indexOf(value);
-                if (index === -1) {
-                    tags.push(value);
+                let tags = this.tags().map(
+                    tag => tag?.trim()?.normalize()
+                );
+
+                if (tags.length) {
+                    query.tags = tags;
+                }
+                else if (params.get('search')) {
+                    query.search = this.urlEncoder.encodeValue(params.get('search') || '');
+                }
+                else {
+                    let tagValue = this.tagsControl()
+                        .value
+                        ?.trim()
+                        ?.normalize(); 
+
+                    if (tagValue) {
+                        query.tags = [tagValue];
+                    }
                 }
 
-                return tags;
-            });
-        }
+                if (params.has('slug')) {
+                    query.slug = this.urlEncoder.encodeValue(params.get('slug') || '');
+                }
+                if (params.has('title')) {
+                    query.title = this.urlEncoder.encodeValue(params.get('title') || '');
+                }
+                if (params.has('summary')) {
+                    query.summary = this.urlEncoder.encodeValue(params.get('summary') || '');
+                }
+                if (params.has('tags')) {
+                    query.tags = (params.getAll('tags') || []).map(this.urlEncoder.encodeValue);
+                }
+                if (params.has('offset')) {
+                    let offsetParam: string|number = params.get('offset') || 0;
+                    if (typeof offsetParam === 'string') {
+                        offsetParam = Number.parseInt(offsetParam);
+                    }
+                    if (Number.isNaN(offsetParam) || offsetParam < 0) {
+                        throw new Error('Invalid "offset" param');
+                    }
+                    query.offset = offsetParam;
+                }
+                if (params.has('limit')) {
+                    let limitParam: string|number = params.get('limit') || 0;
+                    if (typeof limitParam === 'string') {
+                        limitParam = Number.parseInt(limitParam);
+                    }
+                    if (Number.isNaN(limitParam) || limitParam < 0) {
+                        throw new Error('Invalid "offset" param');
+                    }
+                    query.offset = limitParam;
+                }
 
-        event.chipInput!.clear();
-    }
+                return query;
+            })
+        )
+    );
+
+    /**
+     * Effect invoked when search-query parameters gets read/updated.
+     */
+    private readonly onParametersChange = effect(
+        () => {
+            const parameters: IPhotoQueryParameters = this.queryParameters() || {
+                search: this.searchControl().value || '',
+                tags: this.tags() || [],
+                offset: 0,
+                limit: 32
+            };
+
+            if (Array.isArray(parameters.tags) && parameters.tags.length) {
+                this.tags.set(parameters.tags);
+            }
+
+            this.searchEvent.emit(parameters);
+        }
+    );
 
     /**
      * Callback invoked when a search-query is triggered.
      */
-    public onSearch = (query: SearchQueryParameters) => {
-    }
+    public readonly searchEvent = output<IPhotoQueryParameters>({ alias: 'onSearch' });
 }
