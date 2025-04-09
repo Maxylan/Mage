@@ -1,4 +1,4 @@
-import { Component, inject, signal, WritableSignal } from '@angular/core';
+import { Component, inject, model, signal, WritableSignal } from '@angular/core';
 import { PhotosService } from '../../core/api/photos.service';
 import { defaultPhotoPageContainer, IPhotoQueryParameters, Photo, PhotoPage, PhotoPageStore } from '../../core/types/photos.types';
 import { ThumbnailCardComponent } from '../../shared/cards/with-thumbnail/card-with-thumbnail.component';
@@ -44,7 +44,7 @@ export class PhotosComponent {
             : this.selectionObserver.selectItems(photo)
     );
 
-    public readonly store: WritableSignal<PhotoPageStore> = signal(defaultPhotoPageContainer);
+    public readonly store: WritableSignal<PhotoPageStore> = model(defaultPhotoPageContainer);
         /* const {
             page,
             pageSize,

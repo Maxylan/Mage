@@ -1,4 +1,4 @@
-<photos-toolbar [initial]="initialQueryParameters$ | async" (photos$)="onPhotoSearch($event)" />
+<photos-toolbar [initial]="initialQueryParameters$ | async" [(photoStore)]="store" />
 <div class="photos-container">
     @if (!isLoading && !(page?.set?.size)) {
         <p>

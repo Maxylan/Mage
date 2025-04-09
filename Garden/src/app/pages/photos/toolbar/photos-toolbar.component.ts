@@ -1,7 +1,7 @@
-import { Component, Input, Output, Signal, WritableSignal, computed, effect, inject, signal } from '@angular/core';
+import { Component, WritableSignal, computed, effect, inject, input, model, signal } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
 import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
-import { IPhotoQueryParameters, PhotoPageStore, SearchQueryParameters } from '../../../core/types/photos.types';
+import { defaultPhotoPageContainer, IPhotoQueryParameters, PhotoPageStore, SearchQueryParameters } from '../../../core/types/photos.types';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
@@ -32,19 +32,20 @@ import { Observable } from 'rxjs';
 })
 export class PhotoToolbarComponent {
     private readonly navbarController = inject(NavbarControllerService);
-
     public readonly getNavbar = this.navbarController.getNavbar;
-    public readonly isLoading: WritableSignal<boolean> = signal(true);
 
-    @Input({ required: true })
-    public readonly initial!: IPhotoQueryParameters;
+    public readonly initial = input.required<IPhotoQueryParameters>();
+    public readonly photos = model<PhotoPageStore>(defaultPhotoPageContainer);
+
+    public readonly tags: WritableSignal<string[]> = signal(this.initial().tags ?? []);
+    public readonly tagsControl = new FormControl<string>('');
+
+    public readonly isLoading = signal<boolean>(true);
+    
     public ngOnInit() {
         this.onSearch(this.initial);
     }
 
-    public readonly tags: WritableSignal<string[]> = signal(this.initial.tags ?? []);
-    public readonly tagsControl = new FormControl<string>('');
-    
     /**
      * Callback triggered by pressing the (X) to remove a tag..
      */
