@@ -31,12 +31,12 @@ export class SearchBarComponent {
 
     public readonly formName = input.required<string>();
     public readonly control = model.required<FormControl<string>>();
-    public readonly placeholder = input<string>('Search for ' + this.formName);
+    public readonly placeholder = input<string>('Search');
     public readonly initialValue = input<string>('');
     public readonly initialSearch = input<boolean>(true);
     public readonly onSearch = output<SearchEvent>();
 
-    public readonly submitHandler = (event?: SubmitEvent): void => {
+    public readonly submitHandler = (event?: Event): void => {
         if (event && 'preventDefault' in event) {
             event.preventDefault();
         }
@@ -67,7 +67,7 @@ export class SearchBarComponent {
         window.history.replaceState(null, '', new URL(`?${queryParameters.join('&')}`, url));
         this.onSearch.emit({
             value: search,
-            event
+            event: event as SubmitEvent
         });
     }
 }

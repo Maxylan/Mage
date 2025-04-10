@@ -4,8 +4,8 @@
     </button>
     <shared-search-bar
         formName="photos"
+        [(control)]="searchControl"
         placeholder="Search for Photos!"
-        [(onSearch)]="queryParameters"
     >
         <shared-tags-input
             [control]="tagsControl()"

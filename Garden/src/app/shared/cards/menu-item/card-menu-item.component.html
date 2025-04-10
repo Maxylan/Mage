@@ -1,0 +1,15 @@
+<button
+    mat-menu-item
+    (click)="callback"
+    [disabled]="disabled()"
+    [ariaLabel]="isSelected() ? labelSelected() : label()"
+>
+    <mat-icon
+        fontSet="hack"
+        [ariaLabel]="(isSelected() ? labelSelected() : label()) + ' Icon'">
+        {{ isSelected() ? iconSelected() : icon() }}
+    </mat-icon>
+    <span>
+        {{ isSelected() ? textSelected() : text() }}
+    </span>
+</button>

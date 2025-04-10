@@ -16,33 +16,11 @@ article.selected {
     border-radius: calc(var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium)) * 1.5);
 }
 
-.thumbnail-card {
-    max-height: 9.2rem;
-    max-width: 7.2rem;
-}
-.thumbnail-card.handset {
-    max-height: 8rem;
-    max-width: 6.4rem;
-}
-
 .card-kebab-wrapper {
     display: flex;
     justify-content: center;
     position: absolute;
     right: 0.32rem;
-}
-
-div.card-image {
-    margin: auto;
-    min-width: 0;
-}
-.card-image {
-    height: 5.6rem;
-    width: 6.4rem;
-}
-.card-image.handset {
-    height: 4.8rem;
-    width: 5.6rem;
 }
 
 p {
@@ -71,10 +49,4 @@ p {
 }
 .card-summary.handset {
     font-size: 10px;
-}
-
-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
 }

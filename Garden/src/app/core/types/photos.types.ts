@@ -86,6 +86,7 @@ export enum Dimension {
     THUMBNAIL = 'THUMBNAIL'
 };
 
+export type FavoritePhotos = Set<Photo['photoId']>;
 export type PhotoPage = {
     page: number,
     set: Set<PhotoCollection>
@@ -94,13 +95,19 @@ export interface PhotoPageStore {
     isLoading: boolean,
     currentPage: number,
     pageSize: number,
-    page: PhotoPage[]
+    pages: PhotoPage[]
+    page: () => PhotoPage|null
 };
 export const defaultPhotoPageContainer: PhotoPageStore = {
     isLoading: false,
     currentPage: 0,
     pageSize: 32,
-    page: []
+    pages: [],
+    page: function() {
+        return this.pages.at(
+            this.currentPage
+        ) || null;
+    }
 };
 
 export interface IPhotoSearchParameters {

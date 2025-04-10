@@ -2,7 +2,6 @@ export type CardDetails = {
     key: string;
     title: string;
     summary: string|null;
-    link: string|null;
 };
 
 export type CardSelectDetails = {

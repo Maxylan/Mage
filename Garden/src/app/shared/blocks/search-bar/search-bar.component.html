@@ -1,6 +1,5 @@
 <form 
-    [formGroup]="searchForm"
-    [name]="'search-' + formName + '-form'"
+    [name]="'search-' + formName() + '-form'"
     (ngSubmit)="submitHandler($event)"
     class="search-form">
     <mat-form-field
@@ -8,13 +7,13 @@
         subscriptSizing="dynamic">
         <input
             matInput
-            [formControl]="searchForm.controls.search"
-            [placeholder]="placeholder"
+            [formControl]="control()"
+            [placeholder]="placeholder()"
             color="secondary">
         <mat-icon
             matSuffix
             fontSet="hack"
-            [ariaLabel]="'Search ' + formName + ' icon'">
+            [ariaLabel]="'Search ' + formName() + ' icon'">
             
         </mat-icon>
     </mat-form-field>

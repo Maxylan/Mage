@@ -23,26 +23,7 @@
                     {{ isSelected() ? 'Deselect' : 'Select' }}
                 </span>
             </button>
-            <button mat-menu-item [disabled]="!link()" (click)="copied()">
-                <mat-icon
-                    fontSet="hack"
-                    [ariaLabel]="key() + ' Copy Icon'">
-                    {{ isSelected() ? '󱊁' : '' }}
-                </mat-icon>
-                <span>
-                    {{ isSelected() ? 'Copy Selected' : 'Copy' }}
-                </span>
-            </button>
-            <button mat-menu-item [disabled]="!share()" (click)="shared()">
-                <mat-icon
-                    fontSet="hack"
-                    [ariaLabel]="key() + ' Share Icon'">
-                    {{ isSelected() ? '󱇴' : '󰒖' }}
-                </mat-icon>
-                <span>
-                    {{ isSelected() ? 'Share Selected' : 'Share' }}
-                </span>
-            </button>
+            <ng-content/>
         </mat-menu>
     }
 
@@ -53,7 +34,7 @@
     }
     <span (click)="clicked($event)">
         <div [ngClass]="'card-image'+(isHandset() ? ' handset':'')">
-            <ng-content/>
+            <ng-content select="shared-card-thumbnail"/>
         </div>
         <p [ngClass]="'card-title'+(isHandset() ? ' handset':'')">
             {{ title() }}

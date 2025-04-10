@@ -1,41 +1,36 @@
-<photos-toolbar
-    [initial]="initialQueryParameters"
-    [(photoStore)]="store"
-/>
+<photos-toolbar (onSearch)="search($event)"/>
 <div class="photos-container">
-    @if (!photoService.isLoading() && !(page?.set?.size)) {
+    @if (!isLoadingPhotos() && !photoStore().pageSize) {
         <p>
           photos works but no photos was fetched!
         </p>
     }
     <mat-grid-list
-        [cols]="(isHandset$ | async) ? 4 : 8">
-        @if (page?.set !== null) {
-            @for (photo of page!.set; track photo.source.photoId) {
+        [cols]="isHandset() ? 4 : 8"
+        rowHeight="fit"
+    >
+        @if (photoStore().page()) {
+            @for (photo of photoStore().page()!.set; track photo.source.photoId) {
                 <mat-grid-tile>
-                    <shared-card-with-thumbnail
-                        [key]="photo.thumbnail?.slug || photo.source.slug"
-                        [title]="photo.thumbnail?.filename || photo.source.filename"
-                        [summary]="photo.thumbnail?.summary || photo.source.summary"
-                        [link]="'/garden/photos/single/' + photo.source.photoId"
-                        [shareLink]="'/garden/photos/single/' + photo.source.photoId"
-                        [isSelected]="selectionState().selection.includes(photo?.thumbnail || photo.source)"
+                    <photo-card
+                        [photo]="photo.source"
+                        [isHandset]="isHandset()"
+                        [isSelected]="selectionState().selection.includes(photo.source)"
                         [isInSelectMode]="selectionState().selectModeActive"
                         [select]="selectPhoto(photo?.thumbnail || photo.source)"
-                        [isHandset]="isHandset"
-                        [initialIsFavorite]="false">
-                        <shared-photo-thumbnail
-                            [alt]="photo.source.slug + ' #' + photo.source.photoId"
-                            [photoId]="photo.source.photoId" />
-                    </shared-card-with-thumbnail>
+                        [link]="'/garden/photos/single/' + photo.source.photoId"
+                        [share]="'/garden/photos/single/' + photo.source.photoId"
+                        [isFavorite]="isFavorite()(photo.source.photoId)"
+                    />
                 </mat-grid-tile>
             }
         }
     </mat-grid-list>
 </div>
 <shared-paginator
-    [length]="photoCount ?? 0"
-    [pageSize]="pageSize || 32"
-    [pageIndex]="pageIndex ?? 0"
-    [disabled]="isLoading"
-    color="primary" />
+    [length]="photoStore().page()?.set?.size ?? 0"
+    [pageSize]="photoStore().pageSize"
+    [pageIndex]="photoStore().currentPage"
+    [disabled]="isLoadingPhotos()"
+    color="primary"
+/>

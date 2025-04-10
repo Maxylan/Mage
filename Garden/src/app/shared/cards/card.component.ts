@@ -7,11 +7,11 @@ import { NgClass } from '@angular/common';
 import {
     CardDetails,
     CardLinkDetails,
-} from './card-with-thumbnail.types';
+} from './card.types';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-    selector: 'shared-card-with-thumbnail',
+    selector: 'shared-card',
     imports: [
         NgClass,
         MatRipple,
@@ -20,20 +20,18 @@ import { MatButtonModule } from '@angular/material/button';
         MatIconModule,
         MatMenuModule
     ],
-    templateUrl: 'card-with-thumbnail.component.html',
-    styleUrl: 'card-with-thumbnail.component.css'
+    templateUrl: 'card.component.html',
+    styleUrl: 'card.component.css'
 })
-export class ThumbnailCardComponent {
-    public readonly isHandset = input.required<boolean>();
+export class CardComponent {
     public readonly key = input.required<string>();
     public readonly title = input.required<string>();
+    public readonly isHandset = input.required<boolean|undefined>();
 
     public readonly summary = input<string>();
-    public readonly link = input<string>();
-    public readonly share = input<string>();
     public readonly isSelected = input<boolean>();
     public readonly isInSelectMode = input<boolean>();
-    public readonly select = model<boolean>();
+    public readonly select = input<(isSelected: boolean) => void>();
 
     /**
      * Compute if we should show the 'select' checkbox.
@@ -48,7 +46,6 @@ export class ThumbnailCardComponent {
         )
     ));
 
-    public readonly isFavorite = input<boolean>(false);
     public readonly isKebabOpen = signal<boolean>(false);
 
     /**
@@ -57,8 +54,7 @@ export class ThumbnailCardComponent {
     public readonly cardDetails = computed<CardDetails>(() => ({
         key: this.key(),
         title: this.title(),
-        summary: this.summary() || null,
-        link: this.link() || null
+        summary: this.summary() || null
     }));
 
     /**
@@ -94,44 +90,10 @@ export class ThumbnailCardComponent {
             return;
         }
 
-        this.select.update(this.isSelected);
+        this.select()!(this.isSelected()!);
 
         this.onSelect.emit(
             this.cardDetails()
         );
-    }
-
-    /**
-     * Emits when `{copied}`
-     */
-    public readonly onCopy = output<CardLinkDetails>();
-    /**
-     * Callback firing when this card gets copied.
-     */
-    public readonly copied = (): void => {
-        const link = this.link();
-        if (link) {
-            this.onCopy.emit({
-                link: link,
-                card: this.cardDetails()
-            } as CardLinkDetails);
-        }
-    }
-
-    /**
-     * Emits when `{shared}`
-     */
-    public readonly onShare = output<CardLinkDetails>();
-    /**
-     * Callback firing when this card gets shared.
-     */
-    public readonly shared = (): void => {
-        const share = this.share();
-        if (share) {
-            this.onShare.emit({
-                link: share,
-                card: this.cardDetails()
-            } as CardLinkDetails);
-        }
     }
 }
