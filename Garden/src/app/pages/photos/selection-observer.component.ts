@@ -2,18 +2,23 @@ import { computed, Injectable, WritableSignal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 
-export type SelectState<T extends object = {}> = {
+export type CardSelectionState = {
+    isSelected: boolean,
+    isInSelectMode: boolean,
+    select: () => void
+};
+export type SelectionState = {
     selectModeActive: boolean,
-    selection: object[]
+    selection: (string|number)[]
 };
 
 @Injectable({
     providedIn: 'root'
 })
 export class SelectionObserver {
-    private selection: WritableSignal<object[]> = signal<object[]>([]);
+    private selection: WritableSignal<(string|number)[]> = signal<(string|number)[]>([]);
     private selectMode: WritableSignal<boolean> = signal(false);
-    private observable?: Observable<SelectState>;
+    private observable?: Observable<SelectionState>;
 
     public State = computed(() => ({
         selectModeActive: this.selectMode(),
@@ -26,7 +31,7 @@ export class SelectionObserver {
         }
     }
 
-    public observe = (): Observable<SelectState<object>> => {
+    public observe = (): Observable<SelectionState> => {
         if (!this.observable) {
             this.observable = toObservable(this.State);
         }
@@ -34,9 +39,10 @@ export class SelectionObserver {
         return this.observable;
     }
 
-    public subscribe: Observable<SelectState<object>>['subscribe'] = this.observe().subscribe;
-    public forEach: Observable<SelectState<object>>['forEach'] = this.observe().forEach;
-    public pipe: Observable<SelectState<object>>['pipe'] = this.observe().pipe;
+    public subscribe: Observable<SelectionState>['subscribe'] = this.observe().subscribe;
+    public forEach: Observable<SelectionState>['forEach'] = this.observe().forEach;
+    public pipe: Observable<SelectionState>['pipe'] = this.observe().pipe;
+    public lift: Observable<SelectionState>['lift'] = this.observe().lift;
 
     public isSelecting = (): boolean =>
         this.selectMode();
@@ -58,10 +64,10 @@ export class SelectionObserver {
             return !prev;
         });
 
-    public getSelectedItems = (): object[] =>
+    public getSelectedItems = (): (string|number)[] =>
         this.selection();
 
-    public setSelectedItems = (items: object[]): void => {
+    public setSelectedItems = (items: (string|number)[]): void => {
         if ((!items || items.length === 0) && this.selectMode()) {
             this.setSelectionMode(false);
             return;
@@ -70,8 +76,7 @@ export class SelectionObserver {
         this.selection.set(items);
     }
 
-    public deselectItems = (...items: object[]): void => {
-        console.log('i fire', items);
+    public deselectItems = (...items: (string|number)[]): void => {
         if (!items || items.length === 0) {
             return;
         }
@@ -87,7 +92,7 @@ export class SelectionObserver {
         });
     }
 
-    public selectItems = (...items: object[]): void => {
+    public selectItems = (...items: (string|number)[]): void => {
         if (!items || items.length === 0) {
             return;
         }

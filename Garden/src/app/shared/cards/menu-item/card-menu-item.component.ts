@@ -1,10 +1,12 @@
 import { Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
     selector: 'shared-card-menu-item',
     imports: [
-        MatIconModule
+        MatIconModule,
+        MatMenuModule
     ],
     templateUrl: 'card-menu-item.component.html',
     styleUrl: 'card-menu-item.component.css'

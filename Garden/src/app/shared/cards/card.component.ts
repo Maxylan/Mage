@@ -1,14 +1,15 @@
-import { Component, computed, EventEmitter, input, Input, model, output, Output, Signal, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatRipple } from '@angular/material/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { NgClass } from '@angular/common';
-import {
-    CardDetails,
-    CardLinkDetails,
-} from './card.types';
+import { CardDetails } from './card.types';
 import { MatButtonModule } from '@angular/material/button';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { SelectionObserver, CardSelectionState, SelectionState } from '../../pages/photos/selection-observer.component';
+import { map } from 'rxjs';
+import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 
 @Component({
     selector: 'shared-card',
@@ -16,6 +17,7 @@ import { MatButtonModule } from '@angular/material/button';
         NgClass,
         MatRipple,
         MatCheckboxModule,
+        CardMenuItemComponent,
         MatButtonModule,
         MatIconModule,
         MatMenuModule
@@ -27,24 +29,22 @@ export class CardComponent {
     public readonly key = input.required<string>();
     public readonly title = input.required<string>();
     public readonly isHandset = input.required<boolean|undefined>();
+    public readonly deselect = input.required<SelectionObserver['deselectItems']>();
+    public readonly select = input.required<SelectionObserver['selectItems']>();
+    public readonly selectionState = input.required<SelectionState>();
+    public readonly isSelected = computed<boolean>(() => {
+        const
+            state = this.selectionState(),
+            key = this.key();
+        if (!state || !key) {
+            return false;
+        }
+        return state.selection.includes(key);
+    });
 
+    public readonly shareUrl = input<string>();
+    public readonly linkUrl = input<string>();
     public readonly summary = input<string>();
-    public readonly isSelected = input<boolean>();
-    public readonly isInSelectMode = input<boolean>();
-    public readonly select = input<(isSelected: boolean) => void>();
-
-    /**
-     * Compute if we should show the 'select' checkbox.
-     * Only determines checbox visibility, not 'checked' status.
-     */
-    public readonly showSelect = computed(() => (
-        this.select() !== undefined &&
-        this.isSelected() !== undefined &&
-        this.isInSelectMode() !== undefined && (
-            this.isSelected() || 
-            this.isInSelectMode()
-        )
-    ));
 
     public readonly isKebabOpen = signal<boolean>(false);
 
@@ -84,16 +84,48 @@ export class CardComponent {
      * Callback firing when this card gets selected/de-selected
      */
     public readonly selected = (): void => {
-        if (this.select() === undefined ||
-            this.isSelected() === undefined ||
-            this.isInSelectMode() === undefined) {
+        const state = this.selectionState();
+        if (!state) {
             return;
         }
 
-        this.select()!(this.isSelected()!);
+        if (this.isSelected()) {
+            this.deselect()(this.key());
+        }
+        else {
+            this.select()(this.key());
+        }
 
         this.onSelect.emit(
             this.cardDetails()
         );
+    }
+
+    /**
+     * Emits when `{linked}`
+     */
+    public readonly onLink = output<URL>();
+    /**
+     * Callback firing when this card gets copied.
+     */
+    public readonly linked = (): void => {
+        const link = this.linkUrl();
+        if (link) {
+            this.onLink.emit(new URL(link));
+        }
+    }
+
+    /**
+     * Emits when `{shared}`
+     */
+    public readonly onShare = output<URL>();
+    /**
+     * Callback firing when this card gets shared.
+     */
+    public readonly shared = (): void => {
+        const share = this.shareUrl();
+        if (share) {
+            this.onShare.emit(new URL(share));
+        }
     }
 }

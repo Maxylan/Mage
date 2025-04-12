@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { defaultPhotoPageContainer, FavoritePhotos, IPhotoQueryParameters, Photo } from '../../core/types/photos.types';
-import { SelectionObserver, SelectState } from './selection-observer.component';
+import { SelectionObserver, SelectionState } from './selection-observer.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
@@ -33,6 +33,8 @@ export class PhotosComponent {
 
     public readonly photoStore = signal(defaultPhotoPageContainer);
     public readonly selectionState = this.selectionObserver.State;
+    public readonly select = this.selectionObserver.selectItems;
+    public readonly deselect = this.selectionObserver.deselectItems;
     public readonly isLoadingPhotos = this.photoService.isLoading;
 
     public readonly favoriteStore = signal<string|null>(window.localStorage.getItem(`favourite-photos`));
@@ -68,15 +70,6 @@ export class PhotosComponent {
                 map(result => result.matches),
                 shareReplay()
             )
-    );
-
-    /**
-     * Select or deselect a photo, based on if its already selected.
-     */
-    public readonly selectPhoto = (photo: Photo): ((isSelected: boolean) => void) => (
-        (isSelected: boolean) => isSelected
-            ? this.selectionObserver.deselectItems(photo)
-            : this.selectionObserver.selectItems(photo)
     );
 
     /**

@@ -1,8 +1,21 @@
-<article matRipple [ngClass]="'thumbnail-card'+(isHandset() ? ' handset':'')+(isSelected() ? ' selected':'')">
-    @if (!isHandset()) {
+<article
+    matRipple
+    [ngClass]="'shared-card'+(isHandset() ? ' handset':'')+(isSelected() ? ' selected':'')"
+>
+    @if (selectionState().selectModeActive) {
+        <mat-checkbox
+            class="card-select-checkbox"
+            [disableRipple]="true"
+            [ariaChecked]="isSelected() ? 'selected' : 'not selected'"
+            [checked]="isSelected()"
+            (click)="selected()"
+        />
+    }
+    @else if (!isHandset()) {
         <div class="card-kebab-wrapper">
             <button
                 mat-mini-fab
+                class="card-menu-button"
                 aria-label="Toggle sidenav"
                 [matMenuTriggerFor]="menu">
                 <mat-icon
@@ -13,29 +26,44 @@
             </button>
         </div>
         <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="selected()">
-                <mat-icon
-                    fontSet="hack"
-                    [ariaLabel]="key() + ' Select Icon'">
-                    {{ isSelected() ? '󰒉' : '󰒇' }}
-                </mat-icon>
-                <span>
-                    {{ isSelected() ? 'Deselect' : 'Select' }}
-                </span>
-            </button>
-            <ng-content/>
+            @if (selectionState()) {
+                <shared-card-menu-item
+                    [key]="key() + '-select'"
+                    (onClick)="selected()"
+                    icon="󰒇" 
+                    text="Select"
+                    iconSelected="󰒉"
+                    textSelected="Deselect"
+                    [isSelected]="isSelected()"
+                />
+            }
+            @if (linkUrl()) {
+                <shared-card-menu-item
+                    [key]="key() + '-link'"
+                    (onClick)="linked()"
+                    icon="󰒖" 
+                    text="Link"
+                    iconSelected="󱇴"
+                    textSelected="Link Selected"
+                    [isSelected]="isSelected()"
+                />
+            }
+            @if (shareUrl()) {
+                <shared-card-menu-item
+                    [key]="key() + '-share'"
+                    (onClick)="shared()"
+                    icon="󰒖" 
+                    text="Share"
+                    iconSelected="󱇴"
+                    textSelected="Share Selected"
+                    [isSelected]="isSelected()"
+                />
+            }
         </mat-menu>
     }
 
-    @if (showSelect()) {
-        <mat-checkbox
-            [ariaChecked]="isSelected() ? 'selected' : 'not selected'"
-            [checked]="isSelected()"/>
-    }
     <span (click)="clicked($event)">
-        <div [ngClass]="'card-image'+(isHandset() ? ' handset':'')">
-            <ng-content select="shared-card-thumbnail"/>
-        </div>
+        <ng-content select="shared-card-thumbnail"/>
         <p [ngClass]="'card-title'+(isHandset() ? ' handset':'')">
             {{ title() }}
         </p>

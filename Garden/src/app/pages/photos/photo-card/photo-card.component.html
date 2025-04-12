@@ -1,33 +1,14 @@
 <shared-card
-    photo-card
     [isHandset]="isHandset()"
     [key]="photo().photoId.toString()"
     [title]="photo().filename"
     [summary]="photo().summary"
-    [isSelected]="isSelected()"
-    [isInSelectMode]="isInSelectMode()"
-    [select]="select"
+    [selectionState]="selectionState()"
+    [deselect]="deselect()"
+    [select]="select()"
+    [shareUrl]="shareUrl()"
+    [linkUrl]="linkUrl()"
 >
-    <shared-card-menu-item
-        [key]="photo().photoId + '-link'"
-        [disabled]="!linkUrl()"
-        (onClick)="linked()"
-        icon="󰒖" 
-        text="Link"
-        iconSelected="󱇴"
-        textSelected="Link Selected"
-        [isSelected]="isSelected()"
-    />
-    <shared-card-menu-item
-        [key]="photo().photoId + '-share'"
-        [disabled]="!shareUrl()"
-        (onClick)="shared()"
-        icon="󰒖" 
-        text="Share"
-        iconSelected="󱇴"
-        textSelected="Share Selected"
-        [isSelected]="isSelected()"
-    />
     <shared-card-thumbnail
         [alt]="photo().slug + ' #' + photo().photoId"
         [base64]="image()"

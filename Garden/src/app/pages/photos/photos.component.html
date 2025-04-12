@@ -15,12 +15,12 @@
                     <photo-card
                         [photo]="photo.source"
                         [isHandset]="isHandset()"
-                        [isSelected]="selectionState().selection.includes(photo.source)"
-                        [isInSelectMode]="selectionState().selectModeActive"
-                        [select]="selectPhoto(photo?.thumbnail || photo.source)"
-                        [link]="'/garden/photos/single/' + photo.source.photoId"
-                        [share]="'/garden/photos/single/' + photo.source.photoId"
+                        [linkUrl]="'/garden/photos/single/' + photo.source.photoId"
+                        [shareUrl]="'/garden/photos/single/' + photo.source.photoId"
                         [isFavorite]="isFavorite()(photo.source.photoId)"
+                        [selectionState]="selectionState()"
+                        [deselect]="deselect"
+                        [select]="select"
                     />
                 </mat-grid-tile>
             }

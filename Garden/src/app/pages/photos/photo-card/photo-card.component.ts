@@ -2,14 +2,13 @@ import { Component, inject, signal, effect, input, output, untracked } from '@an
 import { PhotosService } from '../../../core/api/photos.service';
 import { Photo } from '../../../core/types/photos.types';
 import { CardThumbnailComponent } from '../../../shared/cards/thumbnail/card-thumbnail.component';
-import { CardMenuItemComponent } from '../../../shared/cards/menu-item/card-menu-item.component';
 import { CardComponent } from '../../../shared/cards/card.component';
+import { SelectionObserver, SelectionState } from '../selection-observer.component';
 
 @Component({
     selector: 'photo-card',
     imports: [
         CardThumbnailComponent,
-        CardMenuItemComponent,
         CardComponent
     ],
     templateUrl: 'photo-card.component.html'
@@ -19,12 +18,12 @@ export class PhotoCardComponent {
 
     public readonly photo = input.required<Photo>();
     public readonly isHandset = input.required<boolean|undefined>();
+    public readonly deselect = input.required<SelectionObserver['deselectItems']>();
+    public readonly select = input.required<SelectionObserver['selectItems']>();
+    public readonly selectionState = input.required<SelectionState>();
 
-    public readonly isSelected = input<boolean>();
-    public readonly isInSelectMode = input<boolean>();
-    public readonly select = input<(isSelected: boolean) => void>();
-    public readonly shareUrl = input<string|undefined>(undefined, { alias: 'share' });
-    public readonly linkUrl = input<string|undefined>(undefined, { alias: 'link' });
+    public readonly shareUrl = input<string>();
+    public readonly linkUrl = input<string>();
 
     public readonly imageContentLength = signal<number|null>(null);
     public readonly imageContentType = signal<string|null>(null);
@@ -62,32 +61,4 @@ export class PhotoCardComponent {
                 console.error('[PhotoCardComponent.onLoad] Error!', err);
             });
     });
-
-    /**
-     * Emits when `{linked}`
-     */
-    public readonly onLink = output<URL>();
-    /**
-     * Callback firing when this card gets copied.
-     */
-    public readonly linked = (): void => {
-        const link = this.linkUrl();
-        if (link) {
-            this.onLink.emit(new URL(link));
-        }
-    }
-
-    /**
-     * Emits when `{shared}`
-     */
-    public readonly onShare = output<URL>();
-    /**
-     * Callback firing when this card gets shared.
-     */
-    public readonly shared = (): void => {
-        const share = this.shareUrl();
-        if (share) {
-            this.onShare.emit(new URL(share));
-        }
-    }
 }

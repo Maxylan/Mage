@@ -1,7 +1,7 @@
 <button
     mat-menu-item
-    (click)="callback"
     [disabled]="disabled()"
+    (click)="callback.emit(key())"
     [ariaLabel]="isSelected() ? labelSelected() : label()"
 >
     <mat-icon
