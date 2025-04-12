@@ -1,26 +1,28 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { MatRipple } from '@angular/material/core';
+import { Component, computed, input, output, signal } from '@angular/core';
+import {
+    SelectionObserver,
+    CardSelectionState,
+    SelectionState
+} from '../../pages/photos/selection-observer.component';
+import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
+import { MatRipple } from '@angular/material/core';
 import { NgClass } from '@angular/common';
 import { CardDetails } from './card.types';
-import { MatButtonModule } from '@angular/material/button';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { SelectionObserver, CardSelectionState, SelectionState } from '../../pages/photos/selection-observer.component';
-import { map } from 'rxjs';
-import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 
 @Component({
     selector: 'shared-card',
     imports: [
-        NgClass,
-        MatRipple,
-        MatCheckboxModule,
         CardMenuItemComponent,
+        MatCheckboxModule,
         MatButtonModule,
         MatIconModule,
-        MatMenuModule
+        MatMenuModule,
+        MatRipple,
+        NgClass
     ],
     templateUrl: 'card.component.html',
     styleUrl: 'card.component.css'
@@ -69,6 +71,10 @@ export class CardComponent {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
+        }
+
+        if (this.selectionState().selectModeActive) {
+            this.selected();
         }
 
         this.onClick.emit(

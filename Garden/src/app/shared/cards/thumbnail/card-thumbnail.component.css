@@ -2,10 +2,19 @@ a {
     text-decoration: unset;
 }
 
+img {
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
 shared-card-thumbnail {
-    padding: 0 0.32rem;
+    padding: 0.32rem;
     display: block;
-    height: 80%;
+    height: 72%;
 }
 
 .card-thumbnail {

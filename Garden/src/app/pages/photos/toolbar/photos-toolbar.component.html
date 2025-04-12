@@ -15,4 +15,14 @@
           <mat-icon class="search-submit-button-icon" fontSet="hack">󱎱</mat-icon>
         </button>
     </shared-search-bar>
+    @if (selectionState().selectModeActive) {
+        <a class="select-mode-display-chip">
+            <mat-chip 
+                (click)="quitSelectMode()"
+                color="tertiary"
+            >
+                Select Mode ({{ selectionState().selection.length }})
+            </mat-chip>
+        </a>
+    }
 </mat-toolbar>

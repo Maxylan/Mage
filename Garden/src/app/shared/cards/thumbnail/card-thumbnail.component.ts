@@ -11,7 +11,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
     templateUrl: 'card-thumbnail.component.html',
     styleUrl: 'card-thumbnail.component.css',
     host: {
-        'style': 'display: block; height: 80%; padding: 0 0.32rem;'
+        'style': 'display: block; height: 72%; padding: 0.32rem;'
     }
 })
 export class CardThumbnailComponent {

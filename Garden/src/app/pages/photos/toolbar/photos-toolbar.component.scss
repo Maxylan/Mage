@@ -40,3 +40,24 @@ button {
     icon-size: 12px
   ));
 }
+
+.select-mode-display-chip {
+  cursor: pointer;
+  z-index: 8;
+  
+  mat-chip {
+    background-color: #2196f3;
+  }
+
+  @include mat.chips-overrides((
+    outline-width: 2px,
+    outline-color: white,
+    label-text-size: var(--mat-sys-label-large-size, 14px),
+  ));
+}
+a.select-mode-display-chip {
+  position: absolute;
+  z-index: 10;
+  left: 48%;
+  top: 5rem;
+}

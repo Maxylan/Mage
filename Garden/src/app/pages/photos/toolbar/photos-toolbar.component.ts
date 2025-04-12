@@ -12,6 +12,8 @@ import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
+import { MAT_CHIPS_DEFAULT_OPTIONS, MatChip } from '@angular/material/chips';
+import { COMMA, ENTER, SPACE } from '@angular/cdk/keycodes';
 
 @Component({
     selector: 'photos-toolbar',
@@ -23,7 +25,16 @@ import { map } from 'rxjs';
         MatButtonModule,
         MatIconButton,
         MatIconModule,
-        FormsModule
+        FormsModule,
+        MatChip
+    ],
+    providers: [
+        {
+            provide: MAT_CHIPS_DEFAULT_OPTIONS,
+            useValue: {
+                separatorKeyCodes: [COMMA, SPACE, ENTER]
+            }
+        }
     ],
     templateUrl: 'photos-toolbar.component.html',
     styleUrl: 'photos-toolbar.component.scss'
@@ -34,13 +45,17 @@ export class PhotoToolbarComponent {
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly route = inject(ActivatedRoute);
 
-    public readonly selectionMode = this.selectionObserver.isSelecting;
+    public readonly selectionState = this.selectionObserver.State;
+    public readonly quitSelectMode = () => setTimeout(
+        () => this.selectionObserver.setSelectionMode(false),
+        64
+    );
 
     public readonly getNavbar = this.navbarController.getNavbar;
     public readonly searchControl = signal(new FormControl<string>('') as FormControl<string>);
     public readonly tagsControl = signal(new FormControl<string>('') as FormControl<string>);
     public readonly tags = signal<string[]>([]);
-    
+
     /**
      * Parse the `ParamMap` URL/Query Parameters observable into a supported
      * `IPhotoQueryParameters` collection.
@@ -57,7 +72,7 @@ export class PhotoToolbarComponent {
                 let searchValue = this.searchControl()
                     .value
                     ?.trim()
-                    ?.normalize(); 
+                    ?.normalize();
 
                 if (searchValue) {
                     query.search = searchValue;
@@ -80,7 +95,7 @@ export class PhotoToolbarComponent {
                     let tagValue = this.tagsControl()
                         .value
                         ?.trim()
-                        ?.normalize(); 
+                        ?.normalize();
 
                     if (tagValue) {
                         query.tags = [tagValue];
@@ -100,7 +115,7 @@ export class PhotoToolbarComponent {
                     query.tags = (params.getAll('tags') || []).map(this.urlEncoder.encodeValue);
                 }
                 if (params.has('offset')) {
-                    let offsetParam: string|number = params.get('offset') || 0;
+                    let offsetParam: string | number = params.get('offset') || 0;
                     if (typeof offsetParam === 'string') {
                         offsetParam = Number.parseInt(offsetParam);
                     }
@@ -110,7 +125,7 @@ export class PhotoToolbarComponent {
                     query.offset = offsetParam;
                 }
                 if (params.has('limit')) {
-                    let limitParam: string|number = params.get('limit') || 0;
+                    let limitParam: string | number = params.get('limit') || 0;
                     if (typeof limitParam === 'string') {
                         limitParam = Number.parseInt(limitParam);
                     }
