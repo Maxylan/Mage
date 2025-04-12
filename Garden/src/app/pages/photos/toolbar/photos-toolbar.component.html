@@ -2,19 +2,38 @@
     <button mat-icon-button type="button" aria-label="Toggle sidenav" (click)="getNavbar()?.toggle()">
         <mat-icon fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
     </button>
-    <shared-search-bar
-        formName="photos"
-        [(control)]="searchControl"
-        placeholder="Search for Photos!"
+    <mat-form-field
+        class="search-bar"
+        subscriptSizing="dynamic"
     >
-        <shared-tags-input
-            [control]="tagsControl()"
-            [(tags)]="tags"
+        <input
+            matInput
+            color="secondary"
+            name="search-photos-input"
+            aria-label="Search Photos Input"
+            placeholder="Search for Photos!"
+            [formControl]="searchControl"
         />
-        <button mat-icon-button type="submit" aria-label="Icon submit search button">
-          <mat-icon class="search-submit-button-icon" fontSet="hack">󱎱</mat-icon>
-        </button>
-    </shared-search-bar>
+    </mat-form-field>
+    <photo-tags-input 
+        aria-label="Search Photos With Tags Input"
+        [(tags)]="tags"
+    />
+    <button
+        mat-icon-button
+        class="search-submit"
+        aria-label="Icon submit search button"
+        type="submit"
+    >
+        <mat-icon
+            matSuffix
+            fontSet="hack"
+            class="search-submit-button-icon"
+            aria-label="Search photos icon'"
+        >
+            
+        </mat-icon>
+    </button>
     @if (selectionState().selectModeActive) {
         <a class="select-mode-display-chip">
             <mat-chip 

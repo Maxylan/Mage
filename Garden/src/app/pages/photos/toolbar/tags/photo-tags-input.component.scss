@@ -1,0 +1,43 @@
+@use '@angular/material' as mat;
+
+/* mat-toolbar {
+  @include mat.toolbar-overrides((
+    container-background-color: rgba(0,0,0,0),
+  ));
+} */
+
+/* input.mat-mdc-chip-input {
+  display: inline-block;
+} */
+
+mat-form-field {
+  overflow: clip;
+  width: 100%;
+
+  @include mat.form-field-overrides((
+    focus-state-layer-opacity: 0.16,
+    filled-container-color: rgba(0,0,0,0),
+    // container-vertical-padding: 0,
+    container-text-line-height: 40px,
+    container-height: 32px,
+  ));
+}
+
+mat-chip-grid.tags-chips-grid {
+  overflow: hidden;
+  display: inline-flex;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-height: 32px;
+  max-width: 72%;
+
+  div {
+    /* display: block; */ 
+    flex-flow: unset;
+  }
+
+  @include mat.chips-overrides((
+    container-height: 32px,
+  ));
+}

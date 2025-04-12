@@ -1,0 +1,35 @@
+<mat-form-field
+    class="tags-chips-grid"
+    subscriptSizing="dynamic"
+>
+    <mat-chip-grid
+        #chipGrid
+        class="tags-chips-grid"
+        aria-label="Enter photo tags"
+    >
+        @for (tag of tags(); track tag) {
+            <mat-chip-row (removed)="removeTag(tag)">
+                {{tag}}
+                <button
+                    matChipRemove
+                    [attr.aria-label]="'remove photo tag ' + tag"
+                >
+                    <mat-icon fontSet="hack">󰅚</mat-icon>
+                </button>
+            </mat-chip-row>
+        }
+    </mat-chip-grid>
+    <input
+        color="secondary"
+        placeholder="Tags.."
+        name="search-photos-tags-input"
+        [matChipInputFor]="chipGrid"
+        (matChipInputTokenEnd)="completeTag($event)"
+    />
+    <mat-icon
+        matSuffix
+        fontSet="hack"
+        aria-label="'Search photo tags icon'">
+        
+    </mat-icon>
+</mat-form-field>

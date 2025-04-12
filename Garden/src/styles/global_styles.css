@@ -41,26 +41,20 @@ a {
 }
 
 mat-chip-grid.tags-chips-grid {
-    overflow-x: scroll;
-    overflow-y: hidden;
-    display: inline-flex;
-    scrollbar-width: thin;
-    max-height: var(--mat-form-field-container-height);
-    max-width: 75%;
-
-    div {
-      flex-flow: unset
-    }
+  div {
+    /* display: block; */
+    flex-flow: unset;
+  }
+}
+mat-form-field.tags-chips-grid {
+  .mat-mdc-form-field-infix {
+    padding-bottom: unset;
+    padding-top: unset;
+  }
 }
 
-.tags-chips-input {
-    overflow: clip;
-
-    /* div.mat-mdc-form-field-infix {
-        padding: auto;
-    } */
-
-    input.mat-mdc-chip-input {
-        display: inline-flex;
-    }
+button.search-submit.mdc-icon-button mat-icon {
+    font-size: 20px;
+    text-align: left;
+    left: 2px;
 }

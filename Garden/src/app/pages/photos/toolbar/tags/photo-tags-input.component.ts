@@ -1,31 +1,36 @@
-import { Component, model, input } from '@angular/core';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
+import { Component, model } from '@angular/core';
+import { COMMA, ENTER, SPACE } from '@angular/cdk/keycodes';
+import {
+    MAT_CHIPS_DEFAULT_OPTIONS,
+    MatChipInputEvent,
+    MatChipsModule
+} from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInput } from '@angular/material/input';
 
 @Component({
-    selector: 'shared-tags-input',
-    templateUrl: 'tags-input.component.html',
-    /* host: {
-        style: "display: inline-block; margin: 0px auto;"
-    } */
+    selector: 'photo-tags-input',
+    templateUrl: 'photo-tags-input.component.html',
+    styleUrl: 'photo-tags-input.component.scss',
     imports: [
-        ReactiveFormsModule,
         MatFormFieldModule,
         MatButtonModule,
         MatChipsModule,
-        MatIconModule,
-        FormsModule,
-        MatInput
+        MatIconModule
+    ],
+    providers: [
+        {
+            provide: MAT_CHIPS_DEFAULT_OPTIONS,
+            useValue: {
+                separatorKeyCodes: [COMMA, SPACE, ENTER]
+            }
+        }
     ],
 })
-export class TagsInputComponent {
-    public readonly control = model.required<FormControl<string>>();
-    public readonly tags = model<string[]>([]);
-
+export class PhotoTagsInputComponent {
+    public readonly tags = model.required<string[]>();
+    
     /**
      * Callback triggered by pressing the (X) to remove a tag..
      */

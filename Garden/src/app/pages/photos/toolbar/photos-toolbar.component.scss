@@ -1,44 +1,21 @@
 @use '@angular/material' as mat;
 
-mat-toolbar {
-  @include mat.toolbar-overrides((
-    /* container-background-color: rgba(0,0,0,0), */
-  ));
-}
-
 mat-form-field {
-  margin-right: 2rem;
-  max-width: 48rem;
-  width: 100%;
+  margin: 0 2rem;
+  max-width: 24rem;
+  width: 36%;
 
   @include mat.form-field-overrides((
     focus-state-layer-opacity: 0.16,
     filled-container-color: rgba(0,0,0,0),
-    container-vertical-padding: 0.48rem,
+    // container-vertical-padding: 0,
     container-height: 32px,
   ));
 }
-
-mat-chip-grid {
-  @include mat.chips-overrides((
-    container-height: 32px,
-  ));
-}
-
-button {
-  mat-icon {
-    text-align: justify;
-    vertical-align: middle;
-    padding-left: 2px;
-  }
-  mat-icon.search-submit-button-icon {
-    font-size: 26px;
-  }
-
-  @include mat.icon-button-overrides((
-    state-layer-size: 12px,
-    icon-size: 12px
-  ));
+photo-tags-input {
+  margin-right: 2rem;
+  max-width: 32rem;
+  width: 64%;
 }
 
 .select-mode-display-chip {
@@ -60,4 +37,8 @@ a.select-mode-display-chip {
   z-index: 10;
   left: 48%;
   top: 5rem;
+}
+
+button.search-submit {
+  box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
 }

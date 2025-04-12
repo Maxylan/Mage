@@ -49,6 +49,8 @@ export class CardComponent {
     public readonly summary = input<string>();
 
     public readonly isKebabOpen = signal<boolean>(false);
+    private touchTimeout = signal<NodeJS.Timeout|null>(null);
+    public readonly isHolding = computed<boolean>(() => this.touchTimeout() !== null);
 
     /**
      * Get some of the internal properties of this card as an object instance.
@@ -60,6 +62,84 @@ export class CardComponent {
     }));
 
     /**
+     * Emits when `{touchStart}`
+     */
+    public readonly onTouchStart = output<CardDetails>();
+    /**
+     * Callback firing when this card starts to get touched
+     */
+    public readonly touchStart = (event?: Event): void => {
+        console.log('touchStart', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
+        if (event) {
+            if ('preventDefault' in event) {
+                event.preventDefault();
+            }
+        }
+
+        if (this.touchTimeout() === null) {
+            this.touchTimeout.set(
+                setTimeout(this.held, 500)
+            );
+        }
+
+        this.onTouchStart.emit(
+            this.cardDetails()
+        );
+    }
+
+    /**
+     * Emits when `{touchEnd}`
+     */
+    public readonly onTouchEnd = output<CardDetails>();
+    /**
+     * Callback firing when this card siezes to be touched
+     */
+    public readonly touchEnd = (event?: Event): void => {
+        console.log('touchEnd', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
+        if (event) {
+            if ('preventDefault' in event) {
+                event.preventDefault();
+            }
+        }
+
+        const timeout = this.touchTimeout();
+        if (timeout !== null) {
+            clearTimeout(timeout);
+            this.touchTimeout.set(null);
+        }
+
+        this.onTouchEnd.emit(
+            this.cardDetails()
+        );
+    }
+
+    /**
+     * Emits when `{held}`
+     */
+    public readonly onHeld = output<CardDetails>();
+    /**
+     * Callback firing when this card gets held
+     */
+    public readonly held = (event?: Event): void => {
+        console.log('held', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
+        if (event) {
+            if ('preventDefault' in event) {
+                event.preventDefault();
+            }
+        }
+
+        if ('vibrate' in navigator) {
+            navigator.vibrate(30);
+        }
+
+        this.selected();
+
+        this.onHeld.emit(
+            this.cardDetails()
+        );
+    }
+
+    /**
      * Emits when `{clicked}`
      */
     public readonly onClick = output<CardDetails>();
@@ -67,13 +147,25 @@ export class CardComponent {
      * Callback firing when this card gets clicked
      */
     public readonly clicked = (event?: Event): void => {
+        console.log('clicked', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
+        if (this.isHolding()) {
+            return;
+        }
+
+        let specialClicked = false;
         if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
+
+            specialClicked = (
+                ('ctrlKey' in event && event.ctrlKey === true) ||
+                ('shiftKey' in event && event.shiftKey === true) ||
+                ('controlKey' in event && event.controlKey === true)
+            );
         }
 
-        if (this.selectionState().selectModeActive) {
+        if (this.selectionState().selectModeActive || specialClicked) {
             this.selected();
         }
 

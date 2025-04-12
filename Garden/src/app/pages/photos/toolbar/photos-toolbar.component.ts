@@ -1,40 +1,32 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Component, effect, inject, output, signal } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
-import { SearchBarComponent } from '../../../shared/blocks/search-bar/search-bar.component';
-import { TagsInputComponent } from '../../../shared/blocks/tags/tags-input.component';
+import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { IPhotoQueryParameters } from '../../../core/types/photos.types';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { SelectionObserver } from '../selection-observer.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { MatInput } from '@angular/material/input';
+import { MatChip } from '@angular/material/chips';
 import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
-import { MAT_CHIPS_DEFAULT_OPTIONS, MatChip } from '@angular/material/chips';
-import { COMMA, ENTER, SPACE } from '@angular/cdk/keycodes';
 
 @Component({
     selector: 'photos-toolbar',
     imports: [
+        PhotoTagsInputComponent,
         ReactiveFormsModule,
-        SearchBarComponent,
-        TagsInputComponent,
+        MatFormFieldModule,
         MatToolbarModule,
         MatButtonModule,
-        MatIconButton,
         MatIconModule,
-        FormsModule,
+        MatIconButton,
+        MatInput,
         MatChip
-    ],
-    providers: [
-        {
-            provide: MAT_CHIPS_DEFAULT_OPTIONS,
-            useValue: {
-                separatorKeyCodes: [COMMA, SPACE, ENTER]
-            }
-        }
     ],
     templateUrl: 'photos-toolbar.component.html',
     styleUrl: 'photos-toolbar.component.scss'
@@ -52,8 +44,7 @@ export class PhotoToolbarComponent {
     );
 
     public readonly getNavbar = this.navbarController.getNavbar;
-    public readonly searchControl = signal(new FormControl<string>('') as FormControl<string>);
-    public readonly tagsControl = signal(new FormControl<string>('') as FormControl<string>);
+    public readonly searchControl = new FormControl<string>('');
     public readonly tags = signal<string[]>([]);
 
     /**
@@ -69,7 +60,7 @@ export class PhotoToolbarComponent {
                     limit: 32
                 };
 
-                let searchValue = this.searchControl()
+                let searchValue = this.searchControl
                     .value
                     ?.trim()
                     ?.normalize();
@@ -82,24 +73,13 @@ export class PhotoToolbarComponent {
                 }
 
                 let tags = this.tags().map(
-                    tag => tag?.trim()?.normalize()
+                    tag => this.urlEncoder.encodeValue(
+                        tag?.trim()?.normalize()
+                    )
                 );
 
                 if (tags.length) {
                     query.tags = tags;
-                }
-                else if (params.get('search')) {
-                    query.search = this.urlEncoder.encodeValue(params.get('search') || '');
-                }
-                else {
-                    let tagValue = this.tagsControl()
-                        .value
-                        ?.trim()
-                        ?.normalize();
-
-                    if (tagValue) {
-                        query.tags = [tagValue];
-                    }
                 }
 
                 if (params.has('slug')) {
@@ -146,7 +126,7 @@ export class PhotoToolbarComponent {
     private readonly onParametersChange = effect(
         () => {
             const parameters: IPhotoQueryParameters = this.queryParameters() || {
-                search: this.searchControl().value || '',
+                search: this.searchControl.value || '',
                 tags: this.tags() || [],
                 offset: 0,
                 limit: 32

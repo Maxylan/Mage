@@ -1,6 +1,18 @@
 <article
     matRipple
-    [ngClass]="'shared-card'+(isHandset() ? ' handset':'')+(isSelected() ? ' selected':'')"
+    (onClick)="clicked($event)"
+    (pointerdown)="touchStart($event)"
+    (pointerleave)="touchEnd($event)"
+    (pointerup)="touchEnd($event)"
+    (touchstart)="touchStart($event)"
+    (touchend)="touchEnd($event)"
+    [ngClass]="[
+        'shared-card',
+        isHandset() ? ' handset':'',
+        isSelected() ? 'selected':'',
+        !isSelected() && selectionState().selectModeActive ? 'not-selected' : '',
+        isHolding() ? 'holding':''
+    ]"
 >
     @if (selectionState().selectModeActive) {
         <mat-checkbox
