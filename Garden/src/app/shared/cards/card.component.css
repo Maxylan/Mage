@@ -57,6 +57,9 @@ p {
     height: 32px;
     width: 24px;
 }
+.card-menu-button.handset, .card-menu-button.select-mode {
+    visibility: hidden;
+}
 
 .shared-card {
     height: 12rem;

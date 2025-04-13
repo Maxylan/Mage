@@ -1,14 +1,14 @@
 <article
     matRipple
-    (onClick)="clicked($event)"
+    (click)="clicked($event)"
     (pointerdown)="touchStart($event)"
-    (pointerleave)="touchEnd($event)"
     (pointerup)="touchEnd($event)"
     (touchstart)="touchStart($event)"
+    (touchleave)="touchEnd($event)"
     (touchend)="touchEnd($event)"
     [ngClass]="[
         'shared-card',
-        isHandset() ? ' handset':'',
+        isHandset() ? 'handset':'',
         isSelected() ? 'selected':'',
         !isSelected() && selectionState().selectModeActive ? 'not-selected' : '',
         isHolding() ? 'holding':''
@@ -23,64 +23,78 @@
             (click)="selected()"
         />
     }
-    @else if (!isHandset()) {
-        <div class="card-kebab-wrapper">
-            <button
-                mat-mini-fab
-                class="card-menu-button"
-                aria-label="Toggle sidenav"
-                [matMenuTriggerFor]="menu">
-                <mat-icon
-                    fontSet="hack"
-                    [ariaLabel]="key() + ' Kebab Menu'">
-                    
-                </mat-icon>
-            </button>
-        </div>
-        <mat-menu #menu="matMenu">
-            @if (selectionState()) {
-                <shared-card-menu-item
-                    [key]="key() + '-select'"
-                    (onClick)="selected()"
-                    icon="󰒇" 
-                    text="Select"
-                    iconSelected="󰒉"
-                    textSelected="Deselect"
-                    [isSelected]="isSelected()"
-                />
-            }
-            @if (linkUrl()) {
-                <shared-card-menu-item
-                    [key]="key() + '-link'"
-                    (onClick)="linked()"
-                    icon="󰒖" 
-                    text="Link"
-                    iconSelected="󱇴"
-                    textSelected="Link Selected"
-                    [isSelected]="isSelected()"
-                />
-            }
-            @if (shareUrl()) {
-                <shared-card-menu-item
-                    [key]="key() + '-share'"
-                    (onClick)="shared()"
-                    icon="󰒖" 
-                    text="Share"
-                    iconSelected="󱇴"
-                    textSelected="Share Selected"
-                    [isSelected]="isSelected()"
-                />
-            }
-        </mat-menu>
-    }
+    <div class="card-kebab-wrapper">
+        <button
+            mat-mini-fab
+            #cardMenuButton
+            aria-label="Toggle sidenav"
+            [matMenuTriggerFor]="menu"
+            [ngClass]="[
+                'card-menu-button',
+                isHandset() ? 'handset':'',
+                selectionState().selectModeActive ? 'select-mode' : ''
+            ]"
+        >
+            <mat-icon
+                fontSet="hack"
+                [ariaLabel]="key() + ' Kebab Menu'">
+                
+            </mat-icon>
+        </button>
+    </div>
+    <mat-menu #menu="matMenu">
+        @if (selectionState()) {
+            <shared-card-menu-item
+                [key]="key() + '-select'"
+                (onClick)="selected()"
+                icon="󰒇" 
+                text="Select"
+                iconSelected="󰒉"
+                textSelected="Deselect"
+                [isSelected]="isSelected()"
+            />
+        }
+        @if (linkUrl()) {
+            <shared-card-menu-item
+                [key]="key() + '-link'"
+                (onClick)="linked()"
+                icon="󰒖" 
+                text="Link"
+                iconSelected="󱇴"
+                textSelected="Link Selected"
+                [isSelected]="isSelected()"
+            />
+        }
+        @if (shareUrl()) {
+            <shared-card-menu-item
+                [key]="key() + '-share'"
+                (onClick)="shared()"
+                icon="󰒖" 
+                text="Share"
+                iconSelected="󱇴"
+                textSelected="Share Selected"
+                [isSelected]="isSelected()"
+            />
+        }
+    </mat-menu>
 
-    <span (click)="clicked($event)">
+    <span>
         <ng-content select="shared-card-thumbnail"/>
-        <p [ngClass]="'card-title'+(isHandset() ? ' handset':'')">
+        <p  matTooltipPosition="above"
+            [matTooltip]="title()"
+            [matTooltipDisabled]="title().length < 24"
+            [ariaLabel]="'Card' + key() + 'title text with tooltip'"
+            [ngClass]="'card-title'+(isHandset() ? ' handset':'')"
+        >
             {{ title() }}
         </p>
         @if (summary() && !isHandset()) {
-            <p [ngClass]="'card-summary'+(isHandset() ? ' handset':'')">
+            <p  matTooltipPosition="below"
+                [matTooltip]="summary()"
+                [matTooltipDisabled]="summary()!.length < 32"
+                [ariaLabel]="'Card ' + key() + ' summary text with tooltip'"
+                [ngClass]="'card-summary'+(isHandset() ? ' handset':'')"
+            >
                 {{ summary() }}
             </p>
         }

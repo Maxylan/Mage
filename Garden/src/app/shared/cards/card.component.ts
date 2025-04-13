@@ -1,13 +1,10 @@
-import { Component, computed, input, output, signal } from '@angular/core';
-import {
-    SelectionObserver,
-    CardSelectionState,
-    SelectionState
-} from '../../pages/photos/selection-observer.component';
+import { Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { SelectionObserver, SelectionState } from '../../pages/photos/selection-observer.component';
 import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRipple } from '@angular/material/core';
 import { NgClass } from '@angular/common';
@@ -18,6 +15,7 @@ import { CardDetails } from './card.types';
     imports: [
         CardMenuItemComponent,
         MatCheckboxModule,
+        MatTooltipModule,
         MatButtonModule,
         MatIconModule,
         MatMenuModule,
@@ -48,9 +46,20 @@ export class CardComponent {
     public readonly linkUrl = input<string>();
     public readonly summary = input<string>();
 
-    public readonly isKebabOpen = signal<boolean>(false);
-    private touchTimeout = signal<NodeJS.Timeout|null>(null);
-    public readonly isHolding = computed<boolean>(() => this.touchTimeout() !== null);
+    public readonly isHolding = signal<boolean>(false);
+
+    private readonly menuTrigger = viewChild.required(MatMenuTrigger);
+    private openKebabMenu() {
+        this.menuTrigger().openMenu();
+    }
+
+    private skipNextClickTrigger: boolean = false;
+    private readonly touchTimeout = signal<NodeJS.Timeout|null>(null);
+    private readonly ensureIsHoldingFlips = effect(() => {
+        if (this.touchTimeout() === null) {
+            this.isHolding.set(false);
+        }
+    });
 
     /**
      * Get some of the internal properties of this card as an object instance.
@@ -127,12 +136,26 @@ export class CardComponent {
                 event.preventDefault();
             }
         }
+        
+        this.isHolding.set(true);
+        if (!this.skipNextClickTrigger) {
+            this.skipNextClickTrigger = true;
+        }
 
         if ('vibrate' in navigator) {
             navigator.vibrate(30);
         }
 
-        this.selected();
+        if (!this.isSelected()) {
+            this.selected();
+        }
+        else {
+            this.openKebabMenu();
+            this.touchEnd();
+            if (this.skipNextClickTrigger === true) {
+                this.skipNextClickTrigger = false;
+            }
+        }
 
         this.onHeld.emit(
             this.cardDetails()
@@ -148,9 +171,6 @@ export class CardComponent {
      */
     public readonly clicked = (event?: Event): void => {
         console.log('clicked', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
-        if (this.isHolding()) {
-            return;
-        }
 
         let specialClicked = false;
         if (event) {
@@ -163,6 +183,11 @@ export class CardComponent {
                 ('shiftKey' in event && event.shiftKey === true) ||
                 ('controlKey' in event && event.controlKey === true)
             );
+        }
+
+        if (this.skipNextClickTrigger === true) {
+            this.skipNextClickTrigger = false;
+            return;
         }
 
         if (this.selectionState().selectModeActive || specialClicked) {
