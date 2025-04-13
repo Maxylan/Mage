@@ -9,6 +9,7 @@
         <input
             matInput
             color="secondary"
+            (blur)="triggerSearch()"
             name="search-photos-input"
             aria-label="Search Photos Input"
             placeholder="Search for Photos!"
@@ -17,12 +18,14 @@
     </mat-form-field>
     <photo-tags-input 
         aria-label="Search Photos With Tags Input"
+        (blur)="triggerSearch()"
         [(tags)]="tags"
     />
     <button
         mat-icon-button
         class="search-submit"
         aria-label="Icon submit search button"
+        (click)="triggerSearch()"
         type="submit"
     >
         <mat-icon

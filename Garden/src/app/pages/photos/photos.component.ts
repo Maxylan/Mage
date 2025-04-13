@@ -124,7 +124,6 @@ export class PhotosComponent {
                         }
                     }
                     
-                    console.debug(store);
                     return store;
                 })
             })

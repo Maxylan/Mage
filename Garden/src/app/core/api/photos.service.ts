@@ -176,7 +176,14 @@ export class PhotosService extends ApiBase {
         }
 
         return await this.get(queryParameters)
-            .then(res => res.json())
+            .then(res => {
+                if ('json' in res) {
+                    return res.json()
+                }
+
+                console.warn('getPhotos recieved a bad response!', res);
+                return Promise.resolve([]);
+            })
             .catch(
                 err => {
                     console.error('[getPhotos] Error!', err);

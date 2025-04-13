@@ -78,7 +78,6 @@ export class CardComponent {
      * Callback firing when this card starts to get touched
      */
     public readonly touchStart = (event?: Event): void => {
-        console.log('touchStart', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
         if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
@@ -104,7 +103,6 @@ export class CardComponent {
      * Callback firing when this card siezes to be touched
      */
     public readonly touchEnd = (event?: Event): void => {
-        console.log('touchEnd', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
         if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
@@ -130,7 +128,6 @@ export class CardComponent {
      * Callback firing when this card gets held
      */
     public readonly held = (event?: Event): void => {
-        console.log('held', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
         if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
@@ -170,8 +167,6 @@ export class CardComponent {
      * Callback firing when this card gets clicked
      */
     public readonly clicked = (event?: Event): void => {
-        console.log('clicked', event, 'selected', this.isSelected(), 'selectMode', this.selectionState().selectModeActive);
-
         let specialClicked = false;
         if (event) {
             if ('preventDefault' in event) {

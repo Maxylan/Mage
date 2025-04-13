@@ -1,4 +1,8 @@
-<photos-toolbar (onSearch)="search($event)"/>
+<photos-toolbar
+    (onSearch)="search($event)"
+    [limit]="photoStore().pageSize"
+    [offset]="photoStore().pageSize * photoStore().currentPage"
+/>
 <div class="photos-container">
     @if (!isLoadingPhotos() && !photoStore().pageSize) {
         <p>
