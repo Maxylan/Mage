@@ -53,7 +53,7 @@ export class PhotoCardComponent {
             .then(buffer => {
                 this.imageContentLength.set(buffer.byteLength);
                 this.image.set(
-                    `data:${this.imageContentType};base64,` + // ..i wonder, at what point is @ts-ignore acceptable :p
+                    `data:${this.imageContentType()};base64,` + // ..i wonder, at what point is @ts-ignore acceptable :p
                     (new Uint8Array(buffer) as Uint8Array & { toBase64: () => string|null}).toBase64()
                 );
             })

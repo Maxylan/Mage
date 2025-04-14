@@ -266,16 +266,18 @@ export class PhotosService extends ApiBase {
         };
 
         return await this.get(`/${dimensionParameter}/${photoId}/blob`)
-            .then(
-                res => {
-                    blobResponse.contentType = 
-                        res.headers.get('Content-Type') || res.headers.get('content-type');
-                    blobResponse.contentLength =
-                        res.headers.get('Content-Length') || res.headers.get('content-length');
-                    
-                    return res.blob();
+            .then(res => {
+                if (!res) {
+                    return Promise.reject(res);
                 }
-            )
+
+                blobResponse.contentType = 
+                    res.headers.get('Content-Type') || res.headers.get('content-type');
+                blobResponse.contentLength =
+                    res.headers.get('Content-Length') || res.headers.get('content-length');
+                
+                return res.blob();
+            })
             .then(blob => {
                 blobResponse.file = new File([blob], `${dimensionParameter}_${photoId}`);
                 return blobResponse;

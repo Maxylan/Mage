@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { IPhotoQueryParameters } from '../../../core/types/photos.types';
@@ -13,7 +13,7 @@ import { MatInput } from '@angular/material/input';
 import { MatChip } from '@angular/material/chips';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { last, map } from 'rxjs';
 
 @Component({
     selector: 'photos-toolbar',
@@ -60,25 +60,23 @@ export class PhotoToolbarComponent {
         this.route.queryParamMap.pipe(
             map(params => {
                 let query: IPhotoQueryParameters = {
-                    search: this.searchControl?.value || '',
+                    search: this.searchControl.value?.trim()?.normalize() || '',
                     offset: this.searchOffset(),
                     limit: this.searchLimit(),
                     tags: this.tags()
                 };
 
-                let searchValue = this.searchControl
-                    ?.value
-                    ?.trim()
-                    ?.normalize();
+                if (params.get('search')) {
+                    let searchParameter = this.urlEncoder.encodeValue(
+                        params.get('search')?.trim()?.normalize() || ''
+                    );
 
-                if (searchValue) {
-                    query.search = searchValue;
-                }
-                else if (params.get('search')) {
-                    query.search = this.urlEncoder.encodeValue(params.get('search') || '');
+                    if (query.search !== searchParameter) {
+                        this.searchControl.setValue(searchParameter);
+                    }
                 }
 
-                let tags = this.tags().map(
+                /* let tags = this.tags().map(
                     tag => this.urlEncoder.encodeValue(
                         tag?.trim()?.normalize()
                     )
@@ -86,7 +84,7 @@ export class PhotoToolbarComponent {
 
                 if (tags.length) {
                     query.tags = tags;
-                }
+                } */
 
                 if (params.has('slug')) {
                     query.slug = this.urlEncoder.encodeValue(params.get('slug') || '');
@@ -98,7 +96,12 @@ export class PhotoToolbarComponent {
                     query.summary = this.urlEncoder.encodeValue(params.get('summary') || '');
                 }
                 if (params.has('tags')) {
-                    query.tags = (params.getAll('tags') || []).map(this.urlEncoder.encodeValue);
+                    let tagParameters = this.urlEncoder.decodeValue(params.get('tags') || '').split(',');
+                    console.log('tags', tagParameters);
+
+                    if (query.tags !== tagParameters) {
+                        this.tags.set(tagParameters);
+                    }
                 }
                 if (params.has('offset')) {
                     let offsetParam: string | number = params.get('offset') || 0;
@@ -122,22 +125,53 @@ export class PhotoToolbarComponent {
                 }
 
                 return query;
-            })
+            }),
+            last()
         )
     );
 
     /**
-     * Computes state into search-query parameters and emits `this.searchEvent`.
+     * Compute Query Parameters into a supported `IPhotoQueryParameters` collection.
+     * Also computes Parameters into URL Query parameters.
      */
-    public triggerSearch() {
-        const parameters: IPhotoQueryParameters = this.queryParameters() || {
-            search: this.searchControl.value || '',
-            tags: this.tags() || [],
+    private readonly computeSearchParameters = (): IPhotoQueryParameters => {
+        let parameters: IPhotoQueryParameters = {
+            ...this.queryParameters(),
             offset: this.searchOffset(),
-            limit: this.searchLimit()
+            limit: this.searchLimit(),
+            tags: this.tags()
         };
 
-        if (this.lastParameters() === parameters) {
+        if (this.searchControl.value) {
+            parameters.search = this.searchControl.value;
+        }
+
+        const queryParameters = new URL('?' + Object.entries(parameters).map(kvp => {
+            if (!Array.isArray(kvp) || kvp.length < 2) {
+                return null;
+            }
+
+            let [ key, value ] = kvp;
+            key = this.urlEncoder.encodeKey(key);
+            value = this.urlEncoder.encodeValue(value);
+            if (!key || !value) {
+                return null;
+            }
+
+            return `${key}=${value}`;
+        }).filter(kvp => !!kvp).join('&'), window.location.href);
+        
+        window.history.replaceState(null, '', queryParameters);
+        return parameters;
+    }
+
+    /**
+     * Computes state into search-query parameters and emits `this.searchEvent`.
+     */
+    public readonly triggerSearch = () => {
+        const parameters = this.computeSearchParameters();
+
+        if (untracked(this.lastParameters) === parameters) {
             return;
         }
 
@@ -153,31 +187,5 @@ export class PhotoToolbarComponent {
     /**
      * Initial search..
      */
-    ngOnInit() {
-        this.triggerSearch();
-    }
-
-    /**
-     * Computes `IPhotoQueryParameters` into URL Query parameters.
-     * Effect listens to `this.lastParameters()`..
-     */
-    public updateQueryParameters = effect(() => {
-        const parameters: IPhotoQueryParameters = this.lastParameters() || {
-            search: this.searchControl.value || '',
-            offset: this.searchOffset(),
-            limit: this.searchLimit(),
-            tags: this.tags() || []
-        };
-
-        const queryParameters = new URL('?' + Object.entries(parameters).map(kvp => {
-            const
-                key = this.urlEncoder.encodeKey(kvp[0]),
-                value = this.urlEncoder.encodeValue(kvp[1]);
-            return `${key}=${value}`;
-        }).join('&'), window.location.href);
-
-        console.log('query', queryParameters);
-        
-        window.history.replaceState(null, '', queryParameters);
-    });
+    private readonly initialSearch = effect(this.triggerSearch);
 }
