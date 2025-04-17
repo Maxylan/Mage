@@ -17,6 +17,8 @@ using System.Text;
 using System.Net;
 using Reception.Constants;
 using System.Linq.Expressions;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Reception.Services;
 
@@ -24,7 +26,8 @@ public class PhotoService(
     MageDbContext db,
     ILoggingService logging,
     IHttpContextAccessor contextAccessor,
-    ITagService tagService
+    ITagService tagService,
+    IIntelligenceService ai
 ) : IPhotoService
 {
     #region Get base filepaths.
@@ -709,6 +712,7 @@ public class PhotoService(
         MultipartSection? section;
 
         List<PhotoCollection> photos = [];
+        List<Task> analysis = [];
         uint iteration = 0u;
         do
         {
@@ -734,8 +738,8 @@ public class PhotoService(
                     newPhoto = await UploadSinglePhoto(
                         options,
                         contentDisposition,
-                           section!,
-                          user
+                        section!,
+                        user
                     );
 
                     if (newPhoto is null)
@@ -757,6 +761,18 @@ public class PhotoService(
                            })
                          .SaveAsync();
                     continue;
+                }
+
+                // Fire a query to the AI in-parallell to the rest of our operations.
+                // These take a while, so it would be awesome if we could "fire-and-forget"-them in a non-blocking way.
+                if (newPhoto.Filepaths.Any(p => p.Dimension == Dimension.THUMBNAIL))
+                {
+                    analysis.Add(
+                        ai.InferThumbnailImage(newPhoto)
+                            .ContinueWith(
+                                imageAnalysis => this.ApplyPhotoAnalysis(imageAnalysis, newPhoto)
+                            )
+                    );
                 }
 
                 if (newPhoto.Id == default)
@@ -834,6 +850,15 @@ public class PhotoService(
             }
         }
         while (section is not null && ++iteration < 4096u);
+
+        if (analysis.Any()) {
+            await logging
+                .Action(nameof(UploadPhotos))
+                .InternalInformation($"Performing '{analysis.Count()}' analysis")
+                .SaveAsync();
+
+            Task.WaitAll(analysis.ToArray());
+        }
 
         return new CreatedAtActionResult(null, null, null, photos);
     }
@@ -1414,6 +1439,177 @@ public class PhotoService(
         options.Slug = null;
         options.Title = null;
         options.Tags = null;
+
+        return photo;
+    }
+    #endregion
+
+    #region AI Analysis
+    /// <summary>
+    /// tbd
+    /// </summary>
+    /// <remarks>
+    /// tbd
+    /// </remarks>
+    /// <returns><see cref="PhotoCollection"/></returns>
+    public async Task<ActionResult<PhotoEntity>> ApplyPhotoAnalysis(
+        Task<ActionResult<OllamaResponse>> imageAnalysisTask,
+        PhotoEntity photo
+    ) {
+        var imageAnalysis = await imageAnalysisTask;
+        OllamaResponse? analysis = imageAnalysis.Value;
+
+        if (analysis is null) {
+            return imageAnalysis.Result!;
+        }
+
+        // Since we're dealing with concurrency here, start with a "does this even exist?"-sanity-check..
+        bool photoStillExists = await db.Photos.AnyAsync(entity => entity.Id == photo.Id);
+        if (!photoStillExists) {
+            string message = $"Failed to apply analysis of photo '{photo.Slug}' (#{photo.Id}) no longer exists?";
+            await logging
+                .Action(nameof(ApplyPhotoAnalysis))
+                .InternalWarning(message)
+                .SaveAsync();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        JsonObject analysisResponse;
+        try {
+            JsonNode? analysisAsJson = JsonNode.Parse(analysis.Response);
+            if (analysisAsJson is null) {
+                string message = $"Failed to analyze photo '{photo.Slug}' (#{photo.Id}), could not parse the LLM's 'response': '{analysis.Response}'";
+                await logging
+                    .Action(nameof(ApplyPhotoAnalysis))
+                    .InternalWarning(message)
+                    .SaveAsync();
+
+                return photo;
+            }
+
+            analysisResponse = analysisAsJson.AsObject();
+        }
+        catch (JsonException ex) {
+            string message = $"Failed to analyze photo '{photo.Slug}' (#{photo.Id}), cought a '{nameof(JsonException)}' attempting to parse the LLM's 'response': '{analysis.Response}'";
+            await logging
+                .Action(nameof(ApplyPhotoAnalysis))
+                .InternalError(message, opts => {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return photo;
+        }
+
+        // Since we're dealing with concurrency here, ensure we're operating on the latest values found in the database..
+        try {
+            await db.Photos.Entry(photo).ReloadAsync();
+        }
+        catch (Exception ex) {
+            string message = $"Failed to analyze photo '{photo.Slug}' (#{photo.Id}), cought a '{ex.GetType().FullName}' attempting to fetch latest values of the photo from the database.";
+            await logging
+                .Action(nameof(ApplyPhotoAnalysis))
+                .InternalError(message, opts => {
+                    opts.Exception = ex;
+                })
+                .SaveAsync();
+
+            return photo;
+        }
+
+        if (analysisResponse.ContainsKey("summary") &&
+            analysisResponse.TryGetPropertyValue("summary", out var summaryNode) &&
+            summaryNode is not null
+        ) {
+            string? summary = null;
+            try {
+                summary = summaryNode.GetValue<string>();
+            }
+            catch (Exception ex) {
+                string message = $"Failed to get 'summary' from photo analysis. {ex.GetType().FullName} '{ex.Message}'";
+                logging
+                    .Action(nameof(ApplyPhotoAnalysis))
+                    .InternalWarning(message);
+            }
+
+            if (!string.IsNullOrWhiteSpace(summary)) {
+                if (!string.IsNullOrWhiteSpace(photo.Summary)) {
+                    summary += " - " + photo.Summary;
+                }
+
+                photo.Summary = summary;
+            }
+        }
+
+        if (analysisResponse.ContainsKey("description") &&
+            analysisResponse.TryGetPropertyValue("description", out var descriptionNode) &&
+            descriptionNode is not null
+        ) {
+            string? description = null;
+            try {
+                description = descriptionNode.GetValue<string>();
+            }
+            catch (Exception ex) {
+                string message = $"Failed to get 'description' from photo analysis. {ex.GetType().BaseType} '{ex.Message}'";
+                logging
+                    .Action(nameof(ApplyPhotoAnalysis))
+                    .InternalWarning(message);
+            }
+
+            if (!string.IsNullOrWhiteSpace(description)) {
+                if (!string.IsNullOrWhiteSpace(photo.Description)) {
+                    description += " - " + photo.Description;
+                }
+
+                photo.Description = description;
+            }
+        }
+
+        if (analysisResponse.ContainsKey("tags") &&
+            analysisResponse.TryGetPropertyValue("tags", out var tagsNode) &&
+            tagsNode is not null
+        ) {
+            string[]? tags = null;
+            try {
+                tags = tagsNode.GetValue<string[]>();
+            }
+            catch (Exception ex) {
+                string message = $"Failed to get 'tags' from photo analysis. {ex.GetType().BaseType} '{ex.Message}'";
+                logging
+                    .Action(nameof(ApplyPhotoAnalysis))
+                    .InternalWarning(message);
+            }
+
+            if (tags is not null) {
+                for (int i = 0; i < tags.Length; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(tags[i])) {
+                        continue;
+                    }
+                    photo.Tags.Add(new() {
+                        Name = tags[i]
+                    });
+                }
+            }
+        }
+
+        try {
+            db.Update(photo);
+
+            logging
+                .Action(nameof(ApplyPhotoAnalysis))
+                .InternalInformation($"{nameof(PhotoEntity)} '{photo.Slug}' (#{photo.Id}) was just analyzed.");
+
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex) {
+            string message = $"Failed to save post-analysis updates to photo '{photo.Slug}' (#{photo.Id}). {ex.GetType().BaseType} '{ex.Message}'";
+            await logging
+                .Action(nameof(ApplyPhotoAnalysis))
+                .InternalWarning(message)
+                .SaveAsync();
+        }
 
         return photo;
     }

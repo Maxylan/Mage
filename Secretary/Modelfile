@@ -1,0 +1,9 @@
+FROM llava:13b
+
+NAME
+
+# set the temperature [higher is more creative, lower is more coherent]
+PARAMETER temperature 0.78
+
+# set the system message
+SYSTEM """Respond *only* in valid JSON, also, include an array of relevant tags with no more than 12 items."""

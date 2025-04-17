@@ -2,9 +2,12 @@
 networks:
   magenet:
     driver: bridge
+  mage-inet:
+    driver: none
 
 volumes:
   mage.db_data:
+  mage.ollama_data:
 
 services:
   mage.storage: # Postgresql Database
@@ -45,9 +48,38 @@ services:
       TZ: "Europe/Stockholm"
     networks:
       - magenet
-    expose:
+    ports:
       - "${WINDOW_PORT}"
       - "8080"
+
+  mage.secretary: # ollama
+    container_name: "${SECRETARY_NAME}"
+    restart: unless-stopped
+    image: ollama/ollama:latest
+    # command: [ "serve", "deepseek-r1" ]
+    # command: [ "serve", "&&", "create", "mario", "-f", "/root/Modelfile" ]
+    command: [ "serve" ]
+    volumes:
+      - "${SECRETARY_MOUNT_POINT}/Modelfile:/root/Modelfile"
+      - "mage.ollama_data:/root/.ollama"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+              driver: nvidia
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      SECRETARY_NAME: "${SECRETARY_NAME}"
+      OLLAMA_TIMEOUT: 30
+    env_file:
+      - "${STORAGE_CONFIGURATION_FILE}"
+    networks:
+      - magenet
+      # - mage-inet
+    expose:
+      - "11434"
 
   mage.reception: # ASP.NET 8.0 Backend
     container_name: "${RECEPTION_NAME}"
@@ -68,6 +100,8 @@ services:
       RECEPTION_BLOB_STORAGE_FOLDER: "${RECEPTION_BLOB_STORAGE_FOLDER}"
       RECEPTION_BLOB_STORAGE: "${RECEPTION_VOLUME_TARGET}/${RECEPTION_BLOB_STORAGE_FOLDER}"
       RECEPTION_URL: "http://${RECEPTION_NAME}:${RECEPTION_PORT}"
+      SECRETARY_BASE_PATH: "${SECRETARY_BASE_PATH}"
+      SECRETARY_URL: "http://${SECRETARY_NAME}:${SECRETARY_PORT}"
       GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
       GUARD_URL: "http://${GUARD_NAME}:${GUARD_PORT}"
       STORAGE_URL: "${STORAGE_NAME}:${STORAGE_PORT}"
@@ -127,6 +161,9 @@ services:
       GARDEN_PORT: "${GARDEN_PORT}"
       GARDEN_BASE_PATH: "${GARDEN_BASE_PATH}"
       GARDEN_URL: "http://${GARDEN_NAME}:${GARDEN_PORT}"
+      SECRETARY_PORT: "${SECRETARY_PORT}"
+      SECRETARY_BASE_PATH: "${SECRETARY_BASE_PATH}"
+      SECRETARY_URL: "http://${SECRETARY_NAME}:${SECRETARY_PORT}"
       GUARD_NAME: "${GUARD_NAME}"
       GUARD_PORT: "${GUARD_PORT}"
       GUARD_VERSION: "${GUARD_VERSION}"

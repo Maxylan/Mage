@@ -10,4 +10,5 @@ public static class ControllerTags
     public const string CATEGORIES = "Categories";
     public const string PHOTOS_ENTITIES = "Photos";
     public const string PHOTOS_FILES = "Files";
+    public const string AI = "Artificial Intelligence";
 }
