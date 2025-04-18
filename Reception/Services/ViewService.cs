@@ -239,7 +239,7 @@ public class ViewService(
                 .SaveAsync();
 
             // Get & Return the requested `Photo`..
-            return await blobs.GetBlob(dimension, new(link.Photo, dimension));
+            return await blobs.GetBlob(dimension, link.Photo);
         }
         catch (DbUpdateException ex)
         {

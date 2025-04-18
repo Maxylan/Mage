@@ -25,7 +25,7 @@ public sealed class Program
     public static string? ApiUrl => System.Environment.GetEnvironmentVariable("APP_URL") ?? ApiInternalUrl;
 
     public static string SecretaryName => System.Environment.GetEnvironmentVariable("SECRETARY_BASE_PATH") ?? "/secretary";
-    public static string SecretaryUrl => (System.Environment.GetEnvironmentVariable("SECRETARY_URL") ?? "http://localhost") + SecretaryName;
+    public static string SecretaryUrl => (System.Environment.GetEnvironmentVariable("SECRETARY_URL") ?? "http://localhost");
 
     public static string Environment => (
         System.Environment.GetEnvironmentVariable("RECEPTION_ENVIRONMENT") ??
@@ -137,6 +137,7 @@ public sealed class Program
         builder.Services.AddScoped<IAlbumService, AlbumService>();
         builder.Services.AddScoped<ICategoryService, CategoryService>();
         builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
+        builder.Services.AddScoped<IPhotoStreamingService, PhotoStreamingService>();
 
         var app = builder.Build();
 

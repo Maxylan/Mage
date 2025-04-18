@@ -20,7 +20,12 @@ public interface IBlobService
     public virtual Task<ActionResult> GetSourceBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo);
-        return GetBlob(Dimension.SOURCE, photo);
+
+        if (photo.Dimension != Dimension.SOURCE) {
+            throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.SOURCE.ToString()}'");
+        }
+
+        return GetBlob(photo);
     }
 
     /// <summary>
@@ -37,7 +42,12 @@ public interface IBlobService
     public virtual Task<ActionResult> GetMediumBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo);
-        return GetBlob(Dimension.MEDIUM, photo);
+
+        if (photo.Dimension != Dimension.MEDIUM) {
+            throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.MEDIUM.ToString()}'");
+        }
+
+        return GetBlob(photo);
     }
 
     /// <summary>
@@ -54,8 +64,13 @@ public interface IBlobService
     public virtual Task<ActionResult> GetThumbnailBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo);
-        return GetBlob(Dimension.THUMBNAIL, photo);
+        if (photo.Dimension != Dimension.THUMBNAIL) {
+            throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.THUMBNAIL.ToString()}'");
+        }
+
+        return GetBlob(photo);
     }
+
 
     /// <summary>
     /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
@@ -63,5 +78,11 @@ public interface IBlobService
     /// <remarks>
     /// <paramref name="dimension"/> Controls what image size is returned.
     /// </remarks>
-    public abstract Task<ActionResult> GetBlob(Dimension dimension, Photo photo);
+    public Task<ActionResult> GetBlob(Dimension dimension, PhotoEntity entity) =>
+        this.GetBlob(new Photo(entity, dimension));
+
+    /// <summary>
+    /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
+    /// </summary>
+    public abstract Task<ActionResult> GetBlob(Photo photo);
 }

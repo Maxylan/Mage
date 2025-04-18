@@ -9,7 +9,7 @@ public interface IIntelligenceService
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="PhotoEntity"/> (blob)
     /// </summary>
-    public abstract Task<ActionResult<OllamaResponse>> InferSourceImage(uint photoId);
+    public abstract Task<ActionResult<OllamaResponse>> InferSourceImage(int photoId);
 
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="PhotoEntity"/> (blob)
@@ -20,7 +20,7 @@ public interface IIntelligenceService
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="PhotoEntity"/> (blob)
     /// </summary>
-    public abstract Task<ActionResult<OllamaResponse>> InferMediumImage(uint photoId);
+    public abstract Task<ActionResult<OllamaResponse>> InferMediumImage(int photoId);
 
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="PhotoEntity"/> (blob)
@@ -31,7 +31,7 @@ public interface IIntelligenceService
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="PhotoEntity"/> (blob)
     /// </summary>
-    public abstract Task<ActionResult<OllamaResponse>> InferThumbnailImage(uint photoId);
+    public abstract Task<ActionResult<OllamaResponse>> InferThumbnailImage(int photoId);
 
     /// <summary>
     /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="PhotoEntity"/> (blob)

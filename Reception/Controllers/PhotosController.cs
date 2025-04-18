@@ -17,6 +17,7 @@ namespace Reception.Controllers;
 [Produces("application/json")]
 public class PhotosController(
     IPhotoService handler,
+    IPhotoStreamingService photoStreaming,
     ITagService tagService,
     IBlobService blobs
 ) : ControllerBase
@@ -423,7 +424,7 @@ public class PhotosController(
         [FromQuery] string? summary = null,
         [FromQuery] string[]? tags = null
     */) =>
-        await handler.UploadPhotos(/* opts => {
+        await photoStreaming.UploadPhotos(/* opts => {
             opts.Title = title;
             opts.Summary = summary;
             opts.Tags = tags;

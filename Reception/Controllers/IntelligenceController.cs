@@ -26,7 +26,7 @@ public class IntelligenceController(IIntelligenceService handler) : ControllerBa
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<ActionResult> InferSourceImage(uint photoId) =>
+    public async Task<ActionResult<OllamaResponse>> InferSourceImage(int photoId) =>
         await handler.InferSourceImage(photoId);
 
     /// <summary>
@@ -38,7 +38,7 @@ public class IntelligenceController(IIntelligenceService handler) : ControllerBa
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<ActionResult> InferMediumImage(uint photoId) =>
+    public async Task<ActionResult<OllamaResponse>> InferMediumImage(int photoId) =>
         await handler.InferMediumImage(photoId);
 
     /// <summary>
@@ -50,7 +50,7 @@ public class IntelligenceController(IIntelligenceService handler) : ControllerBa
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<ActionResult> InferThumbnailImage(uint photoId) =>
+    public async Task<ActionResult<OllamaResponse>> InferThumbnailImage(int photoId) =>
         await handler.InferThumbnailImage(photoId);
 
 
@@ -64,6 +64,6 @@ public class IntelligenceController(IIntelligenceService handler) : ControllerBa
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<ActionResult> Chat(string prompt, string model) =>
+    public async Task<ActionResult<OllamaResponse>> Chat(string prompt, string model) =>
         await handler.Chat(prompt, model);
 }
