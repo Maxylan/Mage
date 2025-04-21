@@ -1,5 +1,3 @@
-﻿using System.Collections.Generic;
-using System;
 using System.Text;
 using Npgsql.NameTranslation;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +9,41 @@ namespace Reception.Services;
 
 public partial class MageDbContext : DbContext
 {
+    private (CancellationTokenSource, CancellationToken) cancelOnDispose;
+
     public MageDbContext()
-    { }
+    {
+        CancellationTokenSource source = new();
+        CancellationToken token = source.Token;
+        this.cancelOnDispose = (
+            source,
+            token
+        );
+    }
 
     public MageDbContext(DbContextOptions<MageDbContext> options)
-        : base(options) { }
+        : base(options) {
+        CancellationTokenSource source = new();
+        CancellationToken token = source.Token;
+        this.cancelOnDispose = (
+            source,
+            token
+        );
+    }
+
+    public override void Dispose() {
+        this.cancelOnDispose.Item1.Cancel();
+        base.Dispose();
+    }
+
+    public override ValueTask DisposeAsync() {
+        this.cancelOnDispose.Item1.Cancel();
+        return base.DisposeAsync();
+    }
+
+    public CancellationToken CancellationToken {
+        get => this.cancelOnDispose.Item2;
+    }
 
     public virtual DbSet<Account> Accounts { get; set; } = null!;
     public virtual DbSet<Album> Albums { get; set; } = null!;

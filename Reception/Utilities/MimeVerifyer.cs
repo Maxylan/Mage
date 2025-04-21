@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Net.Http.Headers;
 using SixLabors.ImageSharp.Formats;
+using System.Globalization;
 
 namespace Reception.Utilities;
 
@@ -298,13 +299,20 @@ public class MimeVerifyer : IImageFormatDetector
             }
         }
 
-        if (!filename.EndsWith(extension))
+        if (!filename.EndsWith(extension, true, CultureInfo.InvariantCulture))
         {
             throw new NotImplementedException("Filename does not end with the given extension!"); // TODO: HANDLE
         }
         if (!SupportedExtensions.Contains(extension))
-        {
-            throw new NotImplementedException($"File extension '{extension}' not supported!"); // TODO: HANDLE
+        {   // Ensure it isn't a poorly-formatted extension name preventing us from advancing..
+            extension = extension
+                .Normalize()
+                .Trim()
+                .ToLower();
+
+            if (!SupportedExtensions.Contains(extension)) {
+                throw new NotImplementedException($"File extension '{extension}' not supported!"); // TODO: HANDLE
+            }
         }
 
         int offset = (int)MagicNumbers[extension].Item1;
@@ -403,7 +411,7 @@ public class MimeVerifyer : IImageFormatDetector
         bool isGivenExtensionValid = ValidateContentType(filename, extension, stream);
         if (isGivenExtensionValid)
         {
-            return GetImageFormat(extension);
+            return GetImageFormat(extension.ToLower());
         }
         else if (Program.IsDevelopment)
         {

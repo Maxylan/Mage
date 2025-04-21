@@ -37,6 +37,11 @@ public interface ITagService
     public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(string[] tagNames);
 
     /// <summary>
+    /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (<see cref="Tag"/>[]) array.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(Tag[] tags);
+
+    /// <summary>
     /// Update the properties of the <see cref="Tag"/> with '<paramref ref="name"/>' (string), *not* its members (i.e Photos or Albums).
     /// </summary>
     public abstract Task<ActionResult<Tag>> UpdateTag(string existingTagName, MutateTag mut);

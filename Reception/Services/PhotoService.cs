@@ -638,11 +638,6 @@ public class PhotoService(
                     .ToArray();
             }
 
-            mut.Tags = mut.Tags
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Where(t => t.Length < 128)
-                .ToArray();
-
             if (mut.Tags.Length > 0)
             {
                 var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);

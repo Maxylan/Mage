@@ -1,12 +1,11 @@
 using System.ComponentModel.DataAnnotations;
-using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
 using Reception.Models.Entities;
 using Reception.Interfaces;
-using Reception.Utilities;
 using Reception.Constants;
 
 namespace Reception.Controllers;
@@ -413,6 +412,7 @@ public class PhotosController(
     /// Upload any amount of photos/files by streaming them one-by-one to disk.
     /// </summary>
     [HttpPost("upload")]
+    [RequestTimeout(milliseconds: 60000)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]

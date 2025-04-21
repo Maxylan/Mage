@@ -7,7 +7,7 @@ namespace Reception.Models;
 public class MutatePhoto : PhotoEntity
 {
     public new int? Id { get; set; }
-    public new string[]? Tags { get; set; }
+    public new Tag[]? Tags { get; set; }
 
     /*
     public string Slug { get; set; } = null!;

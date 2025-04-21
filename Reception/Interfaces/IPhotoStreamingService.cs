@@ -35,18 +35,4 @@ public interface IPhotoStreamingService
     /// <returns><see cref="PhotoCollection"/></returns>
     public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(PhotosOptions options);
     #endregion
-
-    #region AI Analysis
-    /// <summary>
-    /// tbd
-    /// </summary>
-    /// <remarks>
-    /// tbd
-    /// </remarks>
-    /// <returns><see cref="PhotoCollection"/></returns>
-    public abstract Task<ActionResult<PhotoEntity>> ApplyPhotoAnalysis(
-        Task<ActionResult<OllamaResponse>> imageAnalysisTask,
-        PhotoEntity photo
-    );
-    #endregion
 }

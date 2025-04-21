@@ -225,34 +225,81 @@ public class TagService(
                 .ToArray();
         }
 
-        List<Tag> validTags = [];
-        int successfullyAddedTags = 0;
-        string[] validTagNames = tagNames
-            .Where(t => !string.IsNullOrWhiteSpace(t))
-            .Where(t => t.Length < 128)
-            .Select(t => t.Normalize().Trim())
+        Tag[] tags = tagNames
+            .Where(tn => !string.IsNullOrWhiteSpace(tn))
+            .Where(tn => tn.Length < 128)
+            .Distinct()
+            .Select(tn => tn.Normalize().Trim())
+            .Select(tn => tn.Replace(' ', '-'))
+            .Select(tn => new Tag() { Name = tn })
             .ToArray();
 
-        if (validTagNames.Length == 0) {
-            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        return await this.CreateTags(tags);
+    }
+
+    /// <summary>
+    /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (<see cref="Tag"/>[]) array.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> CreateTags(Tag[] tags)
+    {
+        if (tags.Length > 9999)
+        {
+            tags = tags
+                .Take(9999)
+                .ToArray();
         }
 
-        foreach(string name in validTagNames)
+        int successfullyAddedTags = 0;
+        int successfullyUpdatedTags = 0;
+        Tag[] validTags = tags
+            .Where(tag => !string.IsNullOrWhiteSpace(tag.Name) && tag.Name.Length < 128)
+            .Where(tag => string.IsNullOrEmpty(tag.Description) || tag.Description.Length < 512)
+            .Distinct()
+            .ToArray();
+
+        for (int i = 0; i < validTags.Length; i++)
         {
-            Tag? existingTag = await db.Tags.FirstOrDefaultAsync(t => t.Name == name);
+            validTags[i].Name = validTags[i].Name
+                .Normalize()
+                .Trim()
+                .Replace(' ', '-');
+
+            Tag? existingTag = await db.Tags.FirstOrDefaultAsync(t => t.Name == validTags[i].Name);
+
+            if (!string.IsNullOrEmpty(validTags[i].Description))
+            {
+                validTags[i].Description = validTags[i].Description!
+                    .Normalize()
+                    .Trim()
+                    .Replace(' ', '-');
+
+                if (existingTag is not null &&
+                    existingTag.Description != validTags[i].Description
+                ) {
+                    existingTag.Description = validTags[i].Description;
+                    db.Tags.Update(validTags[i]);
+                    successfullyUpdatedTags++;
+                }
+            }
 
             if (existingTag is not null)
             {
-                validTags.Add(existingTag);
-                continue;
+                validTags[i] = existingTag;
             }
-
-            validTags.Add(new Tag() { Name = name });
-            db.Tags.Add(validTags[^1]);
-            successfullyAddedTags++;
+            else
+            {
+                db.Tags.Add(validTags[i]);
+                successfullyAddedTags++;
+            }
         }
 
-        if (successfullyAddedTags <= 0) {
+        if (validTags.Length == 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        if (successfullyAddedTags <= 0 ||
+            successfullyUpdatedTags <= 0
+        ) {
             return validTags;
         }
 
@@ -262,7 +309,7 @@ public class TagService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to add {validTags.Count} new tags. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to add/update '{validTags.Length}' new tags. ";
             await logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + " " + updateException.Message, opts =>
@@ -281,7 +328,7 @@ public class TagService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add {validTags.Count} new tags. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add/upate '{validTags.Length}' new tags. ";
             await logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + " " + ex.Message, opts =>
