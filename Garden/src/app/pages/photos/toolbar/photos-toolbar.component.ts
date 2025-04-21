@@ -11,6 +11,7 @@ import { SelectionObserver } from '../selection-observer.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { MatInput } from '@angular/material/input';
 import { MatChip } from '@angular/material/chips';
+import { NgClass } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { last, map } from 'rxjs';
@@ -26,6 +27,7 @@ import { last, map } from 'rxjs';
         MatIconModule,
         MatIconButton,
         MatInput,
+        NgClass,
         MatChip
     ],
     templateUrl: 'photos-toolbar.component.html',
@@ -36,6 +38,8 @@ export class PhotoToolbarComponent {
     private readonly selectionObserver = inject(SelectionObserver);
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly route = inject(ActivatedRoute);
+
+    public readonly expandSearchForm = signal<boolean>(false);
 
     public readonly searchOffset = input<number>(0, { alias: 'offset' });
     public readonly searchLimit = input<number>(32, { alias: 'limit' });
@@ -188,4 +192,10 @@ export class PhotoToolbarComponent {
      * Initial search..
      */
     private readonly initialSearch = effect(this.triggerSearch);
+
+    /**
+     * Toggle `this.expandSearchForm`.
+     */
+    public readonly toggleExpand = () => 
+        this.expandSearchForm.update(status => !status);
 }

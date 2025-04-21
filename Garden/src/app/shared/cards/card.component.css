@@ -2,23 +2,26 @@ article {
     cursor: pointer;
     display: block;
     overflow: hidden; 
+    position: relative; 
     border: 1px solid rgba(0,0,0,0);
     border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
     transition-duration: .08s;
 }
 
 article:hover {
-    border-color: rgba(127,127,127,0.16);
+    background: rgba(127,127,127,0.08);
+    border-color: rgba(255,255,255,0.16);
     box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
 }
-article.selected {
-    border: 2px solid var(--mat-full-pseudo-checkbox-selected-icon-color);
-    border-radius: calc(var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium)) * 1.5);
-}
-article.holding {
+article.holding:hover {
     transition: var(--fbc-transition);
     transition-duration: .24s;
     scale: 1.1;
+}
+
+article.selected {
+    border: 2px solid var(--mat-full-pseudo-checkbox-selected-icon-color);
+    border-radius: calc(var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium)) * 1.5);
 }
 article.not-selected:hover {
     border: 2px dotted var(--mat-full-pseudo-checkbox-selected-icon-color) !IMPORTANT;

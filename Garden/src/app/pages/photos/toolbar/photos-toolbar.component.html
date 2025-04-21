@@ -1,6 +1,26 @@
+<div class="advanced-form" [ngClass]="expandSearchForm() ? 'expanded-toolbar':'hidden-toolbar'">
+    <photo-tags-input 
+        aria-label="Search Photos With Tags Input"
+        (blur)="triggerSearch()"
+        [(tags)]="tags"
+    />
+</div>
 <mat-toolbar>
-    <button mat-icon-button type="button" aria-label="Toggle sidenav" (click)="getNavbar()?.toggle()">
-        <mat-icon fontSet="hack" aria-label="Side nav toggle icon">󰍜</mat-icon>
+    <button
+        mat-icon-button
+        type="button"
+        class="toggle-navbar"
+        aria-label="Toggle sidenav"
+        (click)="getNavbar()?.toggle()"
+    >
+        <mat-icon
+            matPrefix
+            matIconPrefix
+            fontSet="hack"
+            aria-label="Side nav toggle icon"
+        >
+            󰍜
+        </mat-icon>
     </button>
     <mat-form-field
         class="search-bar"
@@ -17,11 +37,27 @@
             (blur)="triggerSearch()"
         />
     </mat-form-field>
-    <photo-tags-input 
-        aria-label="Search Photos With Tags Input"
-        (blur)="triggerSearch()"
-        [(tags)]="tags"
-    />
+    <button
+        mat-button
+        class="advanced-form-button"
+        (click)="toggleExpand()"
+    >
+        <mat-icon
+            matPrefix
+            matIconPrefix
+            fontSet="hack"
+            class="search-submit-button-icon"
+            aria-label="Search photos icon'"
+        >
+            @if (expandSearchForm()) {
+                
+            }
+            @else {
+                
+            }
+        </mat-icon>
+        Advanced
+    </button>
     <button
         mat-icon-button
         class="search-submit"
@@ -30,7 +66,8 @@
         type="submit"
     >
         <mat-icon
-            matSuffix
+            matPrefix
+            matIconPrefix
             fontSet="hack"
             class="search-submit-button-icon"
             aria-label="Search photos icon'"

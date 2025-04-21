@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
-import { MatRipple } from '@angular/material/core';
+import { MatRippleModule } from '@angular/material/core';
 import { NgClass } from '@angular/common';
 import { CardDetails } from './card.types';
 
@@ -16,10 +16,10 @@ import { CardDetails } from './card.types';
         CardMenuItemComponent,
         MatCheckboxModule,
         MatTooltipModule,
+        MatRippleModule,
         MatButtonModule,
         MatIconModule,
         MatMenuModule,
-        MatRipple,
         NgClass
     ],
     templateUrl: 'card.component.html',
@@ -53,7 +53,6 @@ export class CardComponent {
         this.menuTrigger().openMenu();
     }
 
-    private skipNextClickTrigger: boolean = false;
     private readonly touchTimeout = signal<NodeJS.Timeout|null>(null);
     private readonly ensureIsHoldingFlips = effect(() => {
         if (this.touchTimeout() === null) {
@@ -78,11 +77,11 @@ export class CardComponent {
      * Callback firing when this card starts to get touched
      */
     public readonly touchStart = (event?: Event): void => {
-        if (event) {
+        /* if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
-        }
+        } */
 
         if (this.touchTimeout() === null) {
             this.touchTimeout.set(
@@ -103,11 +102,11 @@ export class CardComponent {
      * Callback firing when this card siezes to be touched
      */
     public readonly touchEnd = (event?: Event): void => {
-        if (event) {
+        /* if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
-        }
+        } */
 
         const timeout = this.touchTimeout();
         if (timeout !== null) {
@@ -128,16 +127,13 @@ export class CardComponent {
      * Callback firing when this card gets held
      */
     public readonly held = (event?: Event): void => {
-        if (event) {
+        /* if (event) {
             if ('preventDefault' in event) {
                 event.preventDefault();
             }
-        }
+        } */
         
         this.isHolding.set(true);
-        if (!this.skipNextClickTrigger) {
-            this.skipNextClickTrigger = true;
-        }
 
         if ('vibrate' in navigator) {
             navigator.vibrate(30);
@@ -149,9 +145,6 @@ export class CardComponent {
         else {
             this.openKebabMenu();
             this.touchEnd();
-            if (this.skipNextClickTrigger === true) {
-                this.skipNextClickTrigger = false;
-            }
         }
 
         this.onHeld.emit(
@@ -167,11 +160,15 @@ export class CardComponent {
      * Callback firing when this card gets clicked
      */
     public readonly clicked = (event?: Event): void => {
+        if (this.isHolding() === true) {
+            return;
+        }
+
         let specialClicked = false;
         if (event) {
-            if ('preventDefault' in event) {
+            /* if ('preventDefault' in event) {
                 event.preventDefault();
-            }
+            } */
 
             specialClicked = (
                 ('ctrlKey' in event && event.ctrlKey === true) ||
@@ -180,12 +177,10 @@ export class CardComponent {
             );
         }
 
-        if (this.skipNextClickTrigger === true) {
-            this.skipNextClickTrigger = false;
-            return;
+        if (specialClicked && this.isSelected()) {
+            this.openKebabMenu();
         }
-
-        if (this.selectionState().selectModeActive || specialClicked) {
+        else if (this.selectionState().selectModeActive || specialClicked) {
             this.selected();
         }
 
