@@ -55,6 +55,14 @@
                 [isSelected]="isSelected()"
             />
         }
+        @if (hasDetails() && !selectionState().selectModeActive) {
+            <shared-card-menu-item
+                [key]="key() + '-summary'"
+                (onClick)="itemSummary()"
+                icon="" 
+                text="Summary"
+            />
+        }
         @if (linkUrl()) {
             <shared-card-menu-item
                 [key]="key() + '-link'"

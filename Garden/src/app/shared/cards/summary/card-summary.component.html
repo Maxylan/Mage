@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>{{cardDetails().title}}</h2>
+<mat-dialog-content>
+    @if(!imageIsLoading()) {
+        <mat-progress-bar
+            class="card-thumbnail-buffering"
+            [mode]="'buffer'"
+        />
+    }
+    @else {
+        <img mat-card-md-image 
+            no-drag="on"
+            draggable="false"
+            class="card-thumbnail"
+            [src]="base64()"
+            [alt]="alt()"
+        />
+        <mat-divider/>
+    }
+    <p>{{cardDetails().summary}}</p>
+    <mat-divider/>
+    <p>{{cardDetails().description}}</p>
+    <mat-divider/>
+    @for (tag of cardDetails().tags; track tag) {
+        <mat-chip>
+            {{tag}}
+        </mat-chip>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button
+        mat-button
+        cdkFocusInitial
+        aria-label="Close Dialog"
+    >
+        Back
+    </button>
+</mat-dialog-actions>

@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { SelectionObserver, SelectionState } from '../../pages/photos/selection-observer.component';
 import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -9,6 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
 import { NgClass } from '@angular/common';
 import { CardDetails } from './card.types';
+import { MatDialog } from '@angular/material/dialog';
+import { CardSummaryDialogComponent } from './summary/card-summary.component';
 
 @Component({
     selector: 'shared-card',
@@ -26,6 +28,8 @@ import { CardDetails } from './card.types';
     styleUrl: 'card.component.css'
 })
 export class CardComponent {
+    private readonly dialog = inject(MatDialog); // CardSummaryDialogComponent
+
     public readonly key = input.required<string>();
     public readonly title = input.required<string>();
     public readonly isHandset = input.required<boolean|undefined>();
@@ -44,7 +48,9 @@ export class CardComponent {
 
     public readonly shareUrl = input<string>();
     public readonly linkUrl = input<string>();
-    public readonly summary = input<string>();
+    public readonly summary = input<string|null>(null);
+    public readonly description = input<string|null>(null);
+    public readonly tags = input<string[]|null>(null);
 
     public readonly isHolding = signal<boolean>(false);
 
@@ -63,11 +69,29 @@ export class CardComponent {
     /**
      * Get some of the internal properties of this card as an object instance.
      */
-    public readonly cardDetails = computed<CardDetails>(() => ({
-        key: this.key(),
-        title: this.title(),
-        summary: this.summary() || null
-    }));
+    public readonly cardDetails = computed<CardDetails>(() => {
+        let tags = this.tags();
+        if (!Array.isArray(tags) || tags.length <= 0) {
+            tags = null;
+        }
+
+        return {
+            key: this.key(),
+            title: this.title(),
+            summary: this.summary() || null,
+            description: this.description() || null,
+            tags: tags
+        };
+    });
+    public readonly hasDetails = computed<boolean>(() => {
+        const details = this.cardDetails();
+        return !!(
+            details.summary || 
+            details.description || (
+                Array.isArray(details.tags) && details.tags.length >= 0
+            )
+        );
+    });
 
     /**
      * Emits when `{touchStart}`
@@ -212,6 +236,27 @@ export class CardComponent {
         this.onSelect.emit(
             this.cardDetails()
         );
+    }
+
+    /**
+     * Emits when `{itemSummary}` is triggered
+     */
+    public readonly showItemSummary = output<CardDetails>();
+    /**
+     * Callback firing when this card gets copied.
+     */
+    public readonly itemSummary = (): void => {
+        const state = this.selectionState();
+        if (!state) {
+            return;
+        }
+
+        const cardDetails = this.cardDetails();
+        this.showItemSummary.emit(cardDetails);
+
+        this.dialog.open(CardSummaryDialogComponent, {
+            data: cardDetails
+        });
     }
 
     /**
