@@ -4,20 +4,20 @@ import { SelectionObserver, SelectionState } from './selection-observer.componen
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { MatGridListModule } from '@angular/material/grid-list';
 import { PhotosService } from '../../core/api/photos.service';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map, shareReplay } from 'rxjs';
 import { PhotoCardComponent } from './photo-card/photo-card.component';
+import { NgClass } from '@angular/common';
 
 @Component({
     selector: 'page-list-photos',
     imports: [
-        MatGridListModule,
         PhotoToolbarComponent,
         PaginationComponent,
-        PhotoCardComponent
+        PhotoCardComponent,
+        NgClass
     ],
     providers: [
         HttpUrlEncodingCodec,
@@ -30,6 +30,11 @@ export class PhotosComponent {
     private readonly breakpointObserver = inject(BreakpointObserver);
     private readonly selectionObserver = inject(SelectionObserver);
     private readonly photoService = inject(PhotosService);
+
+    /**
+     * Output invoked when the navbar's open state changes.
+     */
+    public readonly navbarOpen = signal<boolean>(false);
 
     public readonly photoStore = signal(defaultPhotoPageContainer);
     public readonly selectionState = this.selectionObserver.State;

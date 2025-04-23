@@ -64,3 +64,7 @@ button.search-submit.mdc-icon-button mat-icon {
     text-align: left;
     /* left: 2px; */
 }
+.advanced-form-button.mat-mdc-button mat-icon.mat-icon {
+    width: 24px;
+    left: -2px;
+}

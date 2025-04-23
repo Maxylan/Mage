@@ -1,5 +1,5 @@
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { NavbarControllerService } from '../../../layout/navbar/navbar-controller.service';
+import { Component, effect, inject, input, model, output, signal, untracked } from '@angular/core';
+import { NavbarControllerService } from '../../../layout/nav/nav-controller.service';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { IPhotoQueryParameters } from '../../../core/types/photos.types';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -51,6 +51,7 @@ export class PhotoToolbarComponent {
     );
 
     public readonly getNavbar = this.navbarController.getNavbar;
+
     public readonly searchControl = new FormControl<string>('');
     public readonly tags = signal<string[]>([]);
 
@@ -184,7 +185,7 @@ export class PhotoToolbarComponent {
     };
 
     /**
-     * Callback invoked when a search-query is triggered.
+     * Output invoked when a search-query is triggered.
      */
     public readonly searchEvent = output<IPhotoQueryParameters>({ alias: 'onSearch' });
 
@@ -194,8 +195,25 @@ export class PhotoToolbarComponent {
     private readonly initialSearch = effect(this.triggerSearch);
 
     /**
+     * Output invoked when the navbar's open state changes.
+     */
+    public readonly navbarEvent = model<boolean>(false, { alias: 'onNavbarToggle' });
+
+    public readonly toggleNavbar = async (clickEvent: Event|null = null) => {
+        this.navbarEvent.set(!this.getNavbar()?.opened);
+        return this.getNavbar()?.toggle()
+    }
+        /* this.getNavbar()?.toggle().then(
+            () => this.navbarEvent.set(!!this.getNavbar()?.opened)
+        ); */
+
+    /**
      * Toggle `this.expandSearchForm`.
      */
     public readonly toggleExpand = () => 
         this.expandSearchForm.update(status => !status);
+    
+    public ngOnInit() {
+        this.navbarEvent.set(!!this.getNavbar()?.opened);
+    }
 }

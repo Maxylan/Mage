@@ -6,10 +6,13 @@ mat-toolbar button {
 }
 mat-toolbar mat-form-field {
   flex-grow: 1;
-  margin: 0 auto;
+  margin: 0 auto 0 0.64rem ;
 }
 .advanced-form-button {
-  margin: 0 1rem;
+  margin: 0 0.64rem;
+}
+.toggle-navbar {
+  margin-right: 0.64rem;
 }
 
 mat-form-field {
@@ -48,7 +51,7 @@ a.select-mode-display-chip {
   position: absolute;
   z-index: 10;
   left: 38%;
-  top: 3.33rem;
+  top: 4rem;
 }
 
 /* ..is now in global scope.. */
@@ -62,7 +65,8 @@ photo-tags-input {
 .advanced-form {
   top: -2rem;
   left: 1rem;
-  width: 24rem;
+  width: 32rem;
+  max-width: calc(100% - 4.8rem);
   padding: 1rem;
   position: absolute;
   border: 1px solid rgba(0,0,0,0);

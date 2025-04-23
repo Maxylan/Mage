@@ -1,35 +1,32 @@
 <photos-toolbar
     (onSearch)="search($event)"
+    [(onNavbarToggle)]="navbarOpen"
     [limit]="photoStore().pageSize"
     [offset]="photoStore().pageSize * photoStore().currentPage"
 />
-<div class="photos-container">
+<div
+    class="photos-container"
+    [ngClass]="isHandset() ? 'handset' : ''"
+>
     @if (!isLoadingPhotos() && !photoStore().pageSize) {
         <p>
           photos works but no photos was fetched!
         </p>
     }
-    <mat-grid-list
-        [cols]="isHandset() ? 4 : 8"
-        rowHeight="fit"
-    >
-        @if (photoStore().page()) {
-            @for (photo of photoStore().page()!.set; track photo.source.photoId) {
-                <mat-grid-tile>
-                    <photo-card
-                        [photo]="photo.source"
-                        [isHandset]="isHandset()"
-                        [linkUrl]="'/garden/photos/single/' + photo.source.photoId"
-                        [shareUrl]="'/garden/photos/single/' + photo.source.photoId"
-                        [isFavorite]="isFavorite()(photo.source.photoId)"
-                        [selectionState]="selectionState()"
-                        [deselect]="deselect"
-                        [select]="select"
-                    />
-                </mat-grid-tile>
-            }
+    @if (photoStore().page()) {
+        @for (photo of photoStore().page()!.set; track photo.source.photoId) {
+                <photo-card
+                    [photo]="photo.source"
+                    [isHandset]="isHandset()"
+                    [linkUrl]="'/garden/photos/single/' + photo.source.photoId"
+                    [shareUrl]="'/garden/photos/single/' + photo.source.photoId"
+                    [isFavorite]="isFavorite()(photo.source.photoId)"
+                    [selectionState]="selectionState()"
+                    [deselect]="deselect"
+                    [select]="select"
+                />
         }
-    </mat-grid-list>
+    }
 </div>
 <shared-paginator
     [length]="photoStore().page()?.set?.size ?? 0"

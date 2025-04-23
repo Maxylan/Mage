@@ -1,3 +1,18 @@
-div.photos-container, mat-grid-list {
-    height: 100%;
+div.photos-container {
+    padding: 0.64rem;
+    grid-template-columns: repeat(auto-fill, 9.6rem);
+    grid-template-rows: repeat(auto-fill, 12rem);
+    justify-content: center;
+    grid-auto-flow: row;
+    display: grid;
+    gap: 0.92rem;
+}
+div.photos-container.debug {
+    outline: 1px solid red;
+}
+div.photos-container.handset {
+    grid-template-columns: repeat(auto-fill, 6.4rem);
+    grid-template-rows: repeat(auto-fill, 8rem);
+    padding: 0.48rem;
+    gap: 0.64rem;
 }

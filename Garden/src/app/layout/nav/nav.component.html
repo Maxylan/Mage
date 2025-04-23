@@ -3,12 +3,11 @@
 		#drawer
 		class="sidenav"
 		fixedInViewport
-		[attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-		[mode]="(isHandset$ | async) ? 'over' : 'side'"
-		[opened]="(isHandset$ | async) === false"
+		[attr.role]="isHandset() ? 'dialog' : 'navigation'"
+		[mode]="isHandset() ? 'over' : 'side'"
 	>
 		<mat-toolbar>
-            <a href="/garden">
+            <a routerLink="/garden">
                 <img src="/garden/Homie-png-96.png" />
                 <h2>Garden</h2>
             </a>
@@ -16,7 +15,7 @@
 		<mat-nav-list>
         @for (link of navigationLinks; track $index)
         {
-            <a mat-list-item [href]=link.path>{{ link.headline }}</a>
+            <a mat-list-item [routerLink]="link.path">{{ link.headline }}</a>
         }
 		</mat-nav-list>
 	</mat-sidenav>
