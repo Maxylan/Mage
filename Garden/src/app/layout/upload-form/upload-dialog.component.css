@@ -1,0 +1,47 @@
+.upload-form-container {
+    border-radius: 0.32rem;
+    border: 2px solid rgba(0,0,0,0);
+    margin: 0.64rem;
+    min-width: 8rem;
+    max-width: 32rem;
+    width: 75vw;
+    min-height: 8rem;
+    max-height: 32rem;
+    height: 64vh;
+
+    h1 {
+        margin: auto;
+    }
+}
+.upload-form-container:hover {
+    border: 2px ridge rgba(127,127,127,0.64);
+
+    h1 {
+        text-decoration: underline;
+    }
+}
+.upload-form-container.hovering-upload {
+    border: 2px dashed #5ccccc;
+
+    h1 {
+        text-decoration: underline;
+    }
+}
+
+.relative-dropzone {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+}
+.dropzone {
+    cursor: pointer;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: 0;
+}

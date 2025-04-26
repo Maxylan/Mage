@@ -5,23 +5,7 @@
         [(tags)]="tags"
     />
 </div>
-<mat-toolbar>
-    <button
-        mat-icon-button
-        type="button"
-        class="toggle-navbar"
-        aria-label="Toggle sidenav"
-        (click)="toggleNavbar()"
-    >
-        <mat-icon
-            matPrefix
-            matIconPrefix
-            fontSet="hack"
-            aria-label="Side nav toggle icon"
-        >
-            󰍜
-        </mat-icon>
-    </button>
+<toolbar-base>
     <mat-form-field
         class="search-bar"
         subscriptSizing="dynamic"
@@ -75,14 +59,4 @@
             
         </mat-icon>
     </button>
-    @if (selectionState().selectModeActive) {
-        <a class="select-mode-display-chip">
-            <mat-chip 
-                (click)="quitSelectMode()"
-                color="tertiary"
-            >
-                Select Mode ({{ selectionState().selection.length }})
-            </mat-chip>
-        </a>
-    }
-</mat-toolbar>
+</toolbar-base>

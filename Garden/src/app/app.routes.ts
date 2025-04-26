@@ -1,18 +1,22 @@
 import { Route, Routes } from '@angular/router';
-import { HomeComponent } from './pages/home/home.component';
-import { PhotosComponent } from './pages/photos/photos.component';
-import { SinglePhotoComponent } from './pages/photos/single-photo.component';
+import { HomePageComponent } from './pages/home/home.component';
+import { PhotosPageComponent } from './pages/photos/photos.component';
+import { SinglePhotoPageComponent } from './pages/photos/single-photo.component';
+import { AlbumsPageComponent } from './pages/albums/albums.component';
+import { TagsPageComponent } from './pages/tags/tags.component';
+import { CategoriesPageComponent } from './pages/categories/categories.component';
+import { AdminPageComponent } from './pages/admin/admin.component';
 
 export const navigation: (Route & { headline: string })[] = [
-    { path: 'photos', component: PhotosComponent, headline: 'Photos' },
-    { path: 'albums', component: PhotosComponent, headline: 'Albums' },
-    { path: 'tags', component: PhotosComponent, headline: 'Tags' },
-    { path: 'categories', component: PhotosComponent, headline: 'Categories' },
-    { path: 'admin', component: PhotosComponent, headline: 'Admin' },
+    { path: 'photos', component: PhotosPageComponent, headline: 'Photos' },
+    { path: 'albums', component: AlbumsPageComponent, headline: 'Albums' },
+    { path: 'tags', component: TagsPageComponent, headline: 'Tags' },
+    { path: 'categories', component: CategoriesPageComponent, headline: 'Categories' },
+    { path: 'admin', component: AdminPageComponent, headline: 'Admin' },
 ];
 
 export const routes: Routes = [
-    { path: 'photos/single/:id', component: SinglePhotoComponent },
+    { path: 'photos/single/:id', component: SinglePhotoPageComponent },
     ...navigation,
-    { path: '', component: HomeComponent, headline: 'Home' }
+    { path: '', component: HomePageComponent, headline: 'Home' }
 ];

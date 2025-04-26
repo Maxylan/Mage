@@ -2,13 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { BaseToolbarComponent } from '../../layout/toolbar/toolbar-base.component';
 
 @Component({
-    selector: 'page-single-photo',
+    selector: 'page-admin',
     imports: [
         BaseToolbarComponent,
     ],
-    templateUrl: 'single-photo.component.html',
-    styleUrl: 'single-photo.component.css'
+    templateUrl: 'admin.component.html',
+    styleUrl: 'admin.component.css'
 })
-export class SinglePhotoPageComponent {
-
+export class AdminPageComponent {
 }

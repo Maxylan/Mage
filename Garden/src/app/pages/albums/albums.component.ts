@@ -1,15 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { BaseToolbarComponent } from '../../layout/toolbar/toolbar-base.component';
 
 @Component({
-  selector: 'app-albums',
-  imports: [],
-  template: `
-    <p>
-      albums works!
-    </p>
-  `,
-  styles: ``
+    selector: 'page-albums',
+    imports: [
+        BaseToolbarComponent,
+    ],
+    templateUrl: 'albums.component.html',
+    styleUrl: 'albums.component.css'
 })
-export class AlbumsComponent {
-
+export class AlbumsPageComponent {
 }

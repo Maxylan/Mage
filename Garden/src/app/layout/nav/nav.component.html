@@ -7,7 +7,7 @@
 		[mode]="isHandset() ? 'over' : 'side'"
 	>
 		<mat-toolbar>
-            <a routerLink="/garden">
+            <a routerLink="/">
                 <img src="/garden/Homie-png-96.png" />
                 <h2>Garden</h2>
             </a>
@@ -19,7 +19,7 @@
         }
 		</mat-nav-list>
 	</mat-sidenav>
-	<mat-sidenav-content>
+    <mat-sidenav-content>
         <ng-content />
-	</mat-sidenav-content>
+    </mat-sidenav-content>
 </mat-sidenav-container>

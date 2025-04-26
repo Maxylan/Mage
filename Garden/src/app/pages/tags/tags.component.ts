@@ -2,13 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { BaseToolbarComponent } from '../../layout/toolbar/toolbar-base.component';
 
 @Component({
-    selector: 'page-single-photo',
+    selector: 'page-albums',
     imports: [
         BaseToolbarComponent,
     ],
-    templateUrl: 'single-photo.component.html',
-    styleUrl: 'single-photo.component.css'
+    templateUrl: 'tags.component.html',
+    styleUrl: 'tags.component.css'
 })
-export class SinglePhotoPageComponent {
-
+export class TagsPageComponent {
 }

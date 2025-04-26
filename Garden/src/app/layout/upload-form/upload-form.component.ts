@@ -1,20 +1,47 @@
+import { Component, inject, model } from '@angular/core';
+import { CardThumbnailComponent } from '../../shared/cards/thumbnail/card-thumbnail.component';
+import { SelectionObserver } from '../toolbar/selection-observer.component';
+import { CardComponent } from '../../shared/cards/card.component';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from "@angular/common/http";
-import { Component } from "@angular/core";
+import { AsyncPipe } from '@angular/common';
 
 @Component({
-	selector: "upload-form",
-	templateUrl: 'upload-form.component.html',
-	styleUrl: 'upload-form.component.css'
+    selector: 'upload-form',
+    imports: [
+        CardComponent,
+        CardThumbnailComponent,
+        CardThumbnailComponent,
+        ReactiveFormsModule,
+        MatButtonModule,
+        MatChipsModule,
+        AsyncPipe
+    ],
+    providers: [
+        SelectionObserver
+    ],
+    templateUrl: 'upload-form.component.html',
+    styleUrl: 'upload-form.component.css'
 })
 export class UploadFormComponent {
-	constructor(private http: HttpClient) { }
+    private readonly selectionObserver = inject(SelectionObserver);
+    private readonly http = inject(HttpClient);
 
-	onSubmit(ev: Event): any {
+    public readonly selectionState = this.selectionObserver.State;
+    public readonly select = this.selectionObserver.selectItems;
+    public readonly deselect = this.selectionObserver.deselectItems;
+
+    public readonly files = model.required<FileList|null>();
+
+	public onSubmit(ev: Event): void {
 		if (!ev) {
 			return;
 		}
-
-		ev.preventDefault();
+        else if ('preventDefault' in ev) {
+		    ev.preventDefault();
+        }
 
 		/* method="post"
 		enctype="multipart/form-data" */

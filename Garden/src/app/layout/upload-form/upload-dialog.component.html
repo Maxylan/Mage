@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>
+    <mat-icon
+        matIconPrefix
+        fontSet="hack"
+        aria-label="Upload photos icon"
+    >
+        󱤽
+    </mat-icon>
+    Upload Images!
+</h2>
+<mat-dialog-content
+    class="upload-form-container"
+    [ngClass]="hovering() ? 'hovering-upload': ''"
+>
+    <input
+        #fileInput
+        hidden
+        type="file"
+        name="files"
+        (change)="fileInputChange($event)"
+        [(files)]="uploadedFiles"
+    />
+    @if (uploadedFiles() === null) {
+        <div class="relative-dropzone">
+            <h1>Drop Files Here!</h1>
+            <span
+                class="dropzone"
+                (click)="onClick($event)"
+                (dragend)="dragEnd($event)"
+                (dragover)="dragOver($event)"
+                (dragenter)="dragEnter($event)"
+                (dragleave)="dragLeave($event)"
+                (drop)="drop($event)"
+            >
+            </span>
+        </div>
+    }
+    @else {
+        <upload-form 
+            [(files)]="uploadedFiles"
+        />
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button
+        mat-button
+        cdkFocusInitial
+        aria-label="Close Upload Dialog"
+    >
+        Back
+    </button>
+</mat-dialog-actions>

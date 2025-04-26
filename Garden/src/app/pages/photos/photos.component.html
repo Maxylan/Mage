@@ -1,6 +1,5 @@
 <photos-toolbar
     (onSearch)="search($event)"
-    [(onNavbarToggle)]="navbarOpen"
     [limit]="photoStore().pageSize"
     [offset]="photoStore().pageSize * photoStore().currentPage"
 />

@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { defaultPhotoPageContainer, FavoritePhotos, IPhotoQueryParameters, Photo } from '../../core/types/photos.types';
-import { SelectionObserver, SelectionState } from './selection-observer.component';
+import { SelectionObserver, SelectionState } from '../../layout/toolbar/selection-observer.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
@@ -20,20 +20,18 @@ import { NgClass } from '@angular/common';
         NgClass
     ],
     providers: [
+        SelectionObserver,
         HttpUrlEncodingCodec,
         PhotosService
     ],
     templateUrl: 'photos.component.html',
     styleUrl: 'photos.component.css'
 })
-export class PhotosComponent {
+export class PhotosPageComponent {
     private readonly breakpointObserver = inject(BreakpointObserver);
     private readonly selectionObserver = inject(SelectionObserver);
     private readonly photoService = inject(PhotosService);
 
-    /**
-     * Output invoked when the navbar's open state changes.
-     */
     public readonly navbarOpen = signal<boolean>(false);
 
     public readonly photoStore = signal(defaultPhotoPageContainer);

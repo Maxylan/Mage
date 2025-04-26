@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { SelectionObserver, SelectionState } from '../../pages/photos/selection-observer.component';
+import { SelectionObserver, SelectionState } from '../../layout/toolbar/selection-observer.component';
+import { CardSummaryDialogComponent } from './summary/card-summary.component';
 import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,10 +8,9 @@ import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import { NgClass } from '@angular/common';
 import { CardDetails } from './card.types';
-import { MatDialog } from '@angular/material/dialog';
-import { CardSummaryDialogComponent } from './summary/card-summary.component';
 
 @Component({
     selector: 'shared-card',
@@ -28,11 +28,11 @@ import { CardSummaryDialogComponent } from './summary/card-summary.component';
     styleUrl: 'card.component.css'
 })
 export class CardComponent {
-    private readonly dialog = inject(MatDialog); // CardSummaryDialogComponent
+    private readonly dialog = inject(MatDialog);
 
     public readonly key = input.required<string>();
     public readonly title = input.required<string>();
-    public readonly isHandset = input.required<boolean|undefined>();
+    public readonly isHandset = input<boolean|undefined>(true);
     public readonly deselect = input.required<SelectionObserver['deselectItems']>();
     public readonly select = input.required<SelectionObserver['selectItems']>();
     public readonly selectionState = input.required<SelectionState>();

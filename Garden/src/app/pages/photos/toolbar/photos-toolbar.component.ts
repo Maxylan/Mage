@@ -1,16 +1,13 @@
-import { Component, effect, inject, input, model, output, signal, untracked } from '@angular/core';
-import { NavbarControllerService } from '../../../layout/nav/nav-controller.service';
+import { Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { IPhotoQueryParameters } from '../../../core/types/photos.types';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
-import { SelectionObserver } from '../selection-observer.component';
+import { BaseToolbarComponent } from '../../../layout/toolbar/toolbar-base.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { MatInput } from '@angular/material/input';
-import { MatChip } from '@angular/material/chips';
 import { NgClass } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -20,22 +17,19 @@ import { last, map } from 'rxjs';
     selector: 'photos-toolbar',
     imports: [
         PhotoTagsInputComponent,
+        BaseToolbarComponent,
         ReactiveFormsModule,
         MatFormFieldModule,
-        MatToolbarModule,
         MatButtonModule,
         MatIconModule,
         MatIconButton,
         MatInput,
-        NgClass,
-        MatChip
+        NgClass
     ],
     templateUrl: 'photos-toolbar.component.html',
     styleUrl: 'photos-toolbar.component.scss'
 })
 export class PhotoToolbarComponent {
-    private readonly navbarController = inject(NavbarControllerService);
-    private readonly selectionObserver = inject(SelectionObserver);
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly route = inject(ActivatedRoute);
 
@@ -43,14 +37,7 @@ export class PhotoToolbarComponent {
 
     public readonly searchOffset = input<number>(0, { alias: 'offset' });
     public readonly searchLimit = input<number>(32, { alias: 'limit' });
-
-    public readonly selectionState = this.selectionObserver.State;
-    public readonly quitSelectMode = () => setTimeout(
-        () => this.selectionObserver.setSelectionMode(false),
-        64
-    );
-
-    public readonly getNavbar = this.navbarController.getNavbar;
+    public readonly initialSearch = input<boolean>(true);
 
     public readonly searchControl = new FormControl<string>('');
     public readonly tags = signal<string[]>([]);
@@ -184,36 +171,16 @@ export class PhotoToolbarComponent {
         this.searchEvent.emit(parameters);
     };
 
+    private readonly triggerSearchOnEffect = effect(this.triggerSearch);
+
     /**
      * Output invoked when a search-query is triggered.
      */
     public readonly searchEvent = output<IPhotoQueryParameters>({ alias: 'onSearch' });
 
     /**
-     * Initial search..
-     */
-    private readonly initialSearch = effect(this.triggerSearch);
-
-    /**
-     * Output invoked when the navbar's open state changes.
-     */
-    public readonly navbarEvent = model<boolean>(false, { alias: 'onNavbarToggle' });
-
-    public readonly toggleNavbar = async (clickEvent: Event|null = null) => {
-        this.navbarEvent.set(!this.getNavbar()?.opened);
-        return this.getNavbar()?.toggle()
-    }
-        /* this.getNavbar()?.toggle().then(
-            () => this.navbarEvent.set(!!this.getNavbar()?.opened)
-        ); */
-
-    /**
      * Toggle `this.expandSearchForm`.
      */
     public readonly toggleExpand = () => 
         this.expandSearchForm.update(status => !status);
-    
-    public ngOnInit() {
-        this.navbarEvent.set(!!this.getNavbar()?.opened);
-    }
 }

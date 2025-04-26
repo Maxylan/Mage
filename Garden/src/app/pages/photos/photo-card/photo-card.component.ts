@@ -3,7 +3,7 @@ import { PhotosService } from '../../../core/api/photos.service';
 import { Photo } from '../../../core/types/photos.types';
 import { CardThumbnailComponent } from '../../../shared/cards/thumbnail/card-thumbnail.component';
 import { CardComponent } from '../../../shared/cards/card.component';
-import { SelectionObserver, SelectionState } from '../selection-observer.component';
+import { SelectionObserver, SelectionState } from '../../../layout/toolbar/selection-observer.component';
 
 @Component({
     selector: 'photo-card',

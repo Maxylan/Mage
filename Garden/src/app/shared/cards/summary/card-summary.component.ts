@@ -1,6 +1,5 @@
 import { Component, input, computed, effect, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardMdImage } from '@angular/material/card';
 import {
     MatDialogContent,
     MatDialogActions,
