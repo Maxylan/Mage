@@ -17,8 +17,7 @@ import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialo
     templateUrl: 'upload-form.component.html',
     */
     host: {
-        '(dragenter)': 'dragEnter($event)',
-        '(drop)': 'drop($event)'
+        '(dragenter)': 'dragEnter($event)'
     }
 })
 export class UploadFormContainerComponent {
@@ -37,12 +36,6 @@ export class UploadFormContainerComponent {
             return;
         }
 
-        if (this.dialogRef !== null &&
-            this.dialogRef.getState() === MatDialogState.OPEN
-        ) {
-            return;
-        }
-
         if ('preventDefault' in e) {
             e.preventDefault();
         }
@@ -51,33 +44,13 @@ export class UploadFormContainerComponent {
         }
 
         this.onDragEnter.emit(e);
-        console.log('dragEnter', e);
 
-        this.dialogRef = this.dialog.open(UploadDialogComponent, {
-            data: e
-        });
-    }
-
-    /**
-     * Emits on `{drop}`
-     */
-    public readonly onDrop = output<DragEvent>();
-    /**
-     * Callback firing on `drop`.
-     */
-    public readonly drop = (e: DragEvent): void => {
-        if (!e || !('relatedTarget' in e)) {
-            return;
+        if (this.dialogRef === null ||
+            this.dialogRef.getState() === MatDialogState.CLOSED
+        ) {
+            this.dialogRef = this.dialog.open(UploadDialogComponent, {
+                data: e
+            });
         }
-
-        if ('preventDefault' in e) {
-            e.preventDefault();
-        }
-        if ('stopPropagation' in e) {
-            e.stopPropagation();
-        }
-
-        console.log('drop', e);
-        this.onDrop.emit(e);
     }
 }

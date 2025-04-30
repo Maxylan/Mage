@@ -1,31 +1,23 @@
 <form
-    id="uploadForm"
-    (submit)="onSubmit($event)"
+    id="upload-form"
+    (ngSubmit)="onSubmit($event)"
 >
-    <dl>
-        <dt>
-            <label for="tags">Tags</label>
-        </dt>
-        <dd>
-            <input id="tags" type="text" name="tags" />
-        </dd>
-    </dl>
-
-    <input class="btn" type="submit" value="Upload" />
-
-    @for (file of files(); track file.name) {
-        <shared-card
-            [key]="file.name"
-            [title]="file.name"
-            [summary]="file.text() | async"
-            [selectionState]="selectionState()"
-            [deselect]="deselect"
-            [select]="select"
-        >
-            <shared-card-thumbnail
-                [alt]="file.name"
-                [file]="file"
-            />
-        </shared-card>
+    @if (files() && files()!.length > 0) {
+        <div class="uploaded-photos-container">
+            @for (file of files(); track file.name) {
+                <shared-card
+                    [key]="file.name"
+                    [title]="file.name"
+                    [selectionState]="selectionState()"
+                    [deselect]="deselect"
+                    [select]="select"
+                >
+                    <shared-card-thumbnail
+                        [alt]="file.name"
+                        [file]="file"
+                    />
+                </shared-card>
+            }
+        </div>
     }
 </form>

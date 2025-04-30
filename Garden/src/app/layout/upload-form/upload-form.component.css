@@ -1,0 +1,9 @@
+.uploaded-photos-container {
+    padding: 0.32rem;
+    grid-template-columns: repeat(auto-fill, 6.4rem);
+    grid-template-rows: repeat(auto-fill, 8rem);
+    justify-content: center;
+    grid-auto-flow: row;
+    display: grid;
+    gap: 0.48rem;
+}

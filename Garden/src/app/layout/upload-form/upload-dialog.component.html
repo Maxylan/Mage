@@ -20,26 +20,27 @@
         (change)="fileInputChange($event)"
         [(files)]="uploadedFiles"
     />
-    @if (uploadedFiles() === null) {
-        <div class="relative-dropzone">
+    <div class="relative-dropzone"
+        (click)="onClick($event)"
+        (dragover)="dragOver($event)"
+    >
+        @if (uploadedFiles() === null) {
             <h1>Drop Files Here!</h1>
+        }
+        @else {
+            <upload-form 
+                [(files)]="uploadedFiles"
+            />
+        }
+        @if (hovering()) {
             <span
                 class="dropzone"
-                (click)="onClick($event)"
-                (dragend)="dragEnd($event)"
-                (dragover)="dragOver($event)"
-                (dragenter)="dragEnter($event)"
                 (dragleave)="dragLeave($event)"
                 (drop)="drop($event)"
             >
             </span>
-        </div>
-    }
-    @else {
-        <upload-form 
-            [(files)]="uploadedFiles"
-        />
-    }
+        }
+    </div>
 </mat-dialog-content>
 <mat-dialog-actions>
     <button

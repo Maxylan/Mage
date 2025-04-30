@@ -16,8 +16,7 @@ import { AsyncPipe } from '@angular/common';
         CardThumbnailComponent,
         ReactiveFormsModule,
         MatButtonModule,
-        MatChipsModule,
-        AsyncPipe
+        MatChipsModule
     ],
     providers: [
         SelectionObserver
@@ -26,14 +25,14 @@ import { AsyncPipe } from '@angular/common';
     styleUrl: 'upload-form.component.css'
 })
 export class UploadFormComponent {
-    private readonly selectionObserver = inject(SelectionObserver);
     private readonly http = inject(HttpClient);
+    private readonly selectionObserver = inject(SelectionObserver);
 
     public readonly selectionState = this.selectionObserver.State;
-    public readonly select = this.selectionObserver.selectItems;
     public readonly deselect = this.selectionObserver.deselectItems;
+    public readonly select = this.selectionObserver.selectItems;
 
-    public readonly files = model.required<FileList|null>();
+    public readonly files = model<FileList|null>(null);
 
 	public onSubmit(ev: Event): void {
 		if (!ev) {

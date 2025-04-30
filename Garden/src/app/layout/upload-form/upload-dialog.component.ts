@@ -6,8 +6,8 @@ import {
     MatDialogActions,
     MatDialogTitle,
     MatDialogRef,
-    MAT_DIALOG_DATA,
-    MatDialogState
+    MAT_DIALOG_DATA/*,
+    MatDialogState */
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -60,13 +60,11 @@ export class UploadDialogComponent {
             e.stopPropagation();
         }
 
-        console.log('UploadDialogComponent fileInputChange', e);
         const inputElement = e.target as HTMLInputElement|null;
         if (inputElement &&
             inputElement.files &&
             inputElement.files.length > 0
         ) {
-            console.log('inputElement.files', inputElement.files);
             this.uploadedFiles.set(inputElement.files);
             this.onFileInputChange.emit(e);
         }
@@ -83,12 +81,6 @@ export class UploadDialogComponent {
             return;
         }
 
-        /* if (this.dialogRef !== null &&
-            this.dialogRef.getState() === MatDialogState.OPEN
-        ) {
-            return;
-        } */
-
         if ('preventDefault' in e) {
             e.preventDefault();
         }
@@ -96,7 +88,6 @@ export class UploadDialogComponent {
             e.stopPropagation();
         }
 
-        console.log('UploadDialogComponent onClick', e);
         const ref = this.inputRef();
         if (ref && ref.nativeElement) {
             ref.nativeElement.click();
@@ -116,22 +107,14 @@ export class UploadDialogComponent {
         }
 
         if ('preventDefault' in e) {
-            console.log('over preventDefault FIRED');
             e.preventDefault();
         }
-        else {
-            console.log('over preventDefault NOT FIRED');
-        }
         if ('stopPropagation' in e) {
-            console.log('over stopPropagation FIRED');
             e.stopPropagation();
         }
-        else {
-            console.log('over stopPropagation NOT FIRED');
-        }
 
-        console.log('UploadDialogComponent dragOver', e);
         this.onDragOver.emit(e);
+        this.hovering.set(true);
     }
 
     /**
@@ -142,32 +125,17 @@ export class UploadDialogComponent {
      * Callback firing on `dragEnter`.
      */
     public readonly dragEnter = (e: DragEvent): void => {
-        if (!e || !('relatedTarget' in e) || this.hovering()) {
+        if (!e/* || !('relatedTarget' in e)*/) {
             return;
         }
-
-        /* if (this.dialogRef !== null &&
-            this.dialogRef.getState() === MatDialogState.OPEN
-        ) {
-            return;
-        } */
 
         if ('preventDefault' in e) {
-            console.log('enter preventDefault FIRED');
             e.preventDefault();
         }
-        else {
-            console.log('enter preventDefault NOT FIRED');
-        }
         if ('stopPropagation' in e) {
-            console.log('enter stopPropagation FIRED');
             e.stopPropagation();
         }
-        else {
-            console.log('enter stopPropagation NOT FIRED');
-        }
 
-        console.log('UploadDialogComponent dragEnter', e);
         this.onDragEnter.emit(e);
         this.hovering.set(true);
     }
@@ -175,34 +143,25 @@ export class UploadDialogComponent {
     /**
      * Emits on `{dragEnd}`
      */
-    public readonly onDragEnd = output<DragEvent>();
+    /* public readonly onDragEnd = output<DragEvent>(); */
     /**
      * Callback firing on `dragEnd`.
      */
-    public readonly dragEnd = (e: DragEvent): void => {
+    /* public readonly dragEnd = (e: DragEvent): void => {
         if (!e || !('relatedTarget' in e)) {
             return;
         }
 
         if ('preventDefault' in e) {
-            console.log('end preventDefault FIRED');
             e.preventDefault();
         }
-        else {
-            console.log('end preventDefault NOT FIRED');
-        }
         if ('stopPropagation' in e) {
-            console.log('end stopPropagation FIRED');
             e.stopPropagation();
         }
-        else {
-            console.log('end stopPropagation NOT FIRED');
-        }
 
-        console.log('UploadDialogComponent dragEnd', e);
         this.onDragEnd.emit(e);
         this.hovering.set(false);
-    }
+    } */
 
     /**
      * Emits on `{dragLeave}`
@@ -212,26 +171,17 @@ export class UploadDialogComponent {
      * Callback firing on `dragEnter`.
      */
     public readonly dragLeave = (e: DragEvent): void => {
-        if (!e || !('relatedTarget' in e)) {
+        if (!e/* || !('relatedTarget' in e)*/) {
             return;
         }
 
         if ('preventDefault' in e) {
-            console.log('leave preventDefault FIRED');
             e.preventDefault();
         }
-        else {
-            console.log('leave preventDefault NOT FIRED');
-        }
         if ('stopPropagation' in e) {
-            console.log('leave stopPropagation FIRED');
             e.stopPropagation();
         }
-        else {
-            console.log('leave stopPropagation NOT FIRED');
-        }
 
-        console.log('UploadDialogComponent dragLeave', e);
         this.onDragLeave.emit(e);
         this.hovering.set(false);
     }
@@ -249,23 +199,29 @@ export class UploadDialogComponent {
         }
 
         if ('preventDefault' in e) {
-            console.log('preventDefault FIRED');
             e.preventDefault();
         }
-        else {
-            console.log('preventDefault NOT FIRED');
-        }
         if ('stopPropagation' in e) {
-            console.log('stopPropagation FIRED');
             e.stopPropagation();
         }
-        else {
-            console.log('stopPropagation NOT FIRED');
-        }
 
-        console.log('UploadDialogComponent drop', e);
         if ('dataTransfer' in e && e.dataTransfer) {
-            this.uploadedFiles.set(e.dataTransfer.files);
+            this.uploadedFiles.update(files => {
+                if (!files) {
+                    return e.dataTransfer!.files;
+                }
+
+                const arr1 = Array.from(files);
+                const arr2 = Array.from(e.dataTransfer!.files);
+                const newFilesList: File[] = arr1.concat(arr2);
+                return newFilesList as any as FileList; /* new FileList(new MutableFileList({
+                    ...newFilesList,
+                    length: newFilesList.length,
+                    item: function(index: number) {
+                        return this[index];
+                    }
+                } as FileList)) */;
+            });
         }
         else {
             this.uploadedFiles.set(null);
