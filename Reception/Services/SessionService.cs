@@ -7,10 +7,13 @@ using System.Net;
 
 namespace Reception.Services;
 
-public class SessionService(ILoggingService logging, MageDbContext db) : ISessionService
+public class SessionService(
+    ILoggingService<SessionService> logging,
+    MageDbContext db
+) : ISessionService
 {
     /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Session&gt;"/>) set of 
+    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Session&gt;"/>) set of
     /// <see cref="Session"/>-entries, you may use it to freely fetch some sessions.
     /// </summary>
     public DbSet<Session> GetSessions() => db.Sessions;
@@ -244,7 +247,7 @@ public class SessionService(ILoggingService logging, MageDbContext db) : ISessio
 
             var session = account.Sessions.First();
 
-            // Use it only if its valid, if its not we want to verify that we have the latest 
+            // Use it only if its valid, if its not we want to verify that we have the latest
             // sessions with a call to the database.
             if (session.ExpiresAt > DateTime.UtcNow)
             {

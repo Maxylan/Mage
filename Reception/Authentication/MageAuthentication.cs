@@ -3,13 +3,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
-using Reception.Services;
 using System.Security.Claims;
 using Reception.Models.Entities;
-using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Net.Sockets;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Reception.Interfaces;
 using System.Diagnostics.CodeAnalysis;
 
@@ -20,7 +17,7 @@ namespace Reception.Authentication;
 /// Intercepts incoming requests and checks if a valid session token is provided with the request.
 /// </summary>
 public class MageAuthentication(
-    ILoggingService loggingService,
+    ILoggingService<MageAuthentication> logging,
     ReceptionAuthorizationService service,
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -49,10 +46,10 @@ public class MageAuthentication(
         if (session is null || string.IsNullOrWhiteSpace(session.Code))
         {
             string message = $"{Messages.ValidationFailed} Token: '{token}', Result '{getSession.GetType().FullName}', Session: {(session?.GetType()?.Name ?? "null")}).";
-            await loggingService
+            logging
                 .Action(nameof(HandleAuthenticateAsync))
                 .ExternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return AuthenticateResult.Fail(
                 Program.IsProduction ? Messages.ValidationFailed : message
@@ -67,9 +64,9 @@ public class MageAuthentication(
         catch (AuthenticationException authException)
         {
             string message = Messages.ByCode(authException);
-            await loggingService
+            logging
                 .Action(nameof(HandleAuthenticateAsync))
-                .LogEvent(message, opts =>
+                .LogInformation(message, opts =>
                 {
                     opts.Exception = authException;
                     opts.Source = Source.EXTERNAL;
@@ -80,20 +77,20 @@ public class MageAuthentication(
                         _ => Severity.INFORMATION
                     };
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return AuthenticateResult.Fail(message);
         }
         catch (Exception ex)
         {
             string message = Messages.UnknownError + " " + ex.Message;
-            await loggingService
+            logging
                 .Action(nameof(HandleAuthenticateAsync))
                 .ExternalError(message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return AuthenticateResult.Fail(
                 Program.IsProduction ? Messages.UnknownError : message

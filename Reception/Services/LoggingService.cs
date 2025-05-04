@@ -5,549 +5,774 @@ using Reception.Interfaces;
 using Reception.Models;
 using Reception.Authentication;
 
-namespace Reception.Services;
-
-public class LoggingService(
-    IHttpContextAccessor contextAccessor,
-    ILogger<LoggingService> logger
-) : ILoggingService
-{
-    private string nextAction = string.Empty;
-
-    /// <summary>
-    /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
-    /// </summary>
-    /// <remarks>
-    /// Catches most errors thrown, logs them, and finally returns `null`.
-    /// </remarks>
-    private Account? GetAccount()
+namespace Reception.Services {
+    public class LoggingService(ILogger logger) : ILoggingService
     {
-        if (!MageAuthentication.IsAuthenticated(contextAccessor))
+        /// <summary>
+        /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService{TService}"/>
+        /// Use this to, for example, log a message without storing it in the database.
+        /// </summary>
+        public ILogger Logger => logger;
+
+        protected LogEntryOptions? _log = null;
+
+        #region Create Logs (w/ many shortcuts)
+        /// <summary>
+        /// Set what action triggered this entry to be created.
+        /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogEvent"/>.
+        /// </summary>
+        public ILoggingService Action(string actionName)
         {
-            if (Program.IsDevelopment)
-            {
-                logger.LogTrace($"{nameof(LoggingService.GetAccount)} called on an unauthorized request.");
+            if (this._log is null) {
+                this._log = new();
             }
 
-            return null;
+            this._log.Action = actionName;
+            return this;
         }
 
-        try
-        {
-            return MageAuthentication.GetAccount(contextAccessor);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, $"Cought an '{ex.GetType().FullName}' invoking {nameof(LoggingService.GetAccount)}!", ex.StackTrace);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
-    /// </summary>
-    public ILogger Logger => logger;
-
-    /// <summary>
-    /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
-    /// </summary>
-    public async Task<ActionResult<LogEntry>> GetEvent(int id)
-    {
-        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
-        /* LogEntry? result = await db.Logs.FindAsync(id);
-        if (result is null)
-        {
-            return new NotFoundObjectResult($"Failed to find {nameof(LogEntry)} with ID {id}");
-        }
-
-        return result; */
-    }
-
-    /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of
-    /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
-    /// </summary>
-    public DbSet<LogEntry> GetEvents() {
-        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
-        /* return db.Logs; */
-    }
-
-    /// <summary>
-    /// Get all <see cref="LogEntry"/>-entries matching a wide range of optional filtering parameters.
-    /// </summary>
-    public async Task<ActionResult<IEnumerable<LogEntry>>> GetEvents(int? limit, int? offset, Source? source, Severity? severity, Method? method, string? action)
-    {
-        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
-        /* IQueryable<LogEntry> query = db.Logs.OrderByDescending(log => log.CreatedAt);
-        string message;
-
-        if (source is not null)
-        {
-            query = query.Where(log => log.Source == source);
-        }
-        if (severity is not null)
-        {
-            query = query.Where(log => log.LogLevel == severity);
-        }
-        if (method is not null)
-        {
-            query = query.Where(log => log.Method == method);
-        }
-        if (!string.IsNullOrWhiteSpace(action))
-        {
-            query = query.Where(log => log.Action == action);
-        }
-
-        if (offset is not null)
-        {
-            if (offset < 0)
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
             {
-                message = $"Parameter {nameof(offset)} has to either be `0`, or any positive integer greater-than `0`.";
-                logger.LogWarning($"[{nameof(LoggingService)}] ({nameof(GetEvents)}) {message}");
-
-                return new BadRequestObjectResult(message);
-            }
-
-            query = query.Skip(offset.Value);
-        }
-
-        if (limit is not null)
-        {
-            if (limit <= 0)
-            {
-                message = $"Parameter {nameof(limit)} has to be a positive integer greater-than `0`.";
-                logger.LogWarning($"[{nameof(LoggingService)}] ({nameof(GetEvents)}) {message}");
-
-                return new BadRequestObjectResult(message);
-            }
-
-            query = query.Take(limit.Value);
-        }
-
-        var getLogs = await query.ToArrayAsync();
-        return getLogs; */
-    }
-
-    #region Create Logs (w/ many shortcuts)
-    /// <summary>
-    /// Set what action triggered this entry to be created.
-    /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogEvent"/>.
-    /// </summary>
-    public ILoggingService Action(string actionName)
-    {
-        this.nextAction = actionName;
-        return this;
-    }
-
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogTrace(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.TRACE;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.TRACE;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.TRACE;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogDebug(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.DEBUG;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.DEBUG;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.DEBUG;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogInformation(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.INFORMATION;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.INFORMATION;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.INFORMATION;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.SUSPICIOUS;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.SUSPICIOUS;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.SUSPICIOUS;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogWarning(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.WARNING;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.WARNING;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.WARNING;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogError(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.ERROR;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalError(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.ERROR;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalError(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.ERROR;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogCritical(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.LogLevel = Severity.CRITICAL;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase InternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.INTERNAL;
-            entry.LogLevel = Severity.CRITICAL;
-        });
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase ExternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
-        LogEvent(message, entry =>
-        {
-            if (predicate is not null)
-            {
-                predicate(entry);
-            }
-            entry.Source = Source.EXTERNAL;
-            entry.LogLevel = Severity.CRITICAL;
-        });
-
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public StoreLogsInDatabase LogEvent(string message, Action<LogEntryOptions>? predicate = null)
-    {
-        LogEntryOptions entry = new()
-        {
-            Log = message,
-            CreatedAt = DateTime.UtcNow,
-            Action = this.nextAction
-        };
-
-        if (contextAccessor.HttpContext is not null)
-        {
-            entry.SetMethod(contextAccessor.HttpContext.Request.Method);
-
-            entry.RequestAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
-            entry.RequestUserAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
-
-            if (MageAuthentication.IsAuthenticated(contextAccessor))
-            {
-                Account? user = GetAccount();
-                if (user is not null)
+                if (predicate is not null)
                 {
-                    entry.UserId = user.Id;
-                    entry.UserUsername = user.Username;
-                    entry.UserFullName = user.FullName;
-                    entry.UserEmail = user.Email;
+                    predicate(entry);
                 }
-            }
-        }
-
-        if (predicate is not null)
-        {
-            predicate(entry);
-        }
-
-        if (string.IsNullOrWhiteSpace(entry.Action))
-        {
-            entry.Action = "Unknown";
-        }
-
-        this.nextAction = string.Empty;
-
-        return LogEvents(entry);
-    }
-
-    /// <summary>
-    /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
-    /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
-    /// </summary>
-    public StoreLogsInDatabase LogEvents(params LogEntryOptions[] entries)
-    {
-        foreach (var entry in entries)
-        {
-            /* TODO - 
-             * Seems this is not as straight forward as I first thought.
-             * Possible solution would be a seperate DbContext for logging that's a singleton, perhaps?
-             * @see https://go.microsoft.com/fwlink/?linkid=869049
-             */
-            /* bool isNew = db.Entry(entry).State == EntityState.Detached;
-            bool shouldStore = (
-                entry.LogLevel != Severity.DEBUG ||
-                Program.IsDevelopment
-            );
-
-            if (isNew && shouldStore)
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
             {
-                switch (db.Logs.Contains(entry))
+                if (predicate is not null)
                 {
-                    case true: // Exists
-                        db.Update(entry);
-                        break;
-                    case false: // New
-                        db.Add(entry);
-                        break;
+                    predicate(entry);
                 }
-            } */ 
-
-            bool isUserAuthenticated = (
-                contextAccessor.HttpContext is not null &&
-                MageAuthentication.IsAuthenticated(contextAccessor.HttpContext!)
-            );
-
-            switch (entry.LogLevel)
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
             {
-#pragma warning disable CA2254
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService LogCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.CRITICAL;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService InternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.CRITICAL;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService ExternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.CRITICAL;
+            });
+
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        protected ILoggingService StoreEvent(string message, Action<LogEntryOptions>? predicate = null) {
+            this._log = new() {
+                Log = message
+            };
+
+            if (predicate is not null) {
+                predicate(this._log);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        public void Log() {
+            if (this._log is null) {
+                logger.LogWarning($"Method {nameof(LoggingService.Log)} used incorrectly! Called without any log ({nameof(LogEntryOptions)}) stored!");
+                return;
+            }
+
+            switch (this._log.LogLevel)
+            {
+    #pragma warning disable CA2254
                 case Severity.TRACE:
-                    logger.LogTrace(entry.Exception, entry.Format.Short(false));
+                    logger.LogTrace(this._log.Exception, this._log.Format.Short(false));
                     break;
                 case Severity.DEBUG:
-                    logger.LogDebug(entry.Exception, entry.Format.Short());
+                    logger.LogDebug(this._log.Exception, this._log.Format.Short());
                     break;
                 case Severity.INFORMATION:
-                    logger.LogInformation(entry.Exception, entry.Format.Standard(isUserAuthenticated));
+                    logger.LogInformation(this._log.Exception, this._log.Format.Standard());
                     break;
                 case Severity.SUSPICIOUS:
-                    logger.LogWarning(entry.Exception, entry.Format.Standard(true));
+                    logger.LogWarning(this._log.Exception, this._log.Format.Standard());
                     break;
                 case Severity.WARNING:
-                    logger.LogWarning(entry.Exception, entry.Format.Standard(isUserAuthenticated));
+                    logger.LogWarning(this._log.Exception, this._log.Format.Standard());
                     break;
                 case Severity.ERROR:
-                    logger.LogError(entry.Exception, entry.Format.Full());
+                    logger.LogError(this._log.Exception, this._log.Format.Full());
                     break;
                 case Severity.CRITICAL:
-                    logger.LogCritical(entry.Exception, entry.Format.Full());
+                    logger.LogCritical(this._log.Exception, this._log.Format.Full());
                     break;
                 default:
-                    entry.Log += $" ({nameof(LogEntry)} format defaulted)";
-                    logger.LogInformation(entry.Exception, entry.Format.Short(true));
+                    this._log.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    logger.LogInformation(this._log.Exception, this._log.Format.Short(true));
                     break;
-#pragma warning restore CA2254
+    #pragma warning restore CA2254
             }
         }
 
-        return new(/*db*/);
+        /// <summary>
+        /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public void Enqueue() {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public void LogAndEnqueue() {
+            throw new NotImplementedException();
+        }
+        #endregion
     }
-    #endregion
 
-    /// <summary>
-    /// Deletes all provided <see cref="LogEntry"/>-entries.
-    /// </summary>
-    public Task<int> DeleteEvents(params LogEntry[] entries)
+    public class LoggingService<TService>(ILogger<TService> logger) : ILoggingService<TService>
     {
-        throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");
-        // db.RemoveRange(entries);
+        /// <summary>
+        /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService{TService}"/>
+        /// Use this to, for example, log a message without storing it in the database.
+        /// </summary>
+        public ILogger<TService> Logger => logger;
 
-        /* foreach(var entry in entries)
+        protected LogEntryOptions? _log = null;
+
+        #region Create Logs (w/ many shortcuts)
+        /// <summary>
+        /// Set what action triggered this entry to be created.
+        /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogEvent"/>.
+        /// </summary>
+        public ILoggingService<TService> Action(string actionName)
         {
-            bool exists = await db.Logs.ContainsAsync(entry);
+            if (this._log is null) {
+                this._log = new();
+            }
 
-            if (exists)
+            this._log.Action = actionName;
+            return this;
+        }
+
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
             {
-                db.Remove(entry);
-            }
-            else {
-                // Stop tracking the entity, this should result in nothing being added on next save, effectively "deleting" the entity, without a database call.
-                db.Entry(entry).State = EntityState.Detached;
-            }
-        } */
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalTrace(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.TRACE;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalDebug(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.DEBUG;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalInformation(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.INFORMATION;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.SUSPICIOUS;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalWarning(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.WARNING;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalError(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.ERROR;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> LogCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.LogLevel = Severity.CRITICAL;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> InternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.INTERNAL;
+                entry.LogLevel = Severity.CRITICAL;
+            });
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public ILoggingService<TService> ExternalCritical(string message, Action<LogEntryOptions>? predicate = null) =>
+            StoreEvent(message, entry =>
+            {
+                if (predicate is not null)
+                {
+                    predicate(entry);
+                }
+                entry.Source = Source.EXTERNAL;
+                entry.LogLevel = Severity.CRITICAL;
+            });
 
-        // return await db.SaveChangesAsync();
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        protected ILoggingService<TService> StoreEvent(string message, Action<LogEntryOptions>? predicate = null) {
+            this._log = new() {
+                Log = message
+            };
+
+            if (predicate is not null) {
+                predicate(this._log);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        public void Log() {
+            if (this._log is null) {
+                logger.LogWarning($"Method {nameof(LoggingService<TService>.Log)} used incorrectly! Called without any log ({nameof(LogEntryOptions)}) stored!");
+                return;
+            }
+
+            switch (this._log.LogLevel)
+            {
+    #pragma warning disable CA2254
+                case Severity.TRACE:
+                    logger.LogTrace(this._log.Exception, this._log.Format.Short(false));
+                    break;
+                case Severity.DEBUG:
+                    logger.LogDebug(this._log.Exception, this._log.Format.Short());
+                    break;
+                case Severity.INFORMATION:
+                    logger.LogInformation(this._log.Exception, this._log.Format.Standard());
+                    break;
+                case Severity.SUSPICIOUS:
+                    logger.LogWarning(this._log.Exception, this._log.Format.Standard());
+                    break;
+                case Severity.WARNING:
+                    logger.LogWarning(this._log.Exception, this._log.Format.Standard());
+                    break;
+                case Severity.ERROR:
+                    logger.LogError(this._log.Exception, this._log.Format.Full());
+                    break;
+                case Severity.CRITICAL:
+                    logger.LogCritical(this._log.Exception, this._log.Format.Full());
+                    break;
+                default:
+                    this._log.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    logger.LogInformation(this._log.Exception, this._log.Format.Short(true));
+                    break;
+    #pragma warning restore CA2254
+            }
+        }
+
+        /// <summary>
+        /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public void Enqueue() {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public void LogAndEnqueue() {
+            throw new NotImplementedException();
+        }
+        #endregion
     }
 }

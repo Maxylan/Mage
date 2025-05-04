@@ -11,7 +11,7 @@ public class TokenRequirement : IAuthorizationRequirement
 
 public class HandleTokenRequirement(
     IHttpContextAccessor contextAccessor,
-    ILoggingService logging
+    ILoggingService<MageAuthentication> logging
 ) : AuthorizationHandler<TokenRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, TokenRequirement requirement)
@@ -20,10 +20,10 @@ public class HandleTokenRequirement(
         if (httpContext is null)
         {
             string message = $"{nameof(HandleTokenRequirement)} Requirement Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(HandleTokenRequirement.HandleRequirementAsync))
                 .ExternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             context.Fail(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message)
@@ -36,10 +36,10 @@ public class HandleTokenRequirement(
         bool sessionTokenExists = !string.IsNullOrWhiteSpace(extractedToken);
         if (tryGetSessionTokenHeader || sessionTokenExists)
         {
-            await logging
+            logging
                 .Action(nameof(HandleTokenRequirement.HandleRequirementAsync))
                 .ExternalInformation(Messages.MissingHeader)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             context.Fail(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : Messages.MissingHeader)

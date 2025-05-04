@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
 using Reception.Authentication;
+using Reception.Middleware;
 using Reception.Interfaces;
 using Reception.Services;
 using Reception.Caching;
@@ -124,8 +125,10 @@ public sealed class Program
         });
 
         builder.Services.AddSingleton<LoginTracker>();
+        builder.Services.AddSingleton<EventDataAggregator>();
 
         builder.Services.AddScoped<ILoggingService, LoggingService>();
+        builder.Services.AddScoped<IEventLogService, EventLogService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
@@ -166,6 +169,9 @@ public sealed class Program
         }
 
         app.UseForwardedHeaders();
+
+        app.UseMiddleware<EventAggregationMiddleware>();
+
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

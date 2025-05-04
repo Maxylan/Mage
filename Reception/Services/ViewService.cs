@@ -2,15 +2,14 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reception.Authentication;
+using Reception.Models.Entities;
 using Reception.Interfaces;
 using Reception.Utilities;
-using Reception.Models;
-using Reception.Models.Entities;
 
 namespace Reception.Services;
 
 public class ViewService(
-    ILoggingService logging,
+    ILoggingService<ViewService> logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photoService,
     ILinkService linkService,
@@ -73,10 +72,10 @@ public class ViewService(
         if (httpContext is null)
         {
             string message = $"{nameof(ViewService.View)} Failed to generate {dimension.ToString()} view: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(ViewService.View))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
                 StatusCode = StatusCodes.Status500InternalServerError
@@ -105,14 +104,14 @@ public class ViewService(
             string? linkCode = code?.ToString("N")?.Normalize()?.Trim();
             if (string.IsNullOrWhiteSpace(linkCode) || linkCode.Length != 32)
             {
-                await logging
+                logging
                     .Action(nameof(ViewService.View))
                     .ExternalSuspicious($"Bad attempt to view a source ('{(linkCode ?? "null")}')", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 // Do not reveal any more info than necessary in when responding to potentially malicious requests / pen-tests..
                 return new NotFoundResult();
@@ -131,27 +130,27 @@ public class ViewService(
             bool expired = false;
             if (link.ExpiresAt < DateTime.UtcNow)
             {
-                await logging
+                logging
                     .Action(nameof(ViewService.View))
                     .ExternalInformation($"Link '{linkCode}' has expired. {nameof(Link.ExpiresAt)} date has passed.", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 expired = true;
             }
             else if (link.AccessLimit is not null && link.Accessed >= link.AccessLimit)
             {
-                await logging
+                logging
                     .Action(nameof(ViewService.View))
                     .ExternalInformation($"Link '{linkCode}' has expired. {nameof(Link.AccessLimit)} reached.", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 expired = true;
             }
@@ -170,7 +169,7 @@ public class ViewService(
                 link is null ? "null" : LinkService.GenerateLinkUri(link.Code, dimension).ToString()
             );
 
-            await logging
+            logging
                 .Action(nameof(ViewService.View))
                 .ExternalCritical($"A way to induce/throw an {ex.GetType().Name} in {nameof(ViewService.View)} was found! ('{uriForDebugging}') " + ex.Message, opts =>
                 {
@@ -179,7 +178,7 @@ public class ViewService(
                     opts.RequestUserAgent = userAgent;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             // Do not reveal any more info than necessary in when responding to potentially malicious requests / pen-tests..
             return new NotFoundResult();
@@ -228,7 +227,7 @@ public class ViewService(
                 }
             }
 
-            await logging
+            logging
                 .Action(nameof(ViewService.View))
                 .ExternalInformation(visitMessage + ".", opts =>
                 {
@@ -236,14 +235,14 @@ public class ViewService(
                     opts.RequestUserAgent = userAgent;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             // Get & Return the requested `Photo`..
-            return await blobs.GetBlob(dimension, link.Photo);
+            return await blobs.GetBlobAsync(dimension, link.Photo);
         }
         catch (DbUpdateException ex)
         {
-            await logging
+            logging
                 .Action(nameof(ViewService.View))
                 .InternalError($"Cought an {ex.GetType().Name} in {nameof(ViewService.View)} while querying the database! {ex.Message}", opts =>
                 {
@@ -252,7 +251,7 @@ public class ViewService(
                     opts.RequestUserAgent = userAgent;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult($"Internal Server Error." + (Program.IsDevelopment ? $" ({ex.GetType().Name}) {ex.Message}" : "")) {
                 StatusCode = StatusCodes.Status500InternalServerError
@@ -260,7 +259,7 @@ public class ViewService(
         }
         catch (Exception ex)
         {
-            await logging
+            logging
                 .Action(nameof(ViewService.View))
                 .InternalError($"Cought an unknown exception of type {ex.GetType().Name} in {nameof(ViewService.View)}! {ex.Message}", opts =>
                 {
@@ -269,7 +268,7 @@ public class ViewService(
                     opts.RequestUserAgent = userAgent;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult($"Internal Server Error." + (Program.IsDevelopment ? $" ({ex.GetType().Name}) {ex.Message}" : "")) {
                 StatusCode = StatusCodes.Status500InternalServerError

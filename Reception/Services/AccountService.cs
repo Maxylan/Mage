@@ -9,7 +9,7 @@ using System.Net;
 namespace Reception.Services;
 
 public class AccountService(
-    ILoggingService loggingService,
+    ILoggingService<AccountService> logging,
     MageDbContext db
 ) : IAccountService
 {
@@ -32,10 +32,10 @@ public class AccountService(
         if (user is null)
         {
             string message = $"Failed to find an {nameof(Account)} with ID #{id}.";
-            await loggingService
+            logging
                 .Action(nameof(GetAccount))
                 .ExternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -57,10 +57,10 @@ public class AccountService(
         if (user is null)
         {
             string message = $"Failed to find an {nameof(Account)} with Username '{username}'.";
-            await loggingService
+            logging
                 .Action(nameof(GetAccountByUsername))
                 .ExternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -92,10 +92,10 @@ public class AccountService(
             if (offset < 0)
             {
                 message = $"Parameter {nameof(offset)} has to either be `0`, or any positive integer greater-than `0`.";
-                await loggingService
+                logging
                     .Action(nameof(GetAccount))
                     .LogDebug(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -108,10 +108,10 @@ public class AccountService(
             if (limit <= 0)
             {
                 message = $"Parameter {nameof(limit)} has to be a positive integer greater-than `0`.";
-                await loggingService
+                logging
                     .Action(nameof(GetAccount))
                     .LogDebug(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -132,10 +132,10 @@ public class AccountService(
         if (account is null)
         {
             string message = $"Failed to find {nameof(Account)} with ID #{mut.Id}";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccount))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -159,13 +159,13 @@ public class AccountService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)}. ";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccount))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -177,13 +177,13 @@ public class AccountService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccount))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -207,10 +207,10 @@ public class AccountService(
         if (photoId <= 0)
         {
             string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccountAvatar))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -226,9 +226,10 @@ public class AccountService(
 
             if (Program.IsDevelopment)
             {
-                loggingService
+                logging
                     .Action(nameof(UpdateAccountAvatar))
-                    .InternalInformation($"{nameof(Account)} '{user.Username}' (#{user.Id}) just had its Avatar updated.");
+                    .InternalInformation($"{nameof(Account)} '{user.Username}' (#{user.Id}) just had its Avatar updated.")
+                    .LogAndEnqueue();
             }
 
             await db.SaveChangesAsync();
@@ -236,14 +237,14 @@ public class AccountService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update the Avatar of User '{user.Username}'. ";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccountAvatar))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -255,14 +256,14 @@ public class AccountService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the Avatar of User '{user.Username}'. ";
-            await loggingService
+            logging
                 .Action(nameof(UpdateAccountAvatar))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message

@@ -1,5 +1,4 @@
-using Reception.Interfaces;
-using Reception.Services;
+using Reception.Utilities;
 
 namespace Reception.Models;
 
@@ -14,47 +13,79 @@ public class Login
     /// Your <c><see cref="Reception.Models.Entities.Account.Password"/></c>.
     /// </summary>
     public string Hash { get; init; } = null!;
+
+    /// <summary>
+    /// Your <c>IP Address</c>.
+    /// </summary>
+    public string? Address { get; init; }
+
+    /// <summary>
+    /// Your <c>HTTP Client User Agent</c>.
+    /// </summary>
+    public string? UserAgent { get; init; }
 }
 
-public record class LoginAttempt
+public struct LoginAttempt
 {
-    public LoginAttempt(string username)
-    {
-        Username = username;
-    }
+    public const string ADDR_FALLBACK = "unknown";
+    public static string GetKey(string username, string? address) {
+        if (string.IsNullOrWhiteSpace(address)) {
+            return $"{username}_{ADDR_FALLBACK}";
 
-    public string? UserAgent { get; init; }
-    public string? Address { get; init; }
-    public string Username { get; init; }
-    public uint Attempts { get; init; } = 0;
-
-    public string Key
-    {
-        get
-        {
-            string? deviceIdentifier = Address ?? UserAgent;
-            ArgumentException.ThrowIfNullOrWhiteSpace(deviceIdentifier, nameof(deviceIdentifier));
-
-            return LoginAttempt.KeyFormat(this.Username, deviceIdentifier);
         }
-    }
-    public string AddressKey
-    {
-        get
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(this.Address, nameof(this.Address));
-            return LoginAttempt.KeyFormat(this.Username, this.Address);
-        }
-    }
-    public string UserAgentKey
-    {
-        get
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(this.UserAgent, nameof(this.UserAgent));
-            return LoginAttempt.KeyFormat(this.Username, this.UserAgent);
-        }
+
+        return $"{username}_{address}";
     }
 
-    public static string KeyFormat(string username, string deviceIdentifier) =>
-        $"{username}_{deviceIdentifier}";
+    public readonly uint Attempt { get; init; } = 0;
+    public readonly string Username { get; init; }
+    public readonly string? Address { get; init; }
+    public readonly string? UserAgent { get; init; }
+
+    public LoginAttempt(
+        uint attempt,
+        string username,
+        string? address,
+        string? userAgent
+    ) {
+        this.Attempt = attempt;
+        this.Username = username.ToLower().Replace(" ", "-");
+
+        if (string.IsNullOrWhiteSpace(this.Username)) {
+            throw new ArgumentException($"Argument {nameof(username)} cannot be null/empty");
+        }
+        if (this.Username.Length > 63) {
+            throw new ArgumentException($"Argument {nameof(username)} cannot be execed 63 characters");
+        }
+
+        this.Address = address?.ToLower()
+            .Replace(" ", "-")
+            .Subsmart(0, 255);
+
+        this.UserAgent = userAgent?.ToLower()
+            .Replace(" ", "-")
+            .Subsmart(0, 1023);
+    }
+
+    public LoginAttempt(uint attempt, Login login) {
+        this.Attempt = attempt;
+        this.Username = login.Username.ToLower().Replace(" ", "-");
+
+        if (string.IsNullOrWhiteSpace(this.Username)) {
+            throw new ArgumentException($"Argument {nameof(login.Username)} cannot be null/empty");
+        }
+        if (this.Username.Length > 63) {
+            throw new ArgumentException($"Argument {nameof(login.Username)} cannot be execed 63 characters");
+        }
+
+        this.Address = login.Address?.ToLower()
+            .Replace(" ", "-")
+            .Subsmart(0, 255);
+
+        this.UserAgent = login.UserAgent?.ToLower()
+            .Replace(" ", "-")
+            .Subsmart(0, 1023);
+    }
+
+    public string Key => LoginAttempt.GetKey(this.Username, this.Address);
 }

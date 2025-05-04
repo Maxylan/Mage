@@ -14,10 +14,10 @@ namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
+    ILoggingService<AuthorizationService> logging,
     LoginTracker loginTracker,
     ISessionService sessions,
-    IAccountService accounts,
-    ILoggingService logging
+    IAccountService accounts
 ) : IAuthorizationService
 {
     /// <summary>
@@ -34,13 +34,13 @@ public class AuthorizationService(
         if (httpContext is null)
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .LogError(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -51,13 +51,13 @@ public class AuthorizationService(
         if (!getAuthenticationProperties)
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(AuthenticationProperties)} found.";
-            await logging
+            logging
                 .LogError(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -96,13 +96,13 @@ public class AuthorizationService(
         }
 
         message = $"Failed to infer a {nameof(Session)} or Token from contextual {nameof(Account)}, {nameof(Session.Code)} or {nameof(AuthenticationProperties)}";
-        await logging
+        logging
             .LogInformation(message, m =>
             {
                 m.Action = nameof(ValidateSession);
                 m.Source = source;
             })
-            .SaveAsync();
+            .LogAndEnqueue();
 
         return new UnauthorizedObjectResult(message);
     }
@@ -141,13 +141,13 @@ public class AuthorizationService(
         if (httpContext is null)
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .LogError(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -157,13 +157,13 @@ public class AuthorizationService(
         if (session.ExpiresAt <= DateTime.UtcNow)
         {
             message = $"{nameof(Session)} Validation Failed: Expired";
-            await logging
+            logging
                 .LogInformation(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -175,13 +175,13 @@ public class AuthorizationService(
             if (session.UserAgent != httpContext.Request.Headers.UserAgent.ToString())
             {
                 message = $"{nameof(Session)} Validation Failed: UserAgent missmatch";
-                await logging
+                logging
                     .LogSuspicious(message, m =>
                     {
                         m.Action = nameof(ValidateSession);
                         m.Source = source;
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new UnauthorizedObjectResult(
                     Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -192,13 +192,13 @@ public class AuthorizationService(
             if (session.ExpiresAt > DateTime.UtcNow + TimeSpan.FromDays(1))
             {
                 message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
-                await logging
+                logging
                     .LogSuspicious(message, m =>
                     {
                         m.Action = nameof(ValidateSession);
                         m.Source = source;
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new UnauthorizedObjectResult(
                     Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -210,13 +210,13 @@ public class AuthorizationService(
         else if (session.ExpiresAt > DateTime.UtcNow + TimeSpan.FromHours(1))
         {
             message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
-            await logging
+            logging
                 .LogSuspicious(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -229,13 +229,13 @@ public class AuthorizationService(
         if (account is null)
         {
             message = $"{nameof(Session)} Validation Failed: Bad Account.";
-            await logging
+            logging
                 .LogSuspicious(message, m =>
                 {
                     m.Action = nameof(ValidateSession);
                     m.Source = source;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -283,10 +283,10 @@ public class AuthorizationService(
         if (contextAccessor.HttpContext is null)
         {
             string message = $"Login Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(Login))
                 .ExternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message
@@ -299,29 +299,32 @@ public class AuthorizationService(
         string? userAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
         string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
 
+        if (!string.IsNullOrWhiteSpace(userAddress))
+        {
+            userAgent = userAgent
+                .Normalize()
+                .Subsmart(0, 255)
+                .Replace(@"\", string.Empty)
+                .Replace("&&", string.Empty)
+                .Trim();
+        }
         if (!string.IsNullOrWhiteSpace(userAgent))
         {
             userAgent = userAgent
                 .Normalize()
                 .Subsmart(0, 1023)
-                .Replace("\\", "\\\\")
-                .Replace("&&", "and")
+                .Replace(@"\", string.Empty)
+                .Replace("&&", string.Empty)
                 .Trim();
         }
 
-        LoginAttempt attempt = new(account.Username)
-        {
-            UserAgent = userAgent,
-            Address = userAddress
-        };
-
-        if (loginTracker.Attempts(attempt) >= 3)
+        if (loginTracker.Attempts(account.Username, userAddress) >= 3)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout due to repeatedly failed attempts.";
-            await logging
+            logging
                 .Action(nameof(Login))
                 .ExternalSuspicious(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(
                 Program.IsProduction ? HttpStatusCode.RequestTimeout.ToString() : message
@@ -333,12 +336,13 @@ public class AuthorizationService(
 
         if (account.Password != hash)
         {
-            loginTracker.Set(attempt);
+            loginTracker.RecordAttempt(account.Username, userAddress, userAgent);
 
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
             logging
                 .Action(nameof(Login))
-                .ExternalSuspicious(message);
+                .ExternalSuspicious(message)
+                .LogAndEnqueue();
 
             await sessions.CleanupSessions();
 
@@ -352,10 +356,10 @@ public class AuthorizationService(
 
         if (createSession.Result is NoContentResult)
         {
-            await logging
+            logging
                 .Action(nameof(Login))
                 .ExternalTrace($"No new session created ({nameof(NoContentResult)})")
-                .SaveAsync();
+                .LogAndEnqueue();
 
             var getSession = await sessions.GetSessionByUser(account);
             return getSession;
@@ -363,10 +367,10 @@ public class AuthorizationService(
         else if (session is null)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Could not create a new {nameof(Session)} ({nameof(createSession.Result)}).";
-            await logging
+            logging
                 .Action(nameof(Login))
                 .ExternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return createSession.Result!;
         }

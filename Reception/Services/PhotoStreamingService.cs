@@ -21,9 +21,9 @@ namespace Reception.Services;
 
 public class PhotoStreamingService(
     IHttpContextAccessor contextAccessor,
+    ILoggingService<PhotoStreamingService> logging,
     IPhotoService photoService,
     IIntelligenceService ai,
-    ILoggingService logging,
     MageDbContext db
 ) : IPhotoStreamingService
 {
@@ -60,10 +60,10 @@ public class PhotoStreamingService(
         if (httpContext is null)
         {
             string message = $"{nameof(UploadPhotos)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(UploadPhotos))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -73,10 +73,10 @@ public class PhotoStreamingService(
         if (!MultipartHelper.IsMultipartContentType(httpContext.Request.ContentType))
         {
             string message = $"{nameof(UploadPhotos)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
-            await logging
+            logging
                 .Action(nameof(UploadPhotos))
                 .ExternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -93,10 +93,10 @@ public class PhotoStreamingService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(UploadPhotos))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
@@ -146,22 +146,22 @@ public class PhotoStreamingService(
 
                     if (newPhoto is null)
                     {
-                        await logging
+                        logging
                             .Action(nameof(UploadPhotos))
                             .InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo. {nameof(newPhoto)} was null.")
-                            .SaveAsync();
+                            .LogAndEnqueue();
                         continue;
                     }
                 }
                 catch (Exception ex)
                 {
-                    await logging
+                    logging
                          .Action(nameof(UploadPhotos))
                            .InternalError($"Failed to upload a photo. ({ex.GetType().Name}) " + ex.Message, opts =>
                            {
                                opts.Exception = ex;
                            })
-                         .SaveAsync();
+                         .LogAndEnqueue();
                     continue;
                 }
 
@@ -173,20 +173,20 @@ public class PhotoStreamingService(
 
                     if (newPhoto is null || newPhoto.Id == default)
                     {
-                        await logging
+                        logging
                             .Action(nameof(UploadPhotos))
                             .InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).")
-                            .SaveAsync();
+                            .LogAndEnqueue();
                         continue;
                     }
                 }
 
                 if (!newPhoto!.Filepaths.Any(path => path.IsSource))
                 {
-                    await logging
+                    logging
                         .Action(nameof(UploadPhotos))
                         .InternalError($"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(PhotoEntity)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).")
-                        .SaveAsync();
+                        .LogAndEnqueue();
                     continue;
                 }
 
@@ -283,7 +283,7 @@ public class PhotoStreamingService(
             /* await logging
                 .Action(nameof(UploadPhotos))
                 .InternalInformation($"Done! Performed '{analysis.Count()}' analysis of uploaded photo(s)")
-                .SaveAsync(); */
+                .LogAndEnqueue(); */
         }
 
         return new CreatedAtActionResult(null, null, null, photos);
@@ -626,10 +626,10 @@ public class PhotoStreamingService(
         if (options.Slug.Length > 127)
         {
             string message = $"Failed to upload photo, {nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
-            await logging
+            logging
                 .Action(nameof(UploadSinglePhoto))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
         }
@@ -652,10 +652,10 @@ public class PhotoStreamingService(
         if (options.Title.Length > 255)
         {
             string message = $"Failed to upload photo, {nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(UploadSinglePhoto))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
         }
@@ -858,7 +858,8 @@ public class PhotoStreamingService(
 
         logging
             .Action(nameof(UploadSinglePhoto))
-            .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(PhotoCollection)} '{photo.Slug}'.");
+            .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(PhotoCollection)} '{photo.Slug}'.")
+            .LogAndEnqueue();
 
         // Reset provided 'options' to defaults.
         // Order matters, since we're uploading more than one file..

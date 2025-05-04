@@ -1,136 +1,274 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Models.Entities;
 using Reception.Models;
 
-namespace Reception.Interfaces;
+namespace Reception.Interfaces {
+    public interface ILoggingService
+    {
+        /// <summary>
+        /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
+        /// Use this to, for example, log a message without storing it in the database.
+        /// </summary>
+        public ILogger Logger { get; }
 
-public interface ILoggingService
-{
-    /// <summary>
-    /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService"/>
-    /// </summary>
-    public ILogger Logger { get; }
+        /// <summary>
+        /// Set what action triggered this log entry to be created.
+        /// </summary>
+        public abstract ILoggingService Action(string actionName);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService LogCritical(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService InternalCritical(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService ExternalCritical(string message, Action<LogEntryOptions>? predicate = null);
 
-    /// <summary>
-    /// Get the <see cref="LogEntry"/> with Primary Key '<paramref ref="id"/>'
-    /// </summary>
-    public abstract Task<ActionResult<LogEntry>> GetEvent(int id);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        public abstract void Log();
 
-    /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;LogEntry&gt;"/>) set of 
-    /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
-    /// </summary>
-    public abstract DbSet<LogEntry> GetEvents();
+        /// <summary>
+        /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public abstract void Enqueue();
 
-    /// <summary>
-    /// Get all <see cref="LogEntry"/>-entries matching a wide range of optional filtering parameters.
-    /// </summary>
-    public abstract Task<ActionResult<IEnumerable<LogEntry>>> GetEvents(int? limit, int? offset, Source? source, Severity? severity, Method? method, string? action);
+        /// <summary>
+        /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public abstract void LogAndEnqueue();
+    }
+    public interface ILoggingService<TService>
+    {
+        /// <summary>
+        /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService{TService}"/>
+        /// Use this to, for example, log a message without storing it in the database.
+        /// </summary>
+        public ILogger<TService> Logger { get; }
 
-    /// <summary>
-    /// Set what action triggered this entry to be created.
-    /// Will be used for the next <see cref="LogEntry"/> created via <see cref="LogNewEvent"/>.
-    /// </summary>
-    public abstract ILoggingService Action(string actionName);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogTrace(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalTrace(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalTrace(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogDebug(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalDebug(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalDebug(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogInformation(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalInformation(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalInformation(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogSuspicious(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogWarning(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalWarning(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalWarning(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogError(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalError(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalError(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogCritical(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase InternalCritical(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase ExternalCritical(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log a custom <see cref="LogEntry"/>-event to the database.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogEvent(string message, Action<LogEntryOptions>? predicate = null);
-    /// <summary>
-    /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
-    /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
-    /// </summary>
-    public abstract StoreLogsInDatabase LogEvents(params LogEntryOptions[] entries);
+        /// <summary>
+        /// Set what action triggered this log entry to be created.
+        /// </summary>
+        public abstract ILoggingService<TService> Action(string actionName);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalTrace(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalDebug(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalInformation(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalSuspicious(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalWarning(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalError(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> LogCritical(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> InternalCritical(string message, Action<LogEntryOptions>? predicate = null);
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event to the database.
+        /// The log is enqueued, meaning nothing is addded to the database until *after* this current request lifecycle is concluded.
+        /// </summary>
+        public abstract ILoggingService<TService> ExternalCritical(string message, Action<LogEntryOptions>? predicate = null);
 
-    /// <summary>
-    /// Deletes all provided <see cref="LogEntry"/>-entries.
-    /// </summary>
+        /// <summary>
+        /// Log a custom <see cref="LogEntry"/>-event entry.
+        /// </summary>
+        public abstract void Log();
 
-    public abstract Task<int> DeleteEvents(params LogEntry[] entries);
+        /// <summary>
+        /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public abstract void Enqueue();
+
+        /// <summary>
+        /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
+        /// </summary>
+        public abstract void LogAndEnqueue();
+    }
+
 }

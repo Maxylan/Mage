@@ -25,7 +25,7 @@ public interface IBlobService
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.SOURCE.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public interface IBlobService
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.MEDIUM.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public interface IBlobService
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.THUMBNAIL.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
 
@@ -78,11 +78,26 @@ public interface IBlobService
     /// <remarks>
     /// <paramref name="dimension"/> Controls what image size is returned.
     /// </remarks>
-    public Task<ActionResult> GetBlob(Dimension dimension, PhotoEntity entity) =>
+    public ActionResult GetBlob(Dimension dimension, PhotoEntity entity) =>
         this.GetBlob(new Photo(entity, dimension));
 
     /// <summary>
     /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
     /// </summary>
-    public abstract Task<ActionResult> GetBlob(Photo photo);
+    public abstract ActionResult GetBlob(Photo photo);
+
+    /// <summary>
+    /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="dimension"/> Controls what image size is returned.
+    /// </remarks>
+    public virtual Task<ActionResult> GetBlobAsync(Dimension dimension, PhotoEntity entity) =>
+        this.GetBlobAsync(new Photo(entity, dimension));
+
+    /// <summary>
+    /// Asynchronoushly get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
+    /// </summary>
+    public virtual Task<ActionResult> GetBlobAsync(Photo photo) =>
+        Task.Run(() => this.GetBlob(photo));
 }

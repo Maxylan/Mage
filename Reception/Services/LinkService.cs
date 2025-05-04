@@ -10,7 +10,7 @@ namespace Reception.Services;
 
 public class LinkService(
     MageDbContext db,
-    ILoggingService logging,
+    ILoggingService<LinkService> logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photos
 ) : ILinkService
@@ -84,10 +84,10 @@ public class LinkService(
 
         if (link is null)
         {
-            await logging
+            logging
                 .Action(nameof(GetLink))
                 .InternalDebug($"Link with ID #{linkId} could not be found.")
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult($"{nameof(Link)} with ID #{linkId} not found!");
         }
@@ -112,10 +112,10 @@ public class LinkService(
 
         if (link is null)
         {
-            await logging
+            logging
                 .Action(nameof(GetLinkByCode))
                 .InternalDebug($"Link with code '{code}' could not be found.")
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult($"{nameof(Link)} with unique code '{code}' could not be found!");
         }
@@ -154,10 +154,10 @@ public class LinkService(
         if (httpContext is null)
         {
             string message = $"{nameof(CreateLink)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(CreateLink))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
                 StatusCode = StatusCodes.Status500InternalServerError
@@ -172,13 +172,13 @@ public class LinkService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(CreateLink))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => {
                         opts.Exception = ex;
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
@@ -219,14 +219,14 @@ public class LinkService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)}. ";
-            await logging
+            logging
                 .Action(nameof(CreateLink))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -238,14 +238,14 @@ public class LinkService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}'. ";
-            await logging
+            logging
                 .Action(nameof(CreateLink))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -294,10 +294,10 @@ public class LinkService(
         if (linkId <= 0)
         {
             string message = $"Parameter '{nameof(linkId)}' has to be a non-zero positive integer! (Link ID)";
-            await logging
+            logging
                 .Action(nameof(UpdateLink))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -307,10 +307,10 @@ public class LinkService(
         if (existingLink is null)
         {
             string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(UpdateLink))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -329,10 +329,10 @@ public class LinkService(
         else if (mut.ExpiresAt < DateTime.UtcNow)
         {
             string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
-            await logging
+            logging
                 .Action(nameof(UpdateLink))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -345,20 +345,21 @@ public class LinkService(
             db.Update(existingLink);
             logging
                 .Action(nameof(UpdateLink))
-                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.");
+                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -370,13 +371,13 @@ public class LinkService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -409,20 +410,20 @@ public class LinkService(
         if (string.IsNullOrWhiteSpace(code))
         {
             string message = $"Parameter '{nameof(code)}' cannot be null/empty!";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
         if (code.Length != 32)
         {
             string message = $"Parameter '{nameof(code)}' invalid format!";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .ExternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -433,10 +434,10 @@ public class LinkService(
         if (existingLink is null)
         {
             string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -455,10 +456,10 @@ public class LinkService(
         else if (mut.ExpiresAt < DateTime.UtcNow)
         {
             string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -471,20 +472,21 @@ public class LinkService(
             db.Update(existingLink);
             logging
                 .Action(nameof(UpdateLinkByCode))
-                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.");
+                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -496,13 +498,13 @@ public class LinkService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -525,10 +527,10 @@ public class LinkService(
         if (linkId <= 0)
         {
             string message = $"Parameter '{nameof(linkId)}' has to be a non-zero positive integer! (Link ID)";
-            await logging
+            logging
                 .Action(nameof(DeleteLink))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -538,10 +540,10 @@ public class LinkService(
         if (existingLink is null)
         {
             string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeleteLink))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -551,20 +553,21 @@ public class LinkService(
             db.Update(existingLink);
             logging
                 .Action(nameof(DeleteLink))
-                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.");
+                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(DeleteLink))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -576,13 +579,13 @@ public class LinkService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(DeleteLink))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -602,20 +605,20 @@ public class LinkService(
         if (string.IsNullOrWhiteSpace(code))
         {
             string message = $"Parameter '{nameof(code)}' cannot be null/empty!";
-            await logging
+            logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
         if (code.Length != 32)
         {
             string message = $"Parameter '{nameof(code)}' invalid format!";
-            await logging
+            logging
                 .Action(nameof(DeleteLinkByCode))
                 .ExternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -626,10 +629,10 @@ public class LinkService(
         if (existingLink is null)
         {
             string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -639,20 +642,21 @@ public class LinkService(
             db.Remove(existingLink);
             logging
                 .Action(nameof(DeleteLinkByCode))
-                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.");
+                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -664,13 +668,13 @@ public class LinkService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
-            await logging
+            logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message

@@ -1,17 +1,14 @@
-using System.Net;
+using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Reception.Authentication;
 using Reception.Interfaces;
 using Reception.Models;
 using Reception.Models.Entities;
 using Reception.Utilities;
-using SixLabors.ImageSharp.Formats;
 
 namespace Reception.Services;
 
 public class BlobService(
-    ILoggingService logging,
+    ILoggingService<BlobService> logging,
     IPhotoService photoService
 ) : IBlobService
 {
@@ -38,7 +35,7 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(source);
+        return await GetBlobAsync(source);
     }
     /// <summary>
     /// Get the source blob associated with the <see cref="PhotoEntity"/> identified by <paramref name="photoId"/>.
@@ -57,12 +54,12 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(source);
+        return await GetBlobAsync(source);
     }
     /// <summary>
     /// Get the source blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
     /// </summary>
-    public virtual Task<ActionResult> GetSourceBlob(Photo photo)
+    public Task<ActionResult> GetSourceBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo, nameof(Photo));
         ArgumentNullException.ThrowIfNull(photo.Filepath, nameof(Photo.Filepath));
@@ -71,7 +68,7 @@ public class BlobService(
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.SOURCE.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
 
@@ -98,7 +95,7 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(medium);
+        return await GetBlobAsync(medium);
     }
     /// <summary>
     /// Get the medium blob associated with the <see cref="PhotoEntity"/> identified by <paramref name="photoId"/>.
@@ -117,12 +114,12 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(medium);
+        return await GetBlobAsync(medium);
     }
     /// <summary>
     /// Get the medium blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
     /// </summary>
-    public virtual Task<ActionResult> GetMediumBlob(Photo photo)
+    public Task<ActionResult> GetMediumBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo, nameof(Photo));
         ArgumentNullException.ThrowIfNull(photo.Filepath, nameof(Photo.Filepath));
@@ -131,7 +128,7 @@ public class BlobService(
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.MEDIUM.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
 
@@ -158,7 +155,7 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(thumbnail);
+        return await GetBlobAsync(thumbnail);
     }
     /// <summary>
     /// Get the thumbnail blob associated with the <see cref="PhotoEntity"/> identified by <paramref name="photoId"/>.
@@ -177,12 +174,12 @@ public class BlobService(
             return new NotFoundResult(); // TODO! Log & Handle..
         }
 
-        return await GetBlob(thumbnail);
+        return await GetBlobAsync(thumbnail);
     }
     /// <summary>
     /// Get the thumbnail blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
     /// </summary>
-    public virtual Task<ActionResult> GetThumbnailBlob(Photo photo)
+    public Task<ActionResult> GetThumbnailBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo, nameof(Photo));
         ArgumentNullException.ThrowIfNull(photo.Filepath, nameof(Photo.Filepath));
@@ -191,7 +188,7 @@ public class BlobService(
             throw new ArgumentException($"Incorrect dimension ('{photo.Dimension.ToString()}') in given photo '{photo.Slug}' (#{photo.PhotoId})! Expected dimension '{Dimension.THUMBNAIL.ToString()}'");
         }
 
-        return GetBlob(photo);
+        return GetBlobAsync(photo);
     }
 
 
@@ -201,14 +198,14 @@ public class BlobService(
     /// <remarks>
     /// <paramref name="dimension"/> Controls what image size is returned.
     /// </remarks>
-    public Task<ActionResult> GetBlob(Dimension dimension, PhotoEntity entity) =>
+    public ActionResult GetBlob(Dimension dimension, PhotoEntity entity) =>
         this.GetBlob(new Photo(entity, dimension));
 
 
     /// <summary>
     /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
     /// </summary>
-    public async Task<ActionResult> GetBlob(Photo photo)
+    public ActionResult GetBlob(Photo photo)
     {
         ArgumentNullException.ThrowIfNull(photo, nameof(Photo));
         ArgumentNullException.ThrowIfNull(photo.Filepath, nameof(Photo.Filepath));
@@ -240,13 +237,13 @@ public class BlobService(
                 Program.IsDevelopment ? $"'{path}'. {notFound.Message}" : photo.Filename
             );
 
-            await logging
+            logging
                 .Action(nameof(GetBlob) + $" ({photo.Dimension.ToString()})")
                 .InternalWarning(message, opts =>
                 {
                     opts.Exception = notFound;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -254,13 +251,13 @@ public class BlobService(
         {
             string message = $"Cought {nameof(UnauthorizedAccessException)} attempting to open file '{path}'. {unauthorizedAccess.Message}";
 
-            await logging
+            logging
                 .Action(nameof(GetBlob) + $" ({photo.Dimension.ToString()})")
                 .InternalError(message, opts =>
                 {
                     opts.Exception = unauthorizedAccess;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(Program.IsDevelopment ? message : $"Failed to access '${photo.Filename}'") {
                 StatusCode = StatusCodes.Status423Locked
@@ -273,17 +270,35 @@ public class BlobService(
                 message += $" ({ex.GetType().Name}): {ex.Message}";
             }
 
-            await logging
+            logging
                 .Action(nameof(GetBlob) + $" ({photo.Dimension.ToString()})")
                 .InternalError(message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message) {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
+    }
+
+
+    /// <summary>
+    /// Get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="dimension"/> Controls what image size is returned.
+    /// </remarks>
+    public Task<ActionResult> GetBlobAsync(Dimension dimension, PhotoEntity entity) =>
+        this.GetBlobAsync(new Photo(entity, dimension));
+
+    /// <summary>
+    /// Asynchronoushly get the blob associated with the <see cref="PhotoEntity"/> <paramref name="photo"/>
+    /// </summary>
+    public Task<ActionResult> GetBlobAsync(Photo photo)
+    {
+        return Task.Run(() => this.GetBlob(photo));
     }
 }

@@ -11,7 +11,7 @@ using System.Text.Json;
 namespace Reception.Services;
 
 public class IntelligenceService(
-    ILoggingService logging,
+    ILoggingService<IntelligenceService> logging,
     IPhotoService photos,
     IBlobService blobs
 ) : IIntelligenceService
@@ -173,12 +173,12 @@ public class IntelligenceService(
         catch (Exception ex)
         {
             string message = $"{nameof(PingOllama)}(..) threw an error! '{ex.Message}'";
-            await logging
+            logging
                 .Action($"{nameof(PingOllama)}/{nameof(View)}")
                 .InternalError(message, opts => {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message)
             {
@@ -186,13 +186,13 @@ public class IntelligenceService(
             };
         }
 
-        var getBlob = await blobs.GetBlob(dimension, entity);
+        var getBlob = await blobs.GetBlobAsync(dimension, entity);
         if (getBlob is not FileStreamResult) {
             string message = $"{nameof(IBlobService.GetBlob)}(..) failed to load blob! '{getBlob.GetType().FullName}'";
-            await logging
+            logging
                 .Action($"{nameof(PingOllama)}/{nameof(View)}")
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return getBlob;
         }
@@ -273,12 +273,12 @@ public class IntelligenceService(
         catch (Exception ex)
         {
             string message = $"{nameof(Ollama)}(..) threw an error! '{ex.Message}'";
-            await logging
+            logging
                 .Action($"{nameof(Ollama)}/{nameof(InferSourceImage)}")
                 .InternalError(message, opts => {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message)
             {
@@ -361,10 +361,10 @@ public class IntelligenceService(
 
         if (analysis.Response is null) {
             string message = $"Failed to analyze photo '{photo.Slug}' (#{photo.Id}), could not parse the LLM's 'response': '{analysis.Response}'";
-            await logging
+            logging
                 .Action(nameof(ApplyPhotoAnalysis))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return photo;
         }
@@ -377,7 +377,7 @@ public class IntelligenceService(
             await logging
                 .Action(nameof(ApplyPhotoAnalysis))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -388,7 +388,7 @@ public class IntelligenceService(
                 await logging
                     .Action(nameof(ApplyPhotoAnalysis))
                     .InternalWarning(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return photo;
             }
@@ -400,7 +400,7 @@ public class IntelligenceService(
                 .InternalError(message, opts => {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return photo;
         } */
@@ -417,7 +417,7 @@ public class IntelligenceService(
                 .InternalError(message, opts => {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return photo;
         } */
@@ -501,10 +501,10 @@ public class IntelligenceService(
         }
         catch (Exception ex) {
             string message = $"Failed to save post-analysis updates to photo '{photo.Slug}' (#{photo.Id}). {ex.GetType().BaseType} '{ex.Message}'";
-            await logging
+            logging
                 .Action(nameof(ApplyPhotoAnalysis))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
         }
 
         return photo;

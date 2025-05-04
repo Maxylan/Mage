@@ -10,7 +10,7 @@ namespace Reception.Services;
 
 public class CategoryService(
     MageDbContext db,
-    ILoggingService logging,
+    ILoggingService<CategoryService> logging,
     IHttpContextAccessor contextAccessor
 ) : ICategoryService
 {
@@ -48,10 +48,10 @@ public class CategoryService(
         if (category is null)
         {
             string message = $"Failed to find a {nameof(Category)} matching the given {nameof(id)} #{id}.";
-            await logging
+            logging
                 .Action(nameof(GetCategory))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -89,10 +89,10 @@ public class CategoryService(
         if (string.IsNullOrWhiteSpace(title))
         {
             string message = $"{nameof(Category)} titles cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetCategoryByTitle))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -105,10 +105,10 @@ public class CategoryService(
         if (title.Length > 255)
         {
             string message = $"{nameof(Category)} title exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(GetCategoryByTitle))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -120,10 +120,10 @@ public class CategoryService(
         if (category is null)
         {
             string message = $"{nameof(Category)} with title '{title}' could not be found!";
-            await logging
+            logging
                 .Action(nameof(GetCategoryByTitle))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -164,10 +164,10 @@ public class CategoryService(
         if (httpContext is null)
         {
             string message = $"{nameof(CreateCategory)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -184,22 +184,22 @@ public class CategoryService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(CreateCategory))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -213,12 +213,12 @@ public class CategoryService(
         if (mut.Title.Length > 255)
         {
             string message = $"{nameof(Category.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -227,12 +227,12 @@ public class CategoryService(
         if (titleTaken)
         {
             string message = $"{nameof(Category.Title)} was already taken!";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message) {
                 StatusCode = StatusCodes.Status409Conflict
@@ -250,12 +250,12 @@ public class CategoryService(
             if (mut.Summary.Length > 255)
             {
                 string message = $"{nameof(Category.Summary)} exceeds maximum allowed length of 255.";
-                await logging
+                logging
                     .Action(nameof(CreateCategory))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -301,21 +301,22 @@ public class CategoryService(
                 .InternalInformation($"A new {nameof(Category)} named '{newCategory.Title}' was created.", opts =>
                 {
                     opts.SetUser(user);
-                });
+                })
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to create new Category '{newCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -327,14 +328,14 @@ public class CategoryService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to create new Category '{newCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(CreateCategory))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -366,10 +367,10 @@ public class CategoryService(
         if (httpContext is null)
         {
             string message = $"{nameof(UpdateCategory)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -386,22 +387,22 @@ public class CategoryService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(UpdateCategory))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
         if (mut.Id <= 0)
         {
             string message = $"Parameter '{nameof(mut.Id)}' has to be a non-zero positive integer! (Category ID)";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -411,12 +412,12 @@ public class CategoryService(
         if (existingCategory is null)
         {
             string message = $"{nameof(Category)} with ID #{mut.Id} could not be found!";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -431,12 +432,12 @@ public class CategoryService(
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -450,12 +451,12 @@ public class CategoryService(
         if (mut.Title.Length > 255)
         {
             string message = $"{nameof(Category.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -466,12 +467,12 @@ public class CategoryService(
             if (titleTaken)
             {
                 string message = $"{nameof(Category.Title)} was already taken!";
-                await logging
+                logging
                     .Action(nameof(UpdateCategory))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new ObjectResult(message) {
                     StatusCode = StatusCodes.Status409Conflict
@@ -490,12 +491,12 @@ public class CategoryService(
             if (mut.Summary.Length > 255)
             {
                 string message = $"{nameof(Category.Summary)} exceeds maximum allowed length of 255.";
-                await logging
+                logging
                     .Action(nameof(UpdateCategory))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -548,14 +549,14 @@ public class CategoryService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Category '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -567,14 +568,14 @@ public class CategoryService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Category '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateCategory))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -599,10 +600,10 @@ public class CategoryService(
         if (categoryId <= 0)
         {
             string message = $"Parameter '{nameof(categoryId)}' has to be a non-zero positive integer! (Photo ID)";
-            await logging
+            logging
                 .Action(nameof(RemoveAlbum))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -610,10 +611,10 @@ public class CategoryService(
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(RemoveAlbum))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -625,10 +626,10 @@ public class CategoryService(
         if (existingCategory is null)
         {
             string message = $"{nameof(Category)} with ID #{categoryId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(RemoveAlbum))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -655,13 +656,13 @@ public class CategoryService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove an album from Category '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveAlbum))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -673,13 +674,13 @@ public class CategoryService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove an album from Category '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveAlbum))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -702,10 +703,10 @@ public class CategoryService(
         if (id <= 0)
         {
             string message = $"Parameter '{nameof(id)}' has to be a non-zero positive integer! (Category ID)";
-            await logging
+            logging
                 .Action(nameof(DeleteCategory))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -715,10 +716,10 @@ public class CategoryService(
         if (existingCategory is null)
         {
             string message = $"{nameof(Category)} with ID #{id} could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeleteCategory))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -736,13 +737,13 @@ public class CategoryService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Category)} '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteCategory))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -754,13 +755,13 @@ public class CategoryService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Category)} '{existingCategory.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteCategory))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message

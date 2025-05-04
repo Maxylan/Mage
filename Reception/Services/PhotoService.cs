@@ -1,26 +1,18 @@
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Processing;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using Reception.Authentication;
 using Reception.Models;
 using Reception.Models.Entities;
-using Reception.Utilities;
 using Reception.Interfaces;
-using System.Globalization;
-using System.Text;
-using System.Net;
-using Reception.Constants;
 using System.Linq.Expressions;
+using System.Net;
 
 namespace Reception.Services;
 
 public class PhotoService(
     MageDbContext db,
-    ILoggingService logging,
+    ILoggingService<PhotoService> logging,
     IHttpContextAccessor contextAccessor,
     ITagService tagService
 ) : IPhotoService
@@ -91,10 +83,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(photoId)} #{photoId}.";
-            await logging
+            logging
                 .Action(nameof(GetPhotoEntity))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -132,10 +124,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(slug)} '{slug}'.";
-            await logging
+            logging
                 .Action(nameof(GetPhotoEntity))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -162,10 +154,10 @@ public class PhotoService(
         if (!entity.Filepaths.Any(path => path.Dimension == dimension))
         {
             string message = $"Photo {nameof(PhotoEntity)} (#{photoId}) did not have a {dimension} {nameof(Dimension)}.";
-            await logging
+            logging
                 .Action(nameof(GetSinglePhoto))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -191,10 +183,10 @@ public class PhotoService(
         if (!entity.Filepaths.Any(path => path.Dimension == dimension))
         {
             string message = $"Photo {nameof(PhotoEntity)} ('{slug}') did not have a {dimension} {nameof(Dimension)}.";
-            await logging
+            logging
                 .Action(nameof(GetSinglePhoto))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -220,10 +212,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(photoId)} #{photoId}.";
-            await logging
+            logging
                 .Action(nameof(GetPhoto))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -247,10 +239,10 @@ public class PhotoService(
             string message = $"{nameof(PhotoEntity)} '{photo.Slug}' didn't have a {Dimension.SOURCE} {nameof(Dimension)}";
             // throw new Exception(message);
 
-            await logging
+            logging
                 .Action(nameof(GetPhoto))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -276,10 +268,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} matching the given {nameof(slug)} '{slug}'.";
-            await logging
+            logging
                 .Action(nameof(GetPhoto))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -303,10 +295,10 @@ public class PhotoService(
             string message = $"{nameof(PhotoEntity)} '{photo.Slug}' didn't have a {Dimension.SOURCE} {nameof(Dimension)}";
             // throw new Exception(message);
 
-            await logging
+            logging
                 .Action(nameof(GetPhoto))
                 .InternalWarning(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -669,10 +661,10 @@ public class PhotoService(
             else if (string.IsNullOrWhiteSpace(entity.Title))
             {
                 string message = $"Can't save bad {nameof(PhotoEntity)} (#{entity.Id}) to database, entity has no '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} and both '{nameof(PhotoEntity.Slug)}' & '{nameof(PhotoEntity.Title)}' are null/omitted!";
-                await logging
+                logging
                    .Action(nameof(CreatePhotoEntity))
                    .ExternalWarning(message)
-                   .SaveAsync();
+                   .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -687,10 +679,10 @@ public class PhotoService(
                 if (exists)
                 {
                     string message = $"{nameof(PhotoEntity)} with unique '{entity.Slug}' already exists!";
-                    await logging
+                    logging
                        .Action(nameof(CreatePhotoEntity))
                        .ExternalWarning(message)
-                       .SaveAsync();
+                       .LogAndEnqueue();
 
                     return new ObjectResult(message)
                     {
@@ -718,13 +710,13 @@ public class PhotoService(
             if (exists)
             {
                 message = $"{nameof(PhotoEntity)} '{entity.Slug}' (#{entity.Id}) already exists!";
-                await logging
+                logging
                    .Action(nameof(CreatePhotoEntity))
                    .InternalError(message, opts =>
                    {
                        opts.Exception = concurrencyException;
                    })
-                   .SaveAsync();
+                   .LogAndEnqueue();
 
                 return new ObjectResult(message)
                 {
@@ -733,13 +725,13 @@ public class PhotoService(
             }
 
             message = $"Cought a {nameof(DbUpdateConcurrencyException)} while attempting to save '{entity.Slug}' (#{entity.Id}) to database! ";
-            await logging
+            logging
                .Action(nameof(CreatePhotoEntity))
                .InternalError(message + concurrencyException.Message, opts =>
                {
                    opts.Exception = concurrencyException;
                })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message)
             {
@@ -749,13 +741,13 @@ public class PhotoService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {updateException.GetType().Name} while attempting to save '{entity.Slug}' (#{entity.Id}) to database! ";
-            await logging
+            logging
                .Action(nameof(CreatePhotoEntity))
                .InternalError(message + " " + updateException.Message, opts =>
                {
                    opts.Exception = updateException;
                })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message)
             {
@@ -788,10 +780,10 @@ public class PhotoService(
         if (httpContext is null)
         {
             string message = $"{nameof(UpdatePhotoEntity)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -808,23 +800,23 @@ public class PhotoService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(UpdatePhotoEntity))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
         if (mut.Id <= 0)
         {
             string message = $"Parameter '{nameof(mut.Id)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -834,13 +826,13 @@ public class PhotoService(
         if (existingPhoto is null)
         {
             string message = $"{nameof(Album)} with ID #{mut.Id} could not be found!";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -856,13 +848,13 @@ public class PhotoService(
         if (string.IsNullOrWhiteSpace(mut.Slug))
         {
             string message = $"Parameter '{nameof(mut.Slug)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -876,13 +868,13 @@ public class PhotoService(
         if (mut.Slug.Length > 127)
         {
             string message = $"{nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -893,13 +885,13 @@ public class PhotoService(
             if (slugTaken)
             {
                 string message = $"{nameof(PhotoEntity.Slug)} was already taken!";
-                await logging
+                logging
                     .Action(nameof(UpdatePhotoEntity))
                     .InternalDebug(message, opts =>
                     {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new ObjectResult(message)
                 {
@@ -911,13 +903,13 @@ public class PhotoService(
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -931,13 +923,13 @@ public class PhotoService(
         if (mut.Title.Length > 255)
         {
             string message = $"{nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalDebug(message, opts =>
                 {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -953,13 +945,13 @@ public class PhotoService(
             if (mut.Summary.Length > 255)
             {
                 string message = $"{nameof(PhotoEntity.Summary)} exceeds maximum allowed length of 255.";
-                await logging
+                logging
                     .Action(nameof(UpdatePhotoEntity))
                     .InternalDebug(message, opts =>
                     {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -999,21 +991,22 @@ public class PhotoService(
                 .InternalInformation($"{nameof(PhotoEntity)} '{existingPhoto.Slug}' (#{existingPhoto.Id}) was just updated.", opts =>
                 {
                     opts.SetUser(user);
-                });
+                })
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Album '{existingPhoto.Slug}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -1025,14 +1018,14 @@ public class PhotoService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingPhoto.Slug}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdatePhotoEntity))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -1057,10 +1050,10 @@ public class PhotoService(
         if (string.IsNullOrWhiteSpace(tag))
         {
             string message = $"Parameter '{nameof(tag)}' was null/empty!";
-            await logging
+            logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1068,10 +1061,10 @@ public class PhotoService(
         if (photoId <= 0)
         {
             string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            await logging
+            logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1083,10 +1076,10 @@ public class PhotoService(
         if (existingPhoto is null)
         {
             string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -1107,20 +1100,21 @@ public class PhotoService(
 
             logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
-                .InternalTrace($"A tag was just removed from {nameof(PhotoEntity)} ('{existingPhoto.Title}', #{existingPhoto.Id})");
+                .InternalTrace($"A tag was just removed from {nameof(PhotoEntity)} ('{existingPhoto.Title}', #{existingPhoto.Id})")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -1132,13 +1126,13 @@ public class PhotoService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Photo '{existingPhoto.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveTag) + $" ({nameof(PhotoService)})")
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -1165,10 +1159,10 @@ public class PhotoService(
         if (photoId <= 0)
         {
             string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            await logging
+            logging
                 .Action(nameof(DeletePhoto))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1178,10 +1172,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeletePhoto))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -1228,10 +1222,10 @@ public class PhotoService(
         string fullPath = Path.Combine(entity.Path, entity.Filename);
         if (fullPath.Contains("&&") || fullPath.Contains("..") || fullPath.Length > 511)
         {
-            await logging
+            logging
                 .Action(nameof(DeletePhotoBlob))
                 .ExternalSuspicious($"Sussy filpath '{fullPath}' (TODO! HANDLE)")
-                .SaveAsync();
+                .LogAndEnqueue();
 
             throw new NotImplementedException("Suspicious?"); // TODO! Handle!!
         }
@@ -1253,9 +1247,9 @@ public class PhotoService(
                 // Would need access to `PhotoEntity.Id` or slug here..
             }
 
-            await logging
+            logging
                 .ExternalSuspicious(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             if (Program.IsProduction)
             {
@@ -1271,7 +1265,8 @@ public class PhotoService(
 
             logging
                 .Action(nameof(DeletePhotoEntity))
-                .InternalInformation($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.");
+                .InternalInformation($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.")
+                .LogAndEnqueue();
         }
         /* // TODO! Handle a gazillion different possible errors.
             ArgumentException
@@ -1285,13 +1280,13 @@ public class PhotoService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete the blob on filepath '{fullPath}' (#{entity.Id}). ";
-            await logging
+            logging
                 .Action(nameof(DeletePhotoEntity))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -1320,10 +1315,10 @@ public class PhotoService(
         if (photoId <= 0)
         {
             string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            await logging
+            logging
                 .Action(nameof(DeletePhotoEntity))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1333,10 +1328,10 @@ public class PhotoService(
         if (photo is null)
         {
             string message = $"{nameof(PhotoEntity)} with ID #{photoId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeletePhotoEntity))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -1358,20 +1353,21 @@ public class PhotoService(
 
             logging
                 .Action(nameof(DeletePhotoEntity))
-                .InternalInformation($"The {nameof(PhotoEntity)} ('{entity.Title}', #{entity.Id}) was just deleted.");
+                .InternalInformation($"The {nameof(PhotoEntity)} ('{entity.Title}', #{entity.Id}) was just deleted.")
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeletePhotoEntity))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -1383,13 +1379,13 @@ public class PhotoService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(PhotoEntity)} '{entity.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeletePhotoEntity))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message

@@ -26,11 +26,11 @@ public class Tag
     // Methods
 
     [SwaggerIgnore]
-    [JsonPropertyName("Albums")]
+    [JsonPropertyName("albums")]
     public int AlbumsCount => this.Albums?.Count() ?? 0;
 
     [SwaggerIgnore]
-    [JsonPropertyName("Photos")]
+    [JsonPropertyName("photos")]
     public int PhotosCount => this.Photos?.Count() ?? 0;
 
     [SwaggerIgnore]

@@ -12,7 +12,7 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("logs")]
 [Produces("application/json")]
-public class LogsController(ILoggingService handler) : ControllerBase
+public class LogsController(IEventLogService handler) : ControllerBase
 {
     /// <summary>
     /// Get a single <see cref="LogEntry"/>
@@ -23,7 +23,7 @@ public class LogsController(ILoggingService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LogEntry>> Get(int id) =>
-        await handler.GetEvent(id);
+        await handler.GetEventLog(id);
 
     /// <summary>
     /// Get all <see cref="LogEntry"/>-instances, optionally filtered and/or paginated by a wide range of query parameters.
@@ -40,7 +40,7 @@ public class LogsController(ILoggingService handler) : ControllerBase
         [FromQuery] Severity? severity = null,
         [FromQuery] Method? method = null,
         [FromQuery] string? action = null
-    ) => await handler.GetEvents(limit, offset, source, severity, method, action);
+    ) => await handler.GetEventLogs(limit, offset, source, severity, method, action);
 
     /// <summary>
     /// Delete a single <see cref="LogEntry"/>, returns `204` if successfull and `304` if no changes were made.
@@ -53,7 +53,7 @@ public class LogsController(ILoggingService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IStatusCodeActionResult> Delete(int id)
     {
-        var getLogEntry = await handler.GetEvent(id);
+        var getLogEntry = await handler.GetEventLog(id);
         var entry = getLogEntry.Value;
 
         if (entry is null)
@@ -94,7 +94,7 @@ public class LogsController(ILoggingService handler) : ControllerBase
             return BadRequest($"Parameter {nameof(offset)} cannot be null/omitted, and has to either be `0`, or any positive integer greater-than `0`.");
         }
 
-        var getMatchingEntries = await handler.GetEvents(limit, offset, source, severity, method, action);
+        var getMatchingEntries = await handler.GetEventLogs(limit, offset, source, severity, method, action);
         var entries = getMatchingEntries.Value;
 
         if (entries is null)

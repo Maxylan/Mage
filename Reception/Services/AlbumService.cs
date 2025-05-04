@@ -10,7 +10,7 @@ namespace Reception.Services;
 
 public class AlbumService(
     MageDbContext db,
-    ILoggingService logging,
+    ILoggingService<AlbumService> logging,
     IHttpContextAccessor contextAccessor,
     ITagService tagService
 ) : IAlbumService
@@ -30,10 +30,10 @@ public class AlbumService(
         if (album is null)
         {
             string message = $"Failed to find a {nameof(Album)} matching the given {nameof(albumId)} #{albumId}.";
-            await logging
+            logging
                 .Action(nameof(GetAlbum))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -223,10 +223,10 @@ public class AlbumService(
         if (httpContext is null)
         {
             string message = $"{nameof(CreateAlbum)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -243,22 +243,22 @@ public class AlbumService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(CreateAlbum))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -272,12 +272,12 @@ public class AlbumService(
         if (mut.Title.Length > 255)
         {
             string message = $"{nameof(Album.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -286,12 +286,12 @@ public class AlbumService(
         if (titleTaken)
         {
             string message = $"{nameof(Album.Title)} was already taken!";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message) {
                 StatusCode = StatusCodes.Status409Conflict
@@ -309,12 +309,12 @@ public class AlbumService(
             if (mut.Summary.Length > 255)
             {
                 string message = $"{nameof(Album.Summary)} exceeds maximum allowed length of 255.";
-                await logging
+                logging
                     .Action(nameof(CreateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -335,12 +335,12 @@ public class AlbumService(
             if (thumbnail is null)
             {
                 string message = $"{nameof(PhotoEntity)} with ID #{mut.ThumbnailId} could not be found!";
-                await logging
+                logging
                     .Action(nameof(CreateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new NotFoundObjectResult(message);
             }
@@ -354,12 +354,12 @@ public class AlbumService(
             if (category is null)
             {
                 string message = $"{nameof(Category)} with Title '{mut.Category}' could not be found!";
-                await logging
+                logging
                     .Action(nameof(CreateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new NotFoundObjectResult(message);
             }
@@ -417,14 +417,14 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to create new Album '{newAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -436,14 +436,14 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to create new Album '{newAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(CreateAlbum))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -481,10 +481,10 @@ public class AlbumService(
         if (httpContext is null)
         {
             string message = $"{nameof(UpdateAlbum)} Failed: No {nameof(HttpContext)} found.";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalError(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
@@ -501,22 +501,22 @@ public class AlbumService(
             }
             catch (Exception ex)
             {
-                await logging
+                logging
                     .Action(nameof(UpdateAlbum))
                     .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
         }
 
         if (mut.Id <= 0)
         {
             string message = $"Parameter '{nameof(mut.Id)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -526,12 +526,12 @@ public class AlbumService(
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{mut.Id} could not be found!";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -546,12 +546,12 @@ public class AlbumService(
         if (string.IsNullOrWhiteSpace(mut.Title))
         {
             string message = $"Parameter '{nameof(mut.Title)}' may not be null/empty!";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -565,12 +565,12 @@ public class AlbumService(
         if (mut.Title.Length > 255)
         {
             string message = $"{nameof(Album.Title)} exceeds maximum allowed length of 255.";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalDebug(message, opts => {
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -581,12 +581,12 @@ public class AlbumService(
             if (titleTaken)
             {
                 string message = $"{nameof(Album.Title)} was already taken!";
-                await logging
+                logging
                     .Action(nameof(UpdateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new ObjectResult(message) {
                     StatusCode = StatusCodes.Status409Conflict
@@ -605,12 +605,12 @@ public class AlbumService(
             if (mut.Summary.Length > 255)
             {
                 string message = $"{nameof(Album.Summary)} exceeds maximum allowed length of 255.";
-                await logging
+                logging
                     .Action(nameof(UpdateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new BadRequestObjectResult(message);
             }
@@ -631,12 +631,12 @@ public class AlbumService(
             if (thumbnail is null)
             {
                 string message = $"{nameof(PhotoEntity)} with ID #{mut.ThumbnailId} could not be found!";
-                await logging
+                logging
                     .Action(nameof(UpdateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new NotFoundObjectResult(message);
             }
@@ -650,12 +650,12 @@ public class AlbumService(
             if (category is null)
             {
                 string message = $"{nameof(Category)} with Title '{mut.Category}' could not be found!";
-                await logging
+                logging
                     .Action(nameof(UpdateAlbum))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
-                    .SaveAsync();
+                    .LogAndEnqueue();
 
                 return new NotFoundObjectResult(message);
             }
@@ -722,14 +722,14 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -741,14 +741,14 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateAlbum))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -778,10 +778,10 @@ public class AlbumService(
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumPhotos))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -791,10 +791,10 @@ public class AlbumService(
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumPhotos))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -838,13 +838,13 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update the photos of an existing Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumPhotos))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -856,13 +856,13 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the photos of the existing Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumPhotos))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -887,10 +887,10 @@ public class AlbumService(
         if (photoId <= 0)
         {
             string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            await logging
+            logging
                 .Action(nameof(RemovePhoto))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -898,10 +898,10 @@ public class AlbumService(
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(RemovePhoto))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -913,10 +913,10 @@ public class AlbumService(
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(RemovePhoto))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -943,13 +943,13 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a photo from Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemovePhoto))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -961,13 +961,13 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a photo from Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemovePhoto))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -991,10 +991,10 @@ public class AlbumService(
         if (string.IsNullOrWhiteSpace(tag))
         {
             string message = $"Parameter '{nameof(tag)}' was null/empty!";
-            await logging
+            logging
                 .Action(nameof(RemoveTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1002,10 +1002,10 @@ public class AlbumService(
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(RemoveTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1017,10 +1017,10 @@ public class AlbumService(
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(RemoveTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -1047,13 +1047,13 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveTag))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -1065,13 +1065,13 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Album '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(RemoveTag))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -1094,10 +1094,10 @@ public class AlbumService(
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
-            await logging
+            logging
                 .Action(nameof(DeleteAlbum))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -1107,10 +1107,10 @@ public class AlbumService(
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
-            await logging
+            logging
                 .Action(nameof(DeleteAlbum))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
@@ -1128,13 +1128,13 @@ public class AlbumService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteAlbum))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -1146,13 +1146,13 @@ public class AlbumService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Album)} '{existingAlbum.Title}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteAlbum))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message

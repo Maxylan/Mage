@@ -9,8 +9,8 @@ using Reception.Models.Entities;
 namespace Reception.Services;
 
 public class TagService(
-    MageDbContext db,
-    ILoggingService logging
+    ILoggingService<TagService> logging,
+    MageDbContext db
 ) : ITagService
 {
     /// <summary>
@@ -40,10 +40,10 @@ public class TagService(
         if (string.IsNullOrWhiteSpace(name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -56,10 +56,10 @@ public class TagService(
         if (name.Length > 127)
         {
             string message = $"{nameof(Tag)} name exceeds maximum allowed length of 127.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -75,10 +75,10 @@ public class TagService(
 
             if (Program.IsDevelopment)
             {
-                await logging
+                logging
                     .Action(nameof(GetTag))
                     .InternalDebug(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
 
             return new NotFoundObjectResult(message);
@@ -95,10 +95,10 @@ public class TagService(
         if (tagId == default)
         {
             string message = $"{nameof(Tag)} ID has to be a non-zero positive integer!";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -112,10 +112,10 @@ public class TagService(
 
             if (Program.IsDevelopment)
             {
-                await logging
+                logging
                     .Action(nameof(GetTag))
                     .InternalDebug(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
             }
 
             return new NotFoundObjectResult(message);
@@ -139,10 +139,10 @@ public class TagService(
         if (string.IsNullOrWhiteSpace(name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -180,10 +180,10 @@ public class TagService(
         if (string.IsNullOrWhiteSpace(name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -310,14 +310,14 @@ public class TagService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to add/update '{validTags.Length}' new tags. ";
-            await logging
+            logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -329,14 +329,14 @@ public class TagService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add/upate '{validTags.Length}' new tags. ";
-            await logging
+            logging
                 .Action(nameof(CreateTags))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -359,10 +359,10 @@ public class TagService(
         if (string.IsNullOrWhiteSpace(mut.Name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -375,10 +375,10 @@ public class TagService(
         if (mut.Name.Length > 127)
         {
             string message = $"{nameof(Tag)} name exceeds maximum allowed length of 127.";
-            await logging
+            logging
                 .Action(nameof(UpdateTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -402,7 +402,7 @@ public class TagService(
                     await logging
                         .Action(nameof(UpdateTag))
                         .InternalDebug(message)
-                        .SaveAsync();
+                        .LogAndEnqueue();
                 } */
 
                 return getTag.Result!;
@@ -420,14 +420,14 @@ public class TagService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Tag)} '{existingTagName}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateTag))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -439,14 +439,14 @@ public class TagService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Tag)} '{existingTagName}'. ";
-            await logging
+            logging
                 .Action(nameof(UpdateTag))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -473,10 +473,10 @@ public class TagService(
         if (album is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(albumId)} #{albumId}.";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumTags))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -528,14 +528,14 @@ public class TagService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Album)} with ID #{albumId}. ";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumTags))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -547,14 +547,14 @@ public class TagService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Album)} with ID #{albumId}. ";
-            await logging
+            logging
                 .Action(nameof(MutateAlbumTags))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -581,10 +581,10 @@ public class TagService(
         if (photo is null)
         {
             string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(photoId)} #{photoId}.";
-            await logging
+            logging
                 .Action(nameof(MutatePhotoTags))
                 .LogDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
@@ -636,14 +636,14 @@ public class TagService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
-            await logging
+            logging
                 .Action(nameof(MutatePhotoTags))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -655,14 +655,14 @@ public class TagService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
-            await logging
+            logging
                 .Action(nameof(MutatePhotoTags))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
@@ -683,10 +683,10 @@ public class TagService(
         if (string.IsNullOrWhiteSpace(name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
-            await logging
+            logging
                 .Action(nameof(GetTag))
                 .InternalDebug(message)
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
@@ -708,7 +708,7 @@ public class TagService(
                 await logging
                     .Action(nameof(DeleteTag))
                     .InternalDebug(message)
-                    .SaveAsync();
+                    .LogAndEnqueue();
                 } */
 
             return getTag.Result!;
@@ -722,14 +722,14 @@ public class TagService(
         catch (DbUpdateException updateException)
         {
             string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Tag)} '{name}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteTag))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
@@ -741,14 +741,14 @@ public class TagService(
         catch (Exception ex)
         {
             string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Tag)} '{name}'. ";
-            await logging
+            logging
                 .Action(nameof(DeleteTag))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     // opts.SetUser(user);
                 })
-                .SaveAsync();
+                .LogAndEnqueue();
 
             return new ObjectResult(message + (
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
