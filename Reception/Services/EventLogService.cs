@@ -9,7 +9,7 @@ namespace Reception.Services;
 
 public class EventLogService(
     MageDbContext db,
-    HttpContextAccessor contextAccessor,
+    IHttpContextAccessor contextAccessor,
     ILogger<EventLogService> logger
 ) : IEventLogService
 {

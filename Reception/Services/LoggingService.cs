@@ -4,9 +4,13 @@ using Reception.Models.Entities;
 using Reception.Interfaces;
 using Reception.Models;
 using Reception.Authentication;
+using Reception.Middleware;
 
 namespace Reception.Services {
-    public class LoggingService(ILogger logger) : ILoggingService
+    public class LoggingService(
+        ILogger logger,
+        EventDataAggregator eventAggregator
+    ) : ILoggingService
     {
         /// <summary>
         /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService{TService}"/>
@@ -343,6 +347,11 @@ namespace Reception.Services {
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(this._log.Action))
+            {
+                this._log.Action = "Unknown";
+            }
+
             switch (this._log.LogLevel)
             {
     #pragma warning disable CA2254
@@ -379,19 +388,30 @@ namespace Reception.Services {
         /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
         /// </summary>
         public void Enqueue() {
-            throw new NotImplementedException();
+            if (this._log is not null) {
+                if (string.IsNullOrWhiteSpace(this._log.Action))
+                {
+                    this._log.Action = "Unknown";
+                }
+
+                eventAggregator.AddEvent(this._log);
+            }
         }
 
         /// <summary>
         /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
         /// </summary>
         public void LogAndEnqueue() {
-            throw new NotImplementedException();
+            this.Log();
+            this.Enqueue();
         }
         #endregion
     }
 
-    public class LoggingService<TService>(ILogger<TService> logger) : ILoggingService<TService>
+    public class LoggingService<TService>(
+        ILogger<TService> logger,
+        EventDataAggregator eventAggregator
+    ) : ILoggingService<TService>
     {
         /// <summary>
         /// Get the <see cref="ILogger{T}"/> used by this <see cref="ILoggingService{TService}"/>
@@ -728,6 +748,11 @@ namespace Reception.Services {
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(this._log.Action))
+            {
+                this._log.Action = "Unknown";
+            }
+
             switch (this._log.LogLevel)
             {
     #pragma warning disable CA2254
@@ -764,14 +789,22 @@ namespace Reception.Services {
         /// Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
         /// </summary>
         public void Enqueue() {
-            throw new NotImplementedException();
+            if (this._log is not null) {
+                if (string.IsNullOrWhiteSpace(this._log.Action))
+                {
+                    this._log.Action = "Unknown";
+                }
+
+                eventAggregator.AddEvent(this._log);
+            }
         }
 
         /// <summary>
         /// Log & Store / "Enqueue" a custom <see cref="LogEntry"/>-event entry, which will be added to the database (..on request-lifecycle end).
         /// </summary>
         public void LogAndEnqueue() {
-            throw new NotImplementedException();
+            this.Log();
+            this.Enqueue();
         }
         #endregion
     }

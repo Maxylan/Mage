@@ -79,8 +79,8 @@ public sealed class Program
             conf.SwaggerDoc(VERSION, new()
             {
                 Title = $"{AppName} '{ApiName}' ({ApiVersion}) {VERSION}",
-                Description = $"{AppName} Backend Server (ASP.NET 8.0, '{ApiPathBase}'). {VERSION}",
-                Version = VERSION
+                Description = $"{AppName} Backend Server (ASP.NET 9.0, '{ApiPathBase}'). {VERSION}",
+                Version = "3.0.0"
             });
 
             OpenApiSecurityScheme scheme = new()
@@ -127,7 +127,7 @@ public sealed class Program
         builder.Services.AddSingleton<LoginTracker>();
         builder.Services.AddSingleton<EventDataAggregator>();
 
-        builder.Services.AddScoped<ILoggingService, LoggingService>();
+        builder.Services.AddScoped(typeof(ILoggingService<>), typeof(LoggingService<>));
         builder.Services.AddScoped<IEventLogService, EventLogService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -153,7 +153,10 @@ public sealed class Program
             }
             else
             {
-                app.UseSwagger();
+                app.UseSwagger(opts => {
+                    opts.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0;
+                });
+
                 app.UseSwaggerUI(opts =>
                 {
                     opts.EnableFilter();
@@ -161,7 +164,7 @@ public sealed class Program
                     opts.EnableTryItOutByDefault();
                     opts.DisplayRequestDuration();
 
-                    opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
+                    //opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
                     // opts.RoutePrefix = ApiPathBase[1..];
                     Console.WriteLine("Swagger Path: " + opts.RoutePrefix);
                 });

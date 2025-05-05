@@ -270,5 +270,4 @@ namespace Reception.Interfaces {
         /// </summary>
         public abstract void LogAndEnqueue();
     }
-
 }

@@ -84,7 +84,7 @@ services:
   mage.reception: # ASP.NET 8.0 Backend
     container_name: "${RECEPTION_NAME}"
     restart: unless-stopped
-    image: mcr.microsoft.com/dotnet/sdk:8.0
+    image: mcr.microsoft.com/dotnet/sdk:9.0
     working_dir: "${RECEPTION_VOLUME_TARGET}"
     command: [ "dotnet", "run", "-c", "Debug" ]
     volumes:
