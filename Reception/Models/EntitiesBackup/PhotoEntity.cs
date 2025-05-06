@@ -1,16 +1,21 @@
+/*
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("photos", Schema = "magedb")]
 [Index("Slug", Name = "idx_photos_slug")]
 [Index("UpdatedAt", Name = "idx_photos_updated_at")]
 [Index("Slug", Name = "photos_slug_key", IsUnique = true)]
+*/
+/*
 public class PhotoEntity
 {
     [Key]
@@ -150,3 +155,4 @@ public class PhotoEntity
         }
     );
 }
+*/

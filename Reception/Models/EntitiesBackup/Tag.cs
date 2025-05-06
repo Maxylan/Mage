@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,12 +7,16 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("tags", Schema = "magedb")]
 [Index("Name", Name = "idx_tags_name")]
 [Index("Name", Name = "tags_name_key", IsUnique = true)]
+*/
+/*
 public class Tag
 {
     [Key]
@@ -67,3 +72,4 @@ public class Tag
         }
     );
 }
+*/

@@ -1,7 +1,10 @@
+/*
 using System.Text;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 public readonly struct LogFormat(LogEntry entry)
 {
     private readonly LogEntry entry = entry;
@@ -91,3 +94,4 @@ public readonly struct LogFormat(LogEntry entry)
         return sb.ToString();
     }
 }
+*/

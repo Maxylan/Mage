@@ -43,6 +43,13 @@ public sealed class Program
 
     public static void Main(string[] args)
     {
+        var builder = WebApplication.CreateBuilder(args);
+        var app = builder.Build();
+        app.Run();
+    }
+    
+    public static void Second(string[] args)
+    {
         // Swagger/OpenAPI reference & tutorial, if ever needed:
         // https://aka.ms/aspnetcore/swashbuckle
         var builder = WebApplication.CreateBuilder(args);
@@ -114,7 +121,7 @@ public sealed class Program
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
             } */
         });
-        builder.Services.AddDbContext<MageDbContext>(opts =>
+        /*builder.Services.AddDbContext<MageDbContext>(opts =>
         {
             if (IsDevelopment)
             {
@@ -122,8 +129,9 @@ public sealed class Program
             }
 
             opts.EnableDetailedErrors();
-        });
+        });*/
 
+        /*
         builder.Services.AddSingleton<LoginTracker>();
         builder.Services.AddSingleton<EventDataAggregator>();
 
@@ -141,6 +149,7 @@ public sealed class Program
         builder.Services.AddScoped<ICategoryService, CategoryService>();
         builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
         builder.Services.AddScoped<IPhotoStreamingService, PhotoStreamingService>();
+        */
 
         var app = builder.Build();
 
@@ -173,11 +182,11 @@ public sealed class Program
 
         app.UseForwardedHeaders();
 
-        app.UseMiddleware<EventAggregationMiddleware>();
+        // app.UseMiddleware<EventAggregationMiddleware>();
 
-        app.UseAuthentication();
-        app.UseAuthorization();
-        app.MapControllers();
+        // app.UseAuthentication();
+        // app.UseAuthorization();
+        // app.MapControllers();
 
         app.Run();
     }

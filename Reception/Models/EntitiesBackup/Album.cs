@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,13 +7,17 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("albums", Schema = "magedb")]
 [Index("Title", Name = "albums_title_key", IsUnique = true)]
 [Index("Title", Name = "idx_albums_title")]
 [Index("UpdatedAt", Name = "idx_albums_updated_at")]
+*/
+/*
 public class Album
 {
     [Key]
@@ -144,3 +149,4 @@ public class Album
         }
     );
 }
+*/

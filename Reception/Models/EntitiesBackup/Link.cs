@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -7,13 +8,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Reception.Services;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("links", Schema = "magedb")]
 [Index("Code", Name = "idx_links_code")]
 [Index("Code", Name = "links_code_key", IsUnique = true)]
 [Index("PhotoId", Name = "idx_links_photo_id")]
+*/
+/*
 public class Link
 {
     [Key]
@@ -98,3 +103,4 @@ public class Link
         }
     );
 }
+*/

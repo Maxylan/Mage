@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,12 +7,16 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("sessions", Schema = "magedb")]
 [Index("UserId", Name = "idx_sessions_user_id")]
 [Index("Code", Name = "sessions_code_key", IsUnique = true)]
+*/
+/*
 public class Session
 {
     [Key]
@@ -70,3 +75,4 @@ public class Session
         }
     );
 }
+*/

@@ -1,17 +1,17 @@
 using System.Text;
 using Npgsql.NameTranslation;
 using Microsoft.EntityFrameworkCore;
-using Reception.Models.Entities;
-using Npgsql;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Reception.Database.Models;
+using Npgsql;
 
-namespace Reception.Services;
+namespace Reception.Database;
 
-public partial class MageDbContext : DbContext
+public partial class MageDb : DbContext
 {
     private (CancellationTokenSource, CancellationToken) cancelOnDispose;
 
-    public MageDbContext()
+    public MageDb()
     {
         CancellationTokenSource source = new();
         CancellationToken token = source.Token;
@@ -21,8 +21,9 @@ public partial class MageDbContext : DbContext
         );
     }
 
-    public MageDbContext(DbContextOptions<MageDbContext> options)
-        : base(options) {
+    public MageDb(DbContextOptions<MageDb> options)
+        : base(options)
+    {
         CancellationTokenSource source = new();
         CancellationToken token = source.Token;
         this.cancelOnDispose = (
@@ -31,27 +32,37 @@ public partial class MageDbContext : DbContext
         );
     }
 
-    public override void Dispose() {
+    public override void Dispose()
+    {
         this.cancelOnDispose.Item1.Cancel();
         base.Dispose();
     }
 
-    public override ValueTask DisposeAsync() {
+    public override ValueTask DisposeAsync()
+    {
         this.cancelOnDispose.Item1.Cancel();
         return base.DisposeAsync();
     }
 
-    public CancellationToken CancellationToken {
+    public CancellationToken CancellationToken
+    {
         get => this.cancelOnDispose.Item2;
     }
 
     public virtual DbSet<Account> Accounts { get; set; } = null!;
     public virtual DbSet<Album> Albums { get; set; } = null!;
+    public virtual DbSet<AlbumTagRelation> AlbumTags { get; set; } = null!;
+    public virtual DbSet<BanEntry> BannedClients { get; set; } = null!;
     public virtual DbSet<Category> Categories { get; set; } = null!;
+    public virtual DbSet<Client> Clients { get; set; } = null!;
+    public virtual DbSet<FavoriteAlbumRelation> FavoriteAlbums { get; set; } = null!;
+    public virtual DbSet<FavoritePhotoRelation> FavoritePhotos { get; set; } = null!;
     public virtual DbSet<Filepath> Filepaths { get; set; } = null!;
-    public virtual DbSet<Link> Links { get; set; } = null!;
     public virtual DbSet<LogEntry> Logs { get; set; } = null!;
-    public virtual DbSet<PhotoEntity> Photos { get; set; } = null!;
+    public virtual DbSet<Photo> Photos { get; set; } = null!;
+    public virtual DbSet<PublicLink> Links { get; set; } = null!;
+    public virtual DbSet<PhotoAlbumRelation> PhotoAlbums { get; set; } = null!;
+    public virtual DbSet<PhotoTagRelation> PhotoTags { get; set; } = null!;
     public virtual DbSet<Session> Sessions { get; set; } = null!;
     public virtual DbSet<Tag> Tags { get; set; } = null!;
 
@@ -76,7 +87,8 @@ public partial class MageDbContext : DbContext
             });
 
             // I give up..
-            optionsBuilder.ConfigureWarnings(opts => {
+            optionsBuilder.ConfigureWarnings(opts =>
+            {
                 opts.Log(CoreEventId.ManyServiceProvidersCreatedWarning);
             });
         }
@@ -89,14 +101,26 @@ public partial class MageDbContext : DbContext
             .HasPostgresEnum<Method>("magedb", "method") // new[] { "HEAD", "GET", "POST", "PUT", "PATCH", "DELETE" }
             .HasPostgresEnum<Severity>("magedb", "severity") // new[] { "TRACE", "DEBUG", "INFORMATION", "SUSPICIOUS", "WARNING", "ERROR", "CRITICAL" }
             .HasPostgresEnum<Source>("magedb", "source", new NpgsqlNullNameTranslator()); // new[] { "INTERNAL", "EXTERNAL" }
+        /* modelBuilder
+            .HasPostgresEnum("magedb", "dimension", new[] { "THUMBNAIL", "MEDIUM", "SOURCE" })
+            .HasPostgresEnum("magedb", "method", new[] { "UNKNOWN", "HEAD", "GET", "POST", "PUT", "PATCH", "DELETE" })
+            .HasPostgresEnum("magedb", "severity", new[] { "TRACE", "DEBUG", "INFORMATION", "SUSPICIOUS", "WARNING", "ERROR", "CRITICAL" })
+            .HasPostgresEnum("magedb", "source", new[] { "INTERNAL", "EXTERNAL" }); */
 
         modelBuilder.Entity(Account.Build);
         modelBuilder.Entity(Album.Build);
+        modelBuilder.Entity(AlbumTagRelation.Build);
+        modelBuilder.Entity(BanEntry.Build);
         modelBuilder.Entity(Category.Build);
+        modelBuilder.Entity(Client.Build);
+        modelBuilder.Entity(FavoriteAlbumRelation.Build);
+        modelBuilder.Entity(FavoritePhotoRelation.Build);
         modelBuilder.Entity(Filepath.Build);
-        modelBuilder.Entity(Link.Build);
         modelBuilder.Entity(LogEntry.Build);
-        modelBuilder.Entity(PhotoEntity.Build);
+        modelBuilder.Entity(Photo.Build);
+        modelBuilder.Entity(PublicLink.Build);
+        modelBuilder.Entity(PhotoAlbumRelation.Build);
+        modelBuilder.Entity(PhotoTagRelation.Build);
         modelBuilder.Entity(Session.Build);
         modelBuilder.Entity(Tag.Build);
 

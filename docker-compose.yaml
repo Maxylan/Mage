@@ -32,6 +32,8 @@ services:
       - magenet
     expose:
       - "${STORAGE_PORT}"
+    ports:
+      - "${STORAGE_PORT}"
 
   mage.window: # Postgresql Database UI for the browser
     container_name: "${WINDOW_NAME}"
@@ -81,7 +83,7 @@ services:
     expose:
       - "11434"
 
-  mage.reception: # ASP.NET 8.0 Backend
+  mage.reception: # ASP.NET 9.0 Backend
     container_name: "${RECEPTION_NAME}"
     restart: unless-stopped
     image: mcr.microsoft.com/dotnet/sdk:9.0
@@ -111,6 +113,8 @@ services:
     networks:
       - magenet
     expose:
+      - "${RECEPTION_PORT}"
+    ports:
       - "${RECEPTION_PORT}"
 
   mage.garden: # Angular 2 Frontend (Apache2 / httpd)

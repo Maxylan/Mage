@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,15 +7,19 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("accounts", Schema = "magedb")]
 [Index("Email", Name = "accounts_email_key", IsUnique = true)]
 [Index("Username", Name = "accounts_username_key", IsUnique = true)]
 [Index("Email", Name = "idx_accounts_email", IsUnique = true)]
 [Index("LastVisit", Name = "idx_accounts_last_visit")]
 [Index("Username", Name = "idx_accounts_username", IsUnique = true)]
+*/
+/*
 public class Account
 {
     [Key]
@@ -112,3 +117,4 @@ public class Account
         }
     );
 }
+*/

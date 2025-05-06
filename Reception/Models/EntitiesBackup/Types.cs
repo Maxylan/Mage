@@ -1,5 +1,6 @@
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 public enum Dimension
 {
     THUMBNAIL,
@@ -31,3 +32,4 @@ public enum Source
     INTERNAL,
     EXTERNAL
 }
+*/

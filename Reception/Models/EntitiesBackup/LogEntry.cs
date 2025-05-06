@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,11 +8,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("logs", Schema = "magedb")]
 [Index("CreatedAt", Name = "idx_logs_created_at")]
+*/
+/*
 public class LogEntry
 {
     [Key]
@@ -84,7 +89,7 @@ public class LogEntry
                 /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Severity.ERROR.ToString(),
                     y => Enum.Parse<Severity>(y, true)
-                ) */;
+                ) *//*;
             entity.Property(e => e.Source)
                 .HasColumnName("source")
                 .HasDefaultValue(Reception.Models.Entities.Source.INTERNAL)
@@ -92,7 +97,7 @@ public class LogEntry
                 /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Source.INTERNAL.ToString(),
                     y => Enum.Parse<Source>(y, true)
-                ) */;
+                ) *//*;
             entity.Property(e => e.Method)
                 .HasColumnName("method")
                 .HasDefaultValue(Reception.Models.Entities.Method.UNKNOWN)
@@ -100,7 +105,7 @@ public class LogEntry
                 /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Method.UNKNOWN.ToString(),
                     y => Enum.Parse<Method>(y, true)
-                ) */;
+                ) *//*;
             entity.Property(e => e.Log).HasColumnName("log");
             entity.Property(e => e.RequestAddress)
                 .HasMaxLength(255)
@@ -121,3 +126,4 @@ public class LogEntry
         }
     );
 }
+*/

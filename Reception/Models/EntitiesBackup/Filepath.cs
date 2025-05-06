@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,13 +7,17 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("filepaths", Schema = "magedb")]
 [Index("Filename", Name = "idx_filepaths_filename")]
 [Index("PhotoId", Name = "idx_filepaths_photo_id")]
 [Index("Path", "Filename", Name = "idx_path_filename", IsUnique = true)]
+*/
+/*
 public class Filepath
 {
     [Key]
@@ -75,7 +80,7 @@ public class Filepath
                 /* .HasConversion(
                     x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
                     y => Enum.Parse<Dimension>(y, true)
-                ) */;
+                ) *//*;
             entity.Property(e => e.PhotoId).HasColumnName("photo_id");
 
             entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths)
@@ -85,3 +90,4 @@ public class Filepath
         }
     );
 }
+*/

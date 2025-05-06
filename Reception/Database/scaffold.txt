@@ -1,0 +1,1 @@
+dotnet ef dbcontext scaffold "Host=localhost;Port=32783;Database=magedb;User ID=dbuser;Password=password;" Npgsql.EntityFrameworkCore.PostgreSQL --context "magedb" --context-dir Database --output-dir Database/Models --data-annotations -f

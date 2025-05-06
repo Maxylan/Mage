@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,13 +7,17 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models.Entities;
+// namespace Reception.Models.EntitiesBackup;
 
+/*
 [Table("categories", Schema = "magedb")]
 [Index("Title", Name = "categories_title_key", IsUnique = true)]
 [Index("Title", Name = "idx_categories_title")]
 [Index("UpdatedAt", Name = "idx_categories_updated_at")]
+*/
+/*
 public partial class Category
 {
     [Key]
@@ -87,3 +92,4 @@ public partial class Category
         }
     );
 }
+*/
