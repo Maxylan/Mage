@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Reception.Interfaces.DataAccess;
 
-public interface ILinkService
+public interface IPublicLinkService
 {
     /// <summary>
     /// Get the <see cref="Uri"/> of a <see cref="Link"/>

@@ -142,7 +142,7 @@ public sealed class Program
         builder.Services.AddScoped<IAccountService, AccountService>();
         builder.Services.AddScoped<IPhotoService, PhotoService>();
         builder.Services.AddScoped<IBlobService, BlobService>();
-        builder.Services.AddScoped<ILinkService, LinkService>();
+        builder.Services.AddScoped<IPublicLinkService, PublicLinkService>();
         builder.Services.AddScoped<IViewService, ViewService>();
         builder.Services.AddScoped<ITagService, TagService>();
         builder.Services.AddScoped<IAlbumService, AlbumService>();

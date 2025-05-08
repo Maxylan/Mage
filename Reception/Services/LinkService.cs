@@ -8,12 +8,12 @@ using Reception.Database.Models;
 
 namespace Reception.Services;
 
-public class LinkService(
+public class PublicLinkService(
     MageDbContext db,
-    ILoggingService<LinkService> logging,
+    ILoggingService<PublicLinkService> logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photos
-) : ILinkService
+) : IPublicLinkService
 {
     /// <summary>
     /// Get the <see cref="Uri"/> of a <see cref="Link"/>
