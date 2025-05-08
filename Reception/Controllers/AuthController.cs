@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
 using Reception.Interfaces;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
 namespace Reception.Controllers;
 

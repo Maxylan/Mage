@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Interfaces;
 using Reception.Constants;
 

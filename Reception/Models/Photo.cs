@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Services;
 
 namespace Reception.Models;

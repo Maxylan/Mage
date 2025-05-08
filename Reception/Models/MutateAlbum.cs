@@ -1,6 +1,6 @@
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json.Serialization;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
 namespace Reception.Models;
 

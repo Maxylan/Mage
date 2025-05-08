@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Reception.Authentication;
 using Reception.Interfaces;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
 namespace Reception.Services;
 

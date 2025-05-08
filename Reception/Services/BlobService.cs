@@ -2,7 +2,7 @@ using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Interfaces;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Utilities;
 
 namespace Reception.Services;

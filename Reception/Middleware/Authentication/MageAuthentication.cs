@@ -1,16 +1,16 @@
-using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Primitives;
-using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
-using System.Security.Claims;
-using Reception.Models.Entities;
 using System.Net;
 using System.Net.Sockets;
-using Reception.Interfaces;
+using System.Security.Claims;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Encodings.Web;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using Microsoft.AspNetCore.Authentication;
+using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
+using Reception.Database.Models;
+using Reception.Interfaces;
 
-namespace Reception.Authentication;
+namespace Reception.Middleware.Authentication;
 
 /// <summary>
 /// Custom implementation of the opinionated <see cref="IAuthenticationHandler"/> '<see cref="AuthenticationHandler{AuthenticationSchemeOptions}"/>'.

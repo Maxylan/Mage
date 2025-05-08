@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Authentication;
 using Reception.Interfaces;
 using Reception.Utilities;

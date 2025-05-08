@@ -1,14 +1,14 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
 namespace Reception.Interfaces;
 
 public interface ISessionService
 {
     /// <summary>
-    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Session&gt;"/>) set of 
+    /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;Session&gt;"/>) set of
     /// <see cref="Session"/>-entries, you may use it to freely fetch some sessions.
     /// </summary>
     public abstract DbSet<Session> GetSessions();

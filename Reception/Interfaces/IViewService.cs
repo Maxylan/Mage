@@ -1,5 +1,5 @@
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Reception.Interfaces;

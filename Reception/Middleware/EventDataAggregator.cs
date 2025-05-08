@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Collections;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Services;
 
 namespace Reception.Middleware;

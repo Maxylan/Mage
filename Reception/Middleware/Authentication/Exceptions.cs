@@ -1,6 +1,6 @@
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
-namespace Reception.Authentication;
+namespace Reception.Middleware.Authentication;
 
 /// <summary>
 /// Collection of custom throwable exeptions (<seealso cref="Exception"/>)

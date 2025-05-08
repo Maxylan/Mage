@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Interfaces;
 
 namespace Reception.Controllers;

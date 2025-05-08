@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models;

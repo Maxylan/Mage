@@ -7,7 +7,7 @@ using Microsoft.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using Reception.Authentication;
 using Reception.Models;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Reception.Utilities;
 using Reception.Interfaces;
 using System.Globalization;

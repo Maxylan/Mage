@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 
-namespace Reception.Authentication;
+namespace Reception.Middleware.Authentication;
 
 /// <summary>
 /// Static collection of hardcoded response values

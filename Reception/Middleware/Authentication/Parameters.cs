@@ -1,9 +1,9 @@
-namespace Reception.Authentication;
+namespace Reception.Middleware.Authentication;
 
 /// <summary>
 /// Static collection of hardcoded parameter key names (<see cref="Microsoft.AspNetCore.Authentication.AuthenticationProperties"/>)
 /// </summary>
-public static class Parameters
+public static class Constants
 {
     public const string TOKEN_REQUIRED_POLICY = "IncludesToken";
     public const string AUTHENTICATED_POLICY = "Authenticated";

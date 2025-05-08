@@ -2,7 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Interfaces;
 
-namespace Reception.Authentication;
+namespace Reception.Middleware.Authentication;
 
 public class TokenRequirement : IAuthorizationRequirement
 {

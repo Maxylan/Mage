@@ -1,5 +1,5 @@
 ﻿using System.Text.Json.Serialization;
-using Reception.Models.Entities;
+using Reception.Database.Models;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models;
