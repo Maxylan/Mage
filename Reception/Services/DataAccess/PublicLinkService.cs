@@ -6,7 +6,7 @@ using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Database.Models;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class PublicLinkService(
     MageDbContext db,

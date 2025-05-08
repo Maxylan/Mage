@@ -5,7 +5,7 @@ using Reception.Models;
 using Reception.Database.Models;
 using Reception.Utilities;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class BlobService(
     ILoggingService<BlobService> logging,

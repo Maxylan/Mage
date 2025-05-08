@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class CategoryService(
     MageDbContext db,

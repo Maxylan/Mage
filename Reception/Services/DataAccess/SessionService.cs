@@ -5,7 +5,7 @@ using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
 using System.Net;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class SessionService(
     ILoggingService<SessionService> logging,

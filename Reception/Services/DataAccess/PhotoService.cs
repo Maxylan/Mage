@@ -8,7 +8,7 @@ using Reception.Interfaces.DataAccess;
 using System.Linq.Expressions;
 using System.Net;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class PhotoService(
     MageDbContext db,

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 using Reception.Authentication;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class AlbumService(
     MageDbContext db,

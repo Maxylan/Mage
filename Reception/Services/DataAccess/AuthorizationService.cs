@@ -10,7 +10,7 @@ using Reception.Caching;
 using System.Net;
 using Reception.Models;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,

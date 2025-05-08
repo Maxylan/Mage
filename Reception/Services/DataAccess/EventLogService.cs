@@ -5,7 +5,7 @@ using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Authentication;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class EventLogService(
     MageDbContext db,

@@ -6,7 +6,7 @@ using Reception.Models;
 using Reception.Interfaces.DataAccess;
 using System.Net;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class AccountService(
     ILoggingService<AccountService> logging,

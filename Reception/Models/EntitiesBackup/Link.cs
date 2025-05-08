@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Reception.Services;
+using Reception.Services.DataAccess;
 using Swashbuckle.AspNetCore.Annotations;
 */
 

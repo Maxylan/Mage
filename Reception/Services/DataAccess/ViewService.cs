@@ -6,7 +6,7 @@ using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
 using Reception.Utilities;
 
-namespace Reception.Services;
+namespace Reception.Services.DataAccess;
 
 public class ViewService(
     ILoggingService<ViewService> logging,
