@@ -12,11 +12,13 @@ public class AlbumTagRelationDTO : AlbumTagRelation, IDataTransferObject<AlbumTa
     [JsonPropertyName("album_id")]
     public new int AlbumId { get; set; }
 
+    /*
     [JsonPropertyName("tag_id")]
     public new int TagId { get; set; }
 
     [JsonPropertyName("added")]
     public new DateTime Added { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="AlbumTagRelationDTO"/> instance to its <see cref="AlbumTagRelation"/> equivalent.

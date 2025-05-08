@@ -12,6 +12,7 @@ public class SessionDTO : Session, IDataTransferObject<Session>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("account_id")]
     public new int AccountId { get; set; }
 
@@ -26,6 +27,7 @@ public class SessionDTO : Session, IDataTransferObject<Session>
 
     [JsonPropertyName("expires_at")]
     public new DateTime ExpiresAt { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="SessionDTO"/> instance to its <see cref="Session"/> equivalent.

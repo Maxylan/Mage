@@ -4,7 +4,7 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Models;
 
-public class MutateAccount : Account
+public class MutateAccount : AccountDTO
 {
     [JsonIgnore, SwaggerIgnore]
     public new string? Password { get; }
@@ -13,5 +13,5 @@ public class MutateAccount : Account
     public new DateTime? CreatedAt { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
-    public new DateTime? LastVisit { get; set; }
+    public new DateTime? LastLogin { get; set; }
 }

@@ -28,11 +28,6 @@ public interface IAlbumService
     public abstract Task<ActionResult<IEnumerable<Album>>> GetAlbums(FilterAlbumsOptions filter);
 
     /// <summary>
-    /// Get the <see cref="Album"/> with PK <paramref ref="albumId"/> (int), along with a collection of all associated Photos.
-    /// </summary>
-    public abstract Task<ActionResult<AlbumPhotoCollection>> GetAlbumPhotoCollection(int albumId);
-
-    /// <summary>
     /// Create a new <see cref="Reception.Models.Entities.Album"/>.
     /// </summary>
     public abstract Task<ActionResult<Album>> CreateAlbum(MutateAlbum mut);
@@ -45,7 +40,7 @@ public interface IAlbumService
     /// <summary>
     /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (int[]).
     /// </summary>
-    public abstract Task<ActionResult<AlbumPhotoCollection>> MutateAlbumPhotos(int albumId, int[] photoIds);
+    public abstract Task<ActionResult<Album>> MutateAlbumPhotos(int albumId, int[] photoIds);
 
     /// <summary>
     /// Removes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..identified by PK <paramref name="photoId"/>) from the

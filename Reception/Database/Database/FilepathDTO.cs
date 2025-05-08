@@ -12,6 +12,7 @@ public class FilepathDTO : Filepath, IDataTransferObject<Filepath>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("photo_id")]
     public new int PhotoId { get; set; }
 
@@ -29,6 +30,7 @@ public class FilepathDTO : Filepath, IDataTransferObject<Filepath>
 
     [JsonPropertyName("height")]
     public new int? Height { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="FilepathDTO"/> instance to its <see cref="Filepath"/> equivalent.
@@ -38,6 +40,7 @@ public class FilepathDTO : Filepath, IDataTransferObject<Filepath>
         PhotoId = this.PhotoId,
         Filename = this.Filename,
         Path = this.Path,
+        Dimension = this.Dimension,
         Filesize = this.Filesize,
         Width = this.Width,
         Height = this.Height

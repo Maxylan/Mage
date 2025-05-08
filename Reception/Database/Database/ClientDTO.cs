@@ -12,6 +12,7 @@ public class ClientDTO : Client, IDataTransferObject<Client>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("trusted")]
     public new bool Trusted { get; set; }
 
@@ -32,6 +33,7 @@ public class ClientDTO : Client, IDataTransferObject<Client>
 
     [JsonPropertyName("last_visit")]
     public new DateTime LastVisit { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="ClientDTO"/> instance to its <see cref="Client"/> equivalent.

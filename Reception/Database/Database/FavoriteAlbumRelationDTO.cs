@@ -9,6 +9,7 @@ namespace Reception.Database.Models;
 /// </summary>
 public class FavoriteAlbumRelationDTO : FavoriteAlbumRelation, IDataTransferObject<FavoriteAlbumRelation>
 {
+    /*
     [JsonPropertyName("account_id")]
     public new int AccountId { get; set; }
 
@@ -17,6 +18,7 @@ public class FavoriteAlbumRelationDTO : FavoriteAlbumRelation, IDataTransferObje
 
     [JsonPropertyName("added")]
     public new DateTime Added { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="FavoriteAlbumRelationDTO"/> instance to its <see cref="FavoriteAlbumRelation"/> equivalent.

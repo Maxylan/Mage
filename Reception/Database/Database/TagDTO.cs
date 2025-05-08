@@ -12,6 +12,7 @@ public class TagDTO : Tag, IDataTransferObject<Tag>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("name")]
     public new string Name { get; set; } = null!;
 
@@ -20,6 +21,7 @@ public class TagDTO : Tag, IDataTransferObject<Tag>
 
     [JsonPropertyName("required_privilege")]
     public new byte RequiredPrivilege { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="TagDTO"/> instance to its <see cref="Tag"/> equivalent.

@@ -12,6 +12,7 @@ public class LogEntryDTO : LogEntry, IDataTransferObject<LogEntry>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("user_id")]
     public new int? UserId { get; set; }
 
@@ -38,6 +39,7 @@ public class LogEntryDTO : LogEntry, IDataTransferObject<LogEntry>
 
     [JsonPropertyName("message")]
     public new string? Message { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="LogEntryDTO"/> instance to its <see cref="LogEntry"/> equivalent.

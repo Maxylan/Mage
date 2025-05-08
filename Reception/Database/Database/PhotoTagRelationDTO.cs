@@ -9,6 +9,7 @@ namespace Reception.Database.Models;
 /// </summary>
 public class PhotoTagRelationDTO : PhotoTagRelation, IDataTransferObject<PhotoTagRelation>
 {
+    /*
     [JsonPropertyName("photo_id")]
     public new int PhotoId { get; set; }
 
@@ -17,6 +18,7 @@ public class PhotoTagRelationDTO : PhotoTagRelation, IDataTransferObject<PhotoTa
 
     [JsonPropertyName("added")]
     public new DateTime Added { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="PhotoTagRelationDTO"/> instance to its <see cref="PhotoTagRelation"/> equivalent.

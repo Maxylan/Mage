@@ -12,6 +12,7 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("title")]
     public new string Title { get; set; } = null!;
 
@@ -32,6 +33,7 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
 
     [JsonPropertyName("required_privilege")]
     public new byte RequiredPrivilege { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="CategoryDTO"/> instance to its <see cref="Category"/> equivalent.

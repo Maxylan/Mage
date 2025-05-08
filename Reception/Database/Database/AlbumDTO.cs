@@ -12,6 +12,7 @@ public class AlbumDTO : Album, IDataTransferObject<Album>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("category_id")]
     public new int? CategoryId { get; set; }
 
@@ -41,6 +42,7 @@ public class AlbumDTO : Album, IDataTransferObject<Album>
 
     [JsonPropertyName("required_privilege")]
     public new byte RequiredPrivilege { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="AlbumDTO"/> instance to its <see cref="Album"/> equivalent.

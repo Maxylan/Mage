@@ -12,6 +12,7 @@ public class PhotoDTO : Photo, IDataTransferObject<Photo>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("slug")]
     public new string Slug { get; set; } = null!;
 
@@ -49,6 +50,7 @@ public class PhotoDTO : Photo, IDataTransferObject<Photo>
 
     [JsonPropertyName("required_privilege")]
     public new byte RequiredPrivilege { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="PhotoDTO"/> instance to its <see cref="Photo"/> equivalent.

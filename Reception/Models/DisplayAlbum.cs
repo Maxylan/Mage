@@ -1,5 +1,3 @@
-using System.Collections;
-using Swashbuckle.AspNetCore.Annotations;
 using Reception.Database.Models;
 
 namespace Reception.Models;
@@ -8,43 +6,154 @@ namespace Reception.Models;
 /// Collection of all photos (<see cref="Reception.Models.DisplayPhoto"/>) inside the the given
 /// <paramref name="album"/> (<see cref="Reception.Database.Models.AlbumDTO"/>).
 /// </summary>
-public record class DisplayAlbum : IEnumerable<DisplayPhoto>
+public record class DisplayAlbum
 {
-    protected readonly IEnumerable<DisplayPhoto> _collection;
-
-    public PhotoCollection this[int index] {
-        get => this._collection.ElementAt(index);
-    }
-
-    public DisplayAlbum(AlbumDTO album)
+    public DisplayAlbum(AlbumDTO album, int? currentUserId = null)
     {
         ArgumentNullException.ThrowIfNull(album, nameof(album));
         ArgumentNullException.ThrowIfNull(album.Photos, nameof(album.Photos));
 
-        _album = album;
-        _collection = _album.Photos
-                .Where(p => p.Filepaths is not null && p.Filepaths.Count > 0)
-                .Select(p => new DisplayPhoto(p));
+        AlbumId = album.Id;
+
+        ThumbnailId = album.ThumbnailId;
+        if (album.ThumbnailId > 0 && album.Thumbnail is not null) {
+            Thumbnail = new DisplayPhoto(album.Thumbnail);
+        }
+
+        CategoryId = album.CategoryId;
+        if (album.CategoryId > 0 && album.Category is not null) {
+            Category = (CategoryDTO)album.Category;
+        }
+
+        this._favoritedBy = album.FavoritedBy;
+        this._currentUserId = currentUserId;
+
+        Title = album.Title;
+        Summary = album.Summary;
+        Description = album.Description;
+
+        this._tags = album.Tags
+            .Select(t => (TagDTO)t.Tag);
+
+        CreatedAt = album.CreatedAt;
+        UpdatedAt = album.UpdatedAt;
+        RequiredPrivilege = (byte)album.RequiredPrivilege;
+
+        this._photos = album.Photos
+            .Where(p => p.Photo is not null && p.Photo.Filepaths.Any())
+            .OrderByDescending(p => p.Added)
+            .Select(p => new DisplayPhoto(p.Photo));
+
+        this.UpdatedByUserId = album.UpdatedBy;
+        var updatedBy = album.UpdatedByNavigation;
+        if (updatedBy is not null) {
+            this._updatedBy = (AccountDTO)updatedBy;
+        }
+
+        this.CreatedByUserId = album.CreatedBy;
+        var createdBy = album.CreatedByNavigation;
+        if (createdBy is not null) {
+            this._createdBy = (AccountDTO)createdBy;
+        }
     }
 
-    public IEnumerable<PhotoCollection> Photos { get => _collection; }
+    public DisplayAlbum(Album album, int? currentUserId = null)
+    {
+        ArgumentNullException.ThrowIfNull(album, nameof(album));
+        ArgumentNullException.ThrowIfNull(album.Photos, nameof(album.Photos));
+
+        AlbumId = album.Id;
+
+        ThumbnailId = album.ThumbnailId;
+        if (album.ThumbnailId > 0 && album.Thumbnail is not null) {
+            Thumbnail = new DisplayPhoto(album.Thumbnail);
+        }
+
+        CategoryId = album.CategoryId;
+        if (album.CategoryId > 0 && album.Category is not null) {
+            Category = (CategoryDTO)album.Category;
+        }
+
+        this._favoritedBy = album.FavoritedBy;
+        this._currentUserId = currentUserId;
+
+        Title = album.Title;
+        Summary = album.Summary;
+        Description = album.Description;
+
+        this._tags = album.Tags
+            .Select(t => (TagDTO)t.Tag);
+
+        CreatedAt = album.CreatedAt;
+        UpdatedAt = album.UpdatedAt;
+        RequiredPrivilege = (byte)album.RequiredPrivilege;
+
+        this._photos = album.Photos
+            .Where(p => p.Photo is not null && p.Photo.Filepaths.Any())
+            .OrderByDescending(p => p.Added)
+            .Select(p => new DisplayPhoto(p.Photo));
+
+        this.UpdatedByUserId = album.UpdatedBy;
+        var updatedBy = album.UpdatedByNavigation;
+        if (updatedBy is not null) {
+            this._updatedBy = (AccountDTO)updatedBy;
+        }
+
+        this.CreatedByUserId = album.CreatedBy;
+        var createdBy = album.CreatedByNavigation;
+        if (createdBy is not null) {
+            this._createdBy = (AccountDTO)createdBy;
+        }
+    }
+
+    protected IEnumerable<DisplayPhoto> _photos;
+    public IEnumerable<DisplayPhoto> Photos {
+        get => _photos;
+    }
 
     /// <summary>
-    /// Returns the number of elements (photos) in this sequence. (See - <seealso cref="IEnumerable{PhotoCollection}.Count()"/>)
+    /// Returns the number of elements (photos) in this sequence.
     /// </summary>
-    public int Count => this._collection.Count();
+    public int Count => this._photos.Count();
 
-    public readonly int AlbumId;
+    protected int? _currentUserId;
+    protected IEnumerable<FavoriteAlbumRelation> _favoritedBy;
+
+    /// <summary>
+    /// Returns the number of times this photo has been favorited.
+    /// </summary>
+    public int Favorites => this._favoritedBy.Count();
+
+    /// <summary>
+    /// Returns a flag indicating if this has been favorited by you (current user).
+    /// </summary>
+    public bool IsFavorite =>
+        _currentUserId is not null &&
+        _currentUserId > 0 &&
+        this._favoritedBy.Any(f => f.AccountId == _currentUserId);
+
+    public readonly int? AlbumId;
     public readonly int? ThumbnailId;
     public readonly DisplayPhoto? Thumbnail;
     public readonly int? CategoryId;
-    public readonly Category? Category;
+    public readonly CategoryDTO? Category;
     public readonly string Title;
     public readonly string? Summary;
     public readonly string? Description;
-    public readonly TagDTO[] Tags;
-    public readonly int? CreatedBy;
     public readonly DateTime CreatedAt;
     public readonly DateTime UpdatedAt;
     public readonly byte RequiredPrivilege;
+
+    protected IEnumerable<TagDTO> _tags;
+    public IEnumerable<TagDTO> Tags => this._tags;
+
+    protected AccountDTO? _updatedBy;
+
+    public readonly int? UpdatedByUserId;
+    public AccountDTO? UpdatedByUser => this._updatedBy;
+
+    protected AccountDTO? _createdBy;
+
+    public readonly int? CreatedByUserId;
+    public AccountDTO? CreatedByUser => this._createdBy;
 }

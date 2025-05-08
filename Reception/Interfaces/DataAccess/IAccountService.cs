@@ -27,7 +27,7 @@ public interface IAccountService
     /// <summary>
     /// Get all <see cref="Account"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Account>>> GetAccounts(int? limit, int? offset, DateTime? lastVisit, string? fullName);
+    public abstract Task<ActionResult<IEnumerable<Account>>> GetAccounts(int? limit, int? offset, DateTime? lastLoginAfter, string? fullName);
 
     /// <summary>
     /// Update an <see cref="Account"/> in the database.

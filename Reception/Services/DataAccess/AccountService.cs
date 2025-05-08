@@ -1,9 +1,9 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
 using Reception.Interfaces;
+using Reception.Database;
 using Reception.Models;
 using System.Net;
 
@@ -74,14 +74,14 @@ public class AccountService(
     /// <summary>
     /// Get all <see cref="Account"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public async Task<ActionResult<IEnumerable<Account>>> GetAccounts(int? limit, int? offset, DateTime? lastVisit, string? fullName)
+    public async Task<ActionResult<IEnumerable<Account>>> GetAccounts(int? limit, int? offset, DateTime? lastLoginAfter, string? fullName)
     {
         IQueryable<Account> query = db.Accounts.OrderByDescending(account => account.CreatedAt);
         string message;
 
-        if (lastVisit is not null)
+        if (lastLoginAfter is not null)
         {
-            query = query.Where(account => account.LastVisit >= lastVisit);
+            query = query.Where(account => account.LastLogin >= lastLoginAfter);
         }
         if (!string.IsNullOrWhiteSpace(fullName))
         {
@@ -141,16 +141,98 @@ public class AccountService(
             return new NotFoundObjectResult(message);
         }
 
+        if (string.IsNullOrWhiteSpace(mut.Email)) {
+            string message = $"{nameof(Account.Email)} cannot be null/empty!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+        else if (mut.Email.Length > 255) {
+            string message = $"{nameof(Account.Email)} length cannot exceed 255 characters!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (string.IsNullOrWhiteSpace(mut.Username)) {
+            string message = $"{nameof(Account.Username)} cannot be null/empty!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+        else if (mut.Username.Length > 127) {
+            string message = $"{nameof(Account.Username)} length cannot exceed 127 characters!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (string.IsNullOrWhiteSpace(mut.FullName)) {
+            string message = $"{nameof(Account.FullName)} cannot be null/empty!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+        else if (mut.FullName.Length > 255) {
+            string message = $"{nameof(Account.FullName)} length cannot exceed 255 characters!";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (mut.AvatarId <= 0)
+        {
+            string message = $"'{nameof(MutateAccount.AvatarId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(UpdateAccountAvatar))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (account.AvatarId != mut.AvatarId) {
+            var photoExists = await db.Photos.AnyAsync(photo => photo.Id == mut.AvatarId);
+            if (!photoExists)
+            {
+                string message = $"Failed to find {nameof(Photo)} with ID #{mut.AvatarId}";
+                logging
+                    .Action(nameof(UpdateAccount))
+                    .LogDebug(message)
+                    .LogAndEnqueue();
+
+                return new NotFoundObjectResult(message);
+            }
+        }
+
         account.Email = mut.Email;
         account.Username = mut.Username;
         account.FullName = mut.FullName;
-        account.Permissions = mut.Permissions;
+        account.Privilege = mut.Privilege;
         account.AvatarId = mut.AvatarId;
 
         // Not changed during update..
         // account.Password = mut.Password
         // account.CreatedAt = mut.CreatedAt
-        // account.LastVisit = mut.LastVisit
+        // account.LastLogin = mut.LastLogin
 
         try
         {
@@ -218,6 +300,18 @@ public class AccountService(
 
         if (user.AvatarId == photoId) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        var photoExists = await db.Photos.AnyAsync(photo => photo.Id == photoId);
+        if (!photoExists)
+        {
+            string message = $"Failed to find {nameof(Photo)} with ID #{photoId}";
+            logging
+                .Action(nameof(UpdateAccount))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
         }
 
         try

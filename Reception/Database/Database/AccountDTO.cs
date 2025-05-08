@@ -12,6 +12,7 @@ public class AccountDTO : Account, IDataTransferObject<Account>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("email")]
     public new string? Email { get; set; }
 
@@ -35,6 +36,7 @@ public class AccountDTO : Account, IDataTransferObject<Account>
 
     [JsonPropertyName("avatar_id")]
     public new int? AvatarId { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="AccountDTO"/> instance to its <see cref="Account"/> equivalent.

@@ -12,6 +12,7 @@ public class PublicLinkDTO : PublicLink, IDataTransferObject<PublicLink>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("photo_id")]
     public new int PhotoId { get; set; }
 
@@ -32,6 +33,7 @@ public class PublicLinkDTO : PublicLink, IDataTransferObject<PublicLink>
 
     [JsonPropertyName("accessed")]
     public new int Accessed { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="PublicLinkDTO"/> instance to its <see cref="PublicLink"/> equivalent.

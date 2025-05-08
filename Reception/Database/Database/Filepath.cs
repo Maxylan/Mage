@@ -31,6 +31,8 @@ public partial class Filepath : IDatabaseEntity<Filepath>
     [StringLength(255)]
     public string Path { get; set; } = null!;
 
+    public Dimension? Dimension { get; set; }
+
     [Column("filesize")]
     public int? Filesize { get; set; }
 
@@ -50,6 +52,15 @@ public partial class Filepath
     [InverseProperty("Filepaths")]
     public virtual Photo Photo { get; set; } = null!;
 
+    public bool IsSource =>
+        this.Dimension == Reception.Database.Dimension.SOURCE;
+
+    public bool IsMedium =>
+        this.Dimension == Reception.Database.Dimension.MEDIUM;
+
+    public bool IsThumbnail =>
+        this.Dimension == Reception.Database.Dimension.THUMBNAIL;
+
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Filepath"/>
     /// </summary>
@@ -59,6 +70,15 @@ public partial class Filepath
             entity.HasKey(e => e.Id).HasName("filepaths_pkey");
 
             entity.HasOne(d => d.Photo).WithMany(p => p.Filepaths).HasConstraintName("fk_photo");
+
+            entity.Property(e => e.Dimension)
+                .HasColumnName("dimension")
+                .HasDefaultValue(Reception.Database.Dimension.SOURCE)
+                .HasSentinel(null)
+                /* .HasConversion(
+                    x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
+                    y => Enum.Parse<Dimension>(y, true)
+                ) */;
         }
     );
 }

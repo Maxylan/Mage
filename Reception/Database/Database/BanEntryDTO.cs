@@ -12,6 +12,7 @@ public class BanEntryDTO : BanEntry, IDataTransferObject<BanEntry>
     [JsonPropertyName("id")]
     public new int? Id { get; set; }
 
+    /*
     [JsonPropertyName("client_id")]
     public new int ClientId { get; set; }
 
@@ -20,6 +21,7 @@ public class BanEntryDTO : BanEntry, IDataTransferObject<BanEntry>
 
     [JsonPropertyName("reason")]
     public new string? Reason { get; set; }
+    */
 
     /// <summary>
     /// Convert this <see cref="BanEntryDTO"/> instance to its <see cref="BanEntry"/> equivalent.
