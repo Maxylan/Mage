@@ -11,7 +11,7 @@ using System.Net;
 namespace Reception.Services.DataAccess;
 
 public class PhotoService(
-    MageDbContext db,
+    MageDb db,
     ILoggingService<PhotoService> logging,
     IHttpContextAccessor contextAccessor,
     ITagService tagService

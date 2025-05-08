@@ -3,10 +3,10 @@ using Reception.Services.DataAccess;
 
 namespace Reception.Models;
 
-public readonly struct StoreLogsInDatabase(MageDbContext? db = null) : IAsyncDisposable, IDisposable
+public readonly struct StoreLogsInDatabase(MageDb? db = null) : IAsyncDisposable, IDisposable
 {
     /// <summary>
-    /// Calls <c><see cref="MageDbContext.SaveChangesAsync"/></c> to asynchronously store your newly created logs.
+    /// Calls <c><see cref="MageDb.SaveChangesAsync"/></c> to asynchronously store your newly created logs.
     /// </summary>
     /// <remarks>
     /// <c><seealso cref="Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync"/></c>
@@ -14,7 +14,7 @@ public readonly struct StoreLogsInDatabase(MageDbContext? db = null) : IAsyncDis
     public async Task<int> SaveAsync() => db is null ? 0 : await db.SaveChangesAsync();
 
     /// <summary>
-    /// Calls <c><see cref="MageDbContext.SaveChanges"/></c> to store your newly created logs.
+    /// Calls <c><see cref="MageDb.SaveChanges"/></c> to store your newly created logs.
     /// </summary>
     /// <remarks>
     /// <c><seealso cref="Microsoft.EntityFrameworkCore.DbContext.SaveChanges"/></c>

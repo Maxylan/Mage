@@ -34,15 +34,12 @@ public interface IAccountService
     /// </summary>
     public abstract Task<ActionResult<Account>> UpdateAccount(MutateAccount mut);
 
-    // TODO! (2025-01-19)
-
     /// <summary>
     /// Update the Avatar of an <see cref="Account"/> in the database.
     /// </summary>
     public abstract Task<ActionResult<Account>> UpdateAccountAvatar(Account user, int photo_id);
 
-    // TODO, maybe?
-
+    // TODO... maybe?
     /// <summary>
     /// Add a new <see cref="Account"/> to the database.
     /// </summary>
@@ -51,5 +48,5 @@ public interface IAccountService
     /// <summary>
     /// Delete / Remove an <see cref="Account"/> from the database.
     /// </summary>
-    // public abstract Task<int> DeleteAccount(MutateAccount mut);
+    public abstract Task<int> DeleteAccount(MutateAccount mut);
 }

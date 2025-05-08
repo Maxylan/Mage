@@ -10,7 +10,7 @@ namespace Reception.Services.DataAccess;
 
 public class TagService(
     ILoggingService<TagService> logging,
-    MageDbContext db
+    MageDb db
 ) : ITagService
 {
     /// <summary>

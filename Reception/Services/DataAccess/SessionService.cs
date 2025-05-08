@@ -9,7 +9,7 @@ namespace Reception.Services.DataAccess;
 
 public class SessionService(
     ILoggingService<SessionService> logging,
-    MageDbContext db
+    MageDb db
 ) : ISessionService
 {
     /// <summary>

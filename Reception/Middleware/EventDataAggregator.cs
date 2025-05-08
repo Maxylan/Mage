@@ -53,7 +53,7 @@ public class EventDataAggregator
         {
             // Create a new DI scope to resolve scoped services (e.g. DbContext)
             using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<MageDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<MageDb>();
             db.Logs.AddRange(events);
 
             await db.SaveChangesAsync();

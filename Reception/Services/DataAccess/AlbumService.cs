@@ -9,7 +9,7 @@ using Reception.Authentication;
 namespace Reception.Services.DataAccess;
 
 public class AlbumService(
-    MageDbContext db,
+    MageDb db,
     ILoggingService<AlbumService> logging,
     IHttpContextAccessor contextAccessor,
     ITagService tagService

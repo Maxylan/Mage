@@ -2,15 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
-using Reception.Models;
 using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
+using Reception.Models;
 using System.Net;
 
 namespace Reception.Services.DataAccess;
 
 public class AccountService(
     ILoggingService<AccountService> logging,
-    MageDbContext db
+    MageDb db
 ) : IAccountService
 {
     /// <summary>
@@ -276,8 +277,7 @@ public class AccountService(
         return user;
     }
 
-    // TODO, maybe?
-
+    // TODO... maybe?
     /// <summary>
     /// Add a new <see cref="Account"/> to the database.
     /// </summary>
@@ -289,8 +289,8 @@ public class AccountService(
     /// <summary>
     /// Delete / Remove an <see cref="Account"/> from the database.
     /// </summary>
-    /* public async Task<int> DeleteAccount(MutateAccount mut)
+    public async Task<int> DeleteAccount(MutateAccount mut)
     {
         throw new NotImplementedException();
-    } */
+    }
 }

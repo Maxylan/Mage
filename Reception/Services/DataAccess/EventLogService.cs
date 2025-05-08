@@ -8,7 +8,7 @@ using Reception.Authentication;
 namespace Reception.Services.DataAccess;
 
 public class EventLogService(
-    MageDbContext db,
+    MageDb db,
     IHttpContextAccessor contextAccessor,
     ILogger<EventLogService> logger
 ) : IEventLogService

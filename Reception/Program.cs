@@ -121,7 +121,7 @@ public sealed class Program
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
             } */
         });
-        /*builder.Services.AddDbContext<MageDbContext>(opts =>
+        /*builder.Services.AddDbContext<MageDb>(opts =>
         {
             if (IsDevelopment)
             {

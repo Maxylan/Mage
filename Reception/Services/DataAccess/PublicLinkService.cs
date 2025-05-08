@@ -9,7 +9,7 @@ using Reception.Database.Models;
 namespace Reception.Services.DataAccess;
 
 public class PublicLinkService(
-    MageDbContext db,
+    MageDb db,
     ILoggingService<PublicLinkService> logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photos

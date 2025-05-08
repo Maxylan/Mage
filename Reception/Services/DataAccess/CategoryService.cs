@@ -9,7 +9,7 @@ using System.Net;
 namespace Reception.Services.DataAccess;
 
 public class CategoryService(
-    MageDbContext db,
+    MageDb db,
     ILoggingService<CategoryService> logging,
     IHttpContextAccessor contextAccessor
 ) : ICategoryService
