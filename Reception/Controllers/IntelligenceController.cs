@@ -1,6 +1,6 @@
 using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Http.Timeouts;

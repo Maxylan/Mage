@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Database.Models;
 using System.ComponentModel.DataAnnotations;

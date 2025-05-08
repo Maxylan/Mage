@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using System.Net;
 
 namespace Reception.Services;

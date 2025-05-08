@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
 using Reception.Authentication;
 using Reception.Middleware;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Reception.Services;
 using Reception.Caching;
 using SixLabors.ImageSharp;
@@ -47,7 +47,7 @@ public sealed class Program
         var app = builder.Build();
         app.Run();
     }
-    
+
     public static void Second(string[] args)
     {
         // Swagger/OpenAPI reference & tutorial, if ever needed:

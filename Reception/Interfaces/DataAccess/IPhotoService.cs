@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 using Reception.Models;
 
-namespace Reception.Interfaces;
+namespace Reception.Interfaces.DataAccess;
 
 public interface IPhotoService
 {

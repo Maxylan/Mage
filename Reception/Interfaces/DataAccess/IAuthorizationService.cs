@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
-namespace Reception.Interfaces;
+namespace Reception.Interfaces.DataAccess;
 
 public interface IAuthorizationService
 {

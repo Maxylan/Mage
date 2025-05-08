@@ -1,4 +1,4 @@
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Reception.Services;
 
 namespace Reception.Models;
@@ -21,7 +21,7 @@ public readonly struct StoreLogsInDatabase(MageDbContext? db = null) : IAsyncDis
     /// </remarks>
     public int Save() => db?.SaveChanges() ?? 0;
 
-    public ValueTask DisposeAsync() => db is null 
+    public ValueTask DisposeAsync() => db is null
         ? ValueTask.CompletedTask
         : db.DisposeAsync();
 

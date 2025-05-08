@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authentication;
 using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
 using Reception.Database.Models;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 
 namespace Reception.Middleware.Authentication;
 

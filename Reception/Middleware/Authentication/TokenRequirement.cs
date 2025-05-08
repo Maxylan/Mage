@@ -1,6 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 
 namespace Reception.Middleware.Authentication;
 

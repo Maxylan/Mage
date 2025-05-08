@@ -1,5 +1,5 @@
 using Reception.Authentication;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Database.Models;
 using Microsoft.EntityFrameworkCore;

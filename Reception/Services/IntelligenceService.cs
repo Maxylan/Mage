@@ -1,6 +1,6 @@
 using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Cryptography;

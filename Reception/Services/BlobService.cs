@@ -1,6 +1,6 @@
 using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Database.Models;
 using Reception.Utilities;

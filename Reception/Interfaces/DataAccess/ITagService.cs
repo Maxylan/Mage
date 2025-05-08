@@ -2,7 +2,7 @@ using Reception.Models;
 using Reception.Database.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Reception.Interfaces;
+namespace Reception.Interfaces.DataAccess;
 
 public interface ITagService
 {

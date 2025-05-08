@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 
-namespace Reception.Interfaces;
+namespace Reception.Interfaces.DataAccess;
 
 public interface ISessionService
 {
