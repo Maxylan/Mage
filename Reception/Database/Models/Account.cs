@@ -45,7 +45,7 @@ public partial class Account : IDatabaseEntity<Account>
     public DateTime LastLogin { get; set; }
 
     [Column("privilege")]
-    public short Privilege { get; set; }
+    public byte Privilege { get; set; }
 
     [Column("avatar_id")]
     public int? AvatarId { get; set; }

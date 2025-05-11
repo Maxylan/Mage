@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 [Table("tags", Schema = "magedb")]

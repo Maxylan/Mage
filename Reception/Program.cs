@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
-using Reception.Authentication;
+using Reception.Middleware.Authentication;
 using Reception.Middleware;
 using Reception.Interfaces.DataAccess;
 using Reception.Services.DataAccess;

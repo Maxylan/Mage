@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 [Table("accounts", Schema = "magedb")]
@@ -40,7 +40,7 @@ public class Account
 
     public DateTime LastVisit { get; set; }
 
-    public short Permissions { get; set; }
+    public byte Permissions { get; set; }
 
     // Navigation Properties
 

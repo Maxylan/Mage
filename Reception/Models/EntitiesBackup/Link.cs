@@ -10,7 +10,7 @@ using Reception.Services.DataAccess;
 using Swashbuckle.AspNetCore.Annotations;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 [Table("links", Schema = "magedb")]

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Swashbuckle.AspNetCore.Annotations;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 [Table("filepaths", Schema = "magedb")]
@@ -41,7 +41,7 @@ public class Filepath
 
     // Method
     [SwaggerIgnore]
-    public bool IsSource => this.Dimension == Reception.Models.Entities.Dimension.SOURCE;
+    public bool IsSource => this.Dimension == Reception.Database.Models.Dimension.SOURCE;
 
     // Navigation Properties
 
@@ -75,10 +75,10 @@ public class Filepath
             entity.Property(e => e.Width).HasColumnName("width");
             entity.Property(e => e.Dimension)
                 .HasColumnName("dimension")
-                .HasDefaultValue(Reception.Models.Entities.Dimension.SOURCE)
+                .HasDefaultValue(Reception.Database.Models.Dimension.SOURCE)
                 .HasSentinel(null)
                 /* .HasConversion(
-                    x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
+                    x => x.ToString() ?? Reception.Database.Models.Dimension.SOURCE.ToString(),
                     y => Enum.Parse<Dimension>(y, true)
                 ) *//*;
             entity.Property(e => e.PhotoId).HasColumnName("photo_id");

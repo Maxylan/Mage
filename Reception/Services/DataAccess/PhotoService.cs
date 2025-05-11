@@ -1,7 +1,7 @@
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Reception.Authentication;
+using Reception.Middleware.Authentication;
 using Reception.Models;
 using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
@@ -615,7 +615,7 @@ public class PhotoService(
 
     #region Create a photo entity.
     /// <summary>
-    /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// Create a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> CreatePhotoEntity(MutatePhoto mut)
     {
@@ -641,7 +641,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Create a <see cref="Reception.Models.Entities.Photo"/> in the database.
+    /// Create a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> CreatePhotoEntity(PhotoEntity entity)
     {
@@ -762,7 +762,7 @@ public class PhotoService(
 
     #region Update a photo entity.
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.PhotoEntity"/> in the database.
+    /// Updates a <see cref="Reception.Database.Models.PhotoEntity"/> in the database.
     /// </summary>
     public async Task<ActionResult<PhotoEntity>> UpdatePhotoEntity(MutatePhoto mut)
     {
@@ -1040,8 +1040,8 @@ public class PhotoService(
 
 
     /// <summary>
-    /// Removes a <see cref="Reception.Models.Entities.Tag"/> (..identified by <paramref name="tag"/>) from the
-    /// <see cref="Reception.Models.Entities.PhotoEntity"/> identified by its PK <paramref name="photoId"/>.
+    /// Removes a <see cref="Reception.Database.Models.Tag"/> (..identified by <paramref name="tag"/>) from the
+    /// <see cref="Reception.Database.Models.PhotoEntity"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
     public async Task<ActionResult> RemoveTag(int photoId, string tag)
     {
@@ -1149,7 +1149,7 @@ public class PhotoService(
 
     #region Delete a photo completely (blob, filepaths & photo)
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
+    /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
     public async Task<ActionResult> DeletePhoto(int photoId)
@@ -1183,7 +1183,7 @@ public class PhotoService(
         return await DeletePhoto(photo);
     }
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
+    /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
     public async Task<ActionResult> DeletePhoto(PhotoEntity entity)
@@ -1215,7 +1215,7 @@ public class PhotoService(
 
     #region Delete a blob from disk
     /// <summary>
-    /// Deletes the blob of a <see cref="Reception.Models.Entities.Photo"/> from disk.
+    /// Deletes the blob of a <see cref="Reception.Database.Models.Photo"/> from disk.
     /// </summary>
     public async Task<ActionResult> DeletePhotoBlob(Filepath entity)
     {
@@ -1303,7 +1303,7 @@ public class PhotoService(
 
     #region Delete photo entities from the database
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
+    /// Deletes a <see cref="Reception.Database.Models.PhotoEntity"/> (..and associated <see cref="Reception.Database.Models.Filepath"/> entities) ..from the database.
     /// </summary>
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
@@ -1340,7 +1340,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Deletes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..and associated <see cref="Reception.Models.Entities.Filepath"/> entities) ..from the database.
+    /// Deletes a <see cref="Reception.Database.Models.PhotoEntity"/> (..and associated <see cref="Reception.Database.Models.Filepath"/> entities) ..from the database.
     /// </summary>
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..

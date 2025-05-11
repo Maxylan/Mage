@@ -50,7 +50,7 @@ public partial class Album : IDatabaseEntity<Album>
     public DateTime UpdatedAt { get; set; }
 
     [Column("required_privilege")]
-    public short RequiredPrivilege { get; set; }
+    public byte RequiredPrivilege { get; set; }
 }
 
 /// <summary>

@@ -9,7 +9,7 @@ using Reception.Interfaces.DataAccess;
 using Reception.Utilities;
 using Reception.Constants;
 using System.Net;
-using Reception.Authentication;
+using Reception.Middleware.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 namespace Reception.Controllers;

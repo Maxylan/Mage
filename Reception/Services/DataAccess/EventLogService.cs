@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
 using Reception.Models;
-using Reception.Authentication;
+using Reception.Middleware.Authentication;
 
 namespace Reception.Services.DataAccess;
 

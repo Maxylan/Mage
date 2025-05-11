@@ -27,7 +27,7 @@ public partial class Tag : IDatabaseEntity<Tag>
     public string? Description { get; set; }
 
     [Column("required_privilege")]
-    public short RequiredPrivilege { get; set; }
+    public byte RequiredPrivilege { get; set; }
 }
 
 /// <summary>

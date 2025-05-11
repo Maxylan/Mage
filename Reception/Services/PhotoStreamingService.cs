@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
-using Reception.Authentication;
+using Reception.Middleware.Authentication;
 using Reception.Models;
 using Reception.Database.Models;
 using Reception.Utilities;
@@ -29,7 +29,7 @@ public class PhotoStreamingService(
 {
     #region Create / Store photos.
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
@@ -46,7 +46,7 @@ public class PhotoStreamingService(
     }
 
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
@@ -290,11 +290,11 @@ public class PhotoStreamingService(
     }
 
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Models.Entities.Photo"/>) by streaming it directly to disk.
+    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Database.Models.Photo"/>) by streaming it directly to disk.
     /// </summary>
     /// <remarks>
     /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
-    /// <see cref="Reception.Models.Entities.Photo"/> database entity.
+    /// <see cref="Reception.Database.Models.Photo"/> database entity.
     /// </remarks>
     /// <returns><see cref="PhotoEntity"/></returns>
     protected async Task<PhotoEntity> UploadSinglePhoto(

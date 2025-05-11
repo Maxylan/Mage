@@ -8,7 +8,7 @@ public interface IPhotoStreamingService
 {
     #region Create / Store photos.
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
@@ -25,7 +25,7 @@ public interface IPhotoStreamingService
     }
 
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Models.Entities.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>

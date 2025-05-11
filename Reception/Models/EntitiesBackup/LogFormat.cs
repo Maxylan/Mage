@@ -2,7 +2,7 @@
 using System.Text;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 public readonly struct LogFormat(LogEntry entry)

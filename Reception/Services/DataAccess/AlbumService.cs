@@ -1,10 +1,12 @@
-using Reception.Models;
-using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
-using Reception.Authentication;
+using Reception.Models;
+using Reception.Database;
+using Reception.Database.Models;
+using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
+using Reception.Middleware.Authentication;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Reception.Services.DataAccess;
 
@@ -22,7 +24,15 @@ public class AlbumService(
     {
         if (albumId <= 0)
         {
-            throw new ArgumentException($"Parameter {nameof(albumId)} has to be a non-zero positive integer!", nameof(albumId));
+            string message = $"Parameter {nameof(albumId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(GetAlbum))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
         }
 
         Album? album = await db.Albums.FindAsync(albumId);
@@ -38,6 +48,48 @@ public class AlbumService(
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreateAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredViewPrivilege = (byte)
+            (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetAlbum))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         // Load missing navigation entries.
@@ -79,7 +131,35 @@ public class AlbumService(
             .OrderByDescending(album => album.CreatedAt)
             .Include(album => album.Thumbnail)
             .Include(album => album.Photos)
-            .Include(album => album.AlbumTags);
+            .Include(album => album.Tags);
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreateAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        // Filter by privilege
+        albumQuery = db.Albums
+            .Where(album => (user.Privilege & (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
 
         // Filtering
         if (filter.MatchPhotoTitles == true)
@@ -154,8 +234,8 @@ public class AlbumService(
             if (validTags?.Any() == true)
             {
                 albumQuery = albumQuery
-                    .Where( // I really hope this makes a valid query..
-                        album => album.AlbumTags.Any(tag => validTags.Contains(tag))
+                    .Where( // I really hope nested-any's still makes a valid query..
+                        album => album.Tags.Any(at => validTags.Any(tag => tag.Id == at.TagId))
                     );
             }
         }
@@ -185,22 +265,7 @@ public class AlbumService(
     }
 
     /// <summary>
-    /// Get the <see cref="Album"/> with PK <paramref ref="albumId"/> (int), along with a collection of all associated Photos.
-    /// </summary>
-    public async Task<ActionResult<AlbumPhotoCollection>> GetAlbumPhotoCollection(int albumId)
-    {
-        var getAlbum = await GetAlbum(albumId);
-        Album? album = getAlbum.Value;
-
-        if (album is null) {
-            return getAlbum.Result!;
-        }
-
-        return new AlbumPhotoCollection(album);
-    }
-
-    /// <summary>
-    /// Create a new <see cref="Reception.Models.Entities.Album"/>.
+    /// Create a new <see cref="Reception.Database.Models.Album"/>.
     /// </summary>
     public async Task<ActionResult<Album>> CreateAlbum(MutateAlbum mut)
     {
@@ -233,21 +298,46 @@ public class AlbumService(
             );
         }
 
-        Account? user = null;
-
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        Account? user;
+        try
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
             }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(CreateAlbum))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreateAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.CREATE | mut.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreateAlbum))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (string.IsNullOrWhiteSpace(mut.Title))
@@ -327,14 +417,14 @@ public class AlbumService(
                 .Trim();
         }
 
-        PhotoEntity? thumbnail = null;
+        Photo? thumbnail = null;
         if (mut.ThumbnailId is not null && mut.ThumbnailId > 0)
         {
             thumbnail = await db.Photos.FindAsync(mut.ThumbnailId);
 
             if (thumbnail is null)
             {
-                string message = $"{nameof(PhotoEntity)} with ID #{mut.ThumbnailId} could not be found!";
+                string message = $"{nameof(Photo)} with ID #{mut.ThumbnailId} could not be found!";
                 logging
                     .Action(nameof(CreateAlbum))
                     .InternalDebug(message, opts => {
@@ -365,23 +455,38 @@ public class AlbumService(
             }
         }
 
-        List<Tag>? validTags = null;
+        List<AlbumTagRelation> tagRelations = [];
         if (mut.Tags?.Any() == true)
         {
             var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
-            validTags = sanitizeAndCreateTags.Value?.ToList();
+
+            if (sanitizeAndCreateTags.Value is not null) {
+                foreach(Tag tag in sanitizeAndCreateTags.Value) {
+                    tagRelations.Add(new() {
+                        Tag = tag,
+                        Added = DateTime.Now
+                    });
+                }
+            }
         }
 
-        List<PhotoEntity>? validPhotos = null;
+        List<PhotoAlbumRelation> photoRelations = [];
         if (mut.Photos?.Any() == true)
         {
             mut.Photos = mut.Photos
                 .Where(photoId => photoId > 0)
                 .ToArray();
 
-            validPhotos = await db.Photos
+            var validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
                 .ToListAsync();
+
+            foreach(Photo photo in validPhotos) {
+                photoRelations.Add(new() {
+                    Photo = photo,
+                    Added = DateTime.Now
+                });
+            }
         }
 
         Album newAlbum = new()
@@ -394,8 +499,8 @@ public class AlbumService(
             CreatedBy = user?.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            AlbumTags = validTags ?? [],
-            Photos = validPhotos ?? [],
+            Tags = tagRelations,
+            Photos = photoRelations,
             Thumbnail = thumbnail,
             Category = category
         };
@@ -407,10 +512,11 @@ public class AlbumService(
 
             logging
                 .Action(nameof(CreateAlbum))
-                .InternalInformation($"A new {nameof(Album)} named '{newAlbum.Title}' was created.", opts =>
+                .ExternalTrace($"A new {nameof(Album)} named '{newAlbum.Title}' was created.", opts =>
                 {
                     opts.SetUser(user);
-                });
+                })
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
@@ -457,7 +563,7 @@ public class AlbumService(
     }
 
     /// <summary>
-    /// Updates a <see cref="Reception.Models.Entities.Album"/> in the database.
+    /// Updates a <see cref="Reception.Database.Models.Album"/> in the database.
     /// </summary>
     public async Task<ActionResult<Album>> UpdateAlbum(MutateAlbum mut)
     {
@@ -491,21 +597,28 @@ public class AlbumService(
             );
         }
 
-        Account? user = null;
-
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        Account? user;
+        try
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
             }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(UpdateAlbum))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(UpdateAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (mut.Id <= 0)
@@ -534,6 +647,33 @@ public class AlbumService(
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
+        }
+
+        byte privilegeRequired = (byte)
+            (mut.RequiredPrivilege | existingAlbum.RequiredPrivilege);
+
+        if (existingAlbum.CreatedBy != user.Id) {
+            privilegeRequired = (byte)
+                (Privilege.UPDATE | privilegeRequired);
+        }
+        if ((mut.RequiredPrivilege & existingAlbum.RequiredPrivilege) != existingAlbum.RequiredPrivilege) {
+            privilegeRequired = (byte)
+                (Privilege.ADMIN | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdateAlbum))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         foreach(var navigation in db.Entry(existingAlbum).Navigations)
@@ -623,14 +763,14 @@ public class AlbumService(
                 .Trim();
         }
 
-        PhotoEntity? thumbnail = null;
+        Photo? thumbnail = null;
         if (mut.ThumbnailId is not null && mut.ThumbnailId > 0)
         {
             thumbnail = await db.Photos.FindAsync(mut.ThumbnailId);
 
             if (thumbnail is null)
             {
-                string message = $"{nameof(PhotoEntity)} with ID #{mut.ThumbnailId} could not be found!";
+                string message = $"{nameof(Photo)} with ID #{mut.ThumbnailId} could not be found!";
                 logging
                     .Action(nameof(UpdateAlbum))
                     .InternalDebug(message, opts => {
@@ -661,36 +801,52 @@ public class AlbumService(
             }
         }
 
-        List<Tag>? validTags = null;
+        List<AlbumTagRelation> tagRelations = [];
         if (mut.Tags?.Any() == true)
         {
             var sanitizeAndCreateTags = await tagService.CreateTags(mut.Tags);
-            validTags = sanitizeAndCreateTags.Value?.ToList();
+
+            if (sanitizeAndCreateTags.Value is not null) {
+                foreach(Tag tag in sanitizeAndCreateTags.Value) {
+                    tagRelations.Add(new() {
+                        Tag = tag,
+                        Added = DateTime.Now
+                    });
+                }
+            }
         }
 
-        List<PhotoEntity>? validPhotos = null;
+        List<PhotoAlbumRelation> photoRelations = [];
         if (mut.Photos?.Any() == true)
         {
             mut.Photos = mut.Photos
                 .Where(photoId => photoId > 0)
                 .ToArray();
 
-            validPhotos = await db.Photos
+            var validPhotos = await db.Photos
                 .Where(photo => mut.Photos.Contains(photo.Id))
                 .ToListAsync();
+
+            foreach(Photo photo in validPhotos) {
+                photoRelations.Add(new() {
+                    Photo = photo,
+                    Added = DateTime.Now
+                });
+            }
         }
 
         existingAlbum.Title = mut.Title;
         existingAlbum.Summary = mut.Summary;
         existingAlbum.Description = mut.Description;
         existingAlbum.UpdatedAt = DateTime.UtcNow;
+        existingAlbum.UpdatedBy = user.Id;
 
         if (mut.Tags is not null) {
-            existingAlbum.AlbumTags = validTags ?? [];
+            existingAlbum.Tags = tagRelations;
         }
 
         if (mut.Photos is not null) {
-            existingAlbum.Photos = validPhotos ?? [];
+            existingAlbum.Photos = photoRelations;
         }
 
         if (mut.ThumbnailId is not null && mut.ThumbnailId > 0) {
@@ -707,15 +863,13 @@ public class AlbumService(
         {
             db.Update(existingAlbum);
 
-            if (Program.IsDevelopment)
-            {
-                logging
-                    .Action(nameof(UpdateAlbum))
-                    .InternalDebug($"An {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just updated.", opts =>
-                    {
-                        opts.SetUser(user);
-                    });
-            }
+            logging
+                .Action(nameof(UpdateAlbum))
+                .ExternalTrace($"{nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}) was just updated.", opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
@@ -762,13 +916,13 @@ public class AlbumService(
     }
 
     /// <summary>
-    /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (int[]).
+    /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (<see cref="IEnumerable{int}"/>).
     /// </summary>
-    public async Task<ActionResult<AlbumPhotoCollection>> MutateAlbumPhotos(int albumId, int[] photoIds)
+    public async Task<ActionResult<Album>> AddPhotos(int albumId, IEnumerable<int> photoIds)
     {
         ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
 
-        if (photoIds.Length > 9999)
+        if (photoIds.Count() > 9999)
         {
             photoIds = photoIds
                 .Take(9999)
@@ -779,7 +933,7 @@ public class AlbumService(
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
             logging
-                .Action(nameof(MutateAlbumPhotos))
+                .Action(nameof(AddPhotos))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
@@ -792,7 +946,7 @@ public class AlbumService(
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
             logging
-                .Action(nameof(MutateAlbumPhotos))
+                .Action(nameof(AddPhotos))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
@@ -806,43 +960,273 @@ public class AlbumService(
             }
         }
 
-        photoIds = photoIds
-            .Where(photoId => photoId > 0)
-            .ToArray();
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(AddPhotos))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = existingAlbum.RequiredPrivilege;
+
+        if (existingAlbum.CreatedBy != user.Id) {
+            privilegeRequired = (byte)
+                (Privilege.UPDATE | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(AddPhotos))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
 
         var existingIds = existingAlbum.Photos
-            .Select(photo => photo.Id)
+            .Select(photo => photo.PhotoId);
+
+        photoIds = photoIds
+            .Where(photoId => photoId > 0)
+            .Distinct()
+            .Intersect(existingIds)
             .ToArray();
 
-        if (photoIds.Length <= 0 || photoIds == existingIds) {
+        if (photoIds.Count() <= 0) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
-        existingAlbum.Photos = await db.Photos
+        var photosToAdd = await db.Photos
             .Where(photo => photoIds.Contains(photo.Id))
+            .Where(photo => (user.Privilege & (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)))
             .ToListAsync();
 
+        if (photosToAdd.Count() <= 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        var newPhotoRelations =
+            photosToAdd.Select(photo => new PhotoAlbumRelation() {
+                PhotoId = photo.Id,
+                Photo = photo,
+                AlbumId = existingAlbum.Id,
+                Album = existingAlbum,
+                Added = DateTime.Now
+            })
+            .Concat(existingAlbum.Photos)
+            .ToList();
+
+        existingAlbum.Photos = newPhotoRelations;
         try
         {
             db.Update(existingAlbum);
 
-            if (Program.IsDevelopment)
+            logging
+                .Action(nameof(AddPhotos))
+                .ExternalTrace(
+                    $"The photos in the {nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to add photos to the existing Album '{existingAlbum.Title}'. ";
+            logging
+                .Action(nameof(AddPhotos))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
             {
-                logging
-                    .Action(nameof(MutateAlbumPhotos))
-                    .InternalDebug($"The photos in an {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just updated.");
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add photos to the existing Album '{existingAlbum.Title}'. ";
+            logging
+                .Action(nameof(AddPhotos))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return existingAlbum;
+    }
+
+    /// <summary>
+    /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (<see cref="IEnumerable{int}"/>).
+    /// </summary>
+    public async Task<ActionResult<Album>> RemovePhotos(int albumId, IEnumerable<int> photoIds)
+    {
+        ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
+
+        if (photoIds.Count() > 9999)
+        {
+            photoIds = photoIds
+                .Take(9999)
+                .ToArray();
+        }
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
+            logging
+                .Action(nameof(RemovePhotos))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            logging
+                .Action(nameof(RemovePhotos))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        foreach(var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
             }
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(RemovePhotos))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = existingAlbum.RequiredPrivilege;
+
+        if (existingAlbum.CreatedBy != user.Id) {
+            privilegeRequired = (byte)
+                (Privilege.UPDATE | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(RemovePhotos))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        photoIds = photoIds
+            .Where(photoId => photoId > 0)
+            .Distinct();
+
+        if (photoIds.Count() <= 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        var newRelations = existingAlbum.Photos
+            .IntersectBy(photoIds, photo => photo.PhotoId)
+            .ToList();
+
+        existingAlbum.Photos = newRelations;
+        try
+        {
+            db.Update(existingAlbum);
+
+            logging
+                .Action(nameof(RemovePhotos))
+                .ExternalTrace(
+                    $"The photos in the {nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the photos of an existing Album '{existingAlbum.Title}'. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove photos from the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(MutateAlbumPhotos))
+                .Action(nameof(RemovePhotos))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -855,12 +1239,13 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update the photos of the existing Album '{existingAlbum.Title}'. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove photos from the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(MutateAlbumPhotos))
+                .Action(nameof(RemovePhotos))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -872,82 +1257,150 @@ public class AlbumService(
             };
         }
 
-        return new AlbumPhotoCollection(existingAlbum);
+        return existingAlbum;
     }
 
     /// <summary>
-    /// Removes a <see cref="Reception.Models.Entities.PhotoEntity"/> (..identified by PK <paramref name="photoId"/>) from the
-    /// <see cref="Reception.Models.Entities.Album"/> identified by its PK <paramref name="albumId"/>.
+    /// Update what tags are associated with this <see cref="Album"/> via <paramref name="tags"/> (<see cref="IEnumerable{Reception.Database.Models.Tag}"/>).
     /// </summary>
-    public async Task<ActionResult> RemovePhoto(int albumId, int photoId)
+    public async Task<ActionResult<IEnumerable<Tag>>> AddTags(int albumId, IEnumerable<Tag> tags)
     {
         ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
-        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
 
-        if (photoId <= 0)
+        if (tags.Count() > 9999)
         {
-            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
-            logging
-                .Action(nameof(RemovePhoto))
-                .InternalDebug(message)
-                .LogAndEnqueue();
-
-            return new BadRequestObjectResult(message);
+            tags = tags
+                .Take(9999)
+                .ToArray();
         }
 
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
             logging
-                .Action(nameof(RemovePhoto))
+                .Action(nameof(AddTags))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
 
-        Album? existingAlbum = await db.Albums
-            .Include(album => album.Photos)
-            .FirstOrDefaultAsync(album => album.Id == albumId);
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
 
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
             logging
-                .Action(nameof(RemovePhoto))
+                .Action(nameof(AddTags))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
 
-        PhotoEntity? photoToRemove = existingAlbum.Photos
-            .FirstOrDefault(photo => photo.Id == photoId);
+        foreach(var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
 
-        if (photoToRemove is null) {
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(AddTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = existingAlbum.RequiredPrivilege;
+
+        if (existingAlbum.CreatedBy != user.Id) {
+            privilegeRequired = (byte)
+                (Privilege.UPDATE | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(AddTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var existingIds = existingAlbum.Tags
+            .Select(tag => tag.TagId);
+
+        tags = tags
+            .Where(tag => (user.Privilege & (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)))
+            .Distinct()
+            .IntersectBy(existingIds, tag => tag.Id)
+            .ToList();
+
+        if (tags.Count() <= 0) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
-        existingAlbum.Photos.Remove(photoToRemove);
+        var newTagRelations =
+            tags.Select(tag => new AlbumTagRelation() {
+                TagId = tag.Id,
+                Tag = tag,
+                AlbumId = existingAlbum.Id,
+                Album = existingAlbum,
+                Added = DateTime.Now
+            })
+            .Concat(existingAlbum.Tags)
+            .ToList();
 
+        existingAlbum.Tags = newTagRelations;
         try
         {
             db.Update(existingAlbum);
 
             logging
-                .Action(nameof(RemovePhoto))
-                .InternalTrace($"A photo was just removed from {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id})");
+                .Action(nameof(AddTags))
+                .ExternalTrace(
+                    $"The tags of {nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a photo from Album '{existingAlbum.Title}'. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to add tags to the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(RemovePhoto))
+                .Action(nameof(AddTags))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -960,12 +1413,13 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a photo from Album '{existingAlbum.Title}'. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add tags to the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(RemovePhoto))
+                .Action(nameof(AddTags))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -977,81 +1431,140 @@ public class AlbumService(
             };
         }
 
-        return new OkResult();
+        return existingAlbum.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
     }
 
     /// <summary>
-    /// Removes a <see cref="Reception.Models.Entities.Tag"/> (..identified by PK <paramref name="tagId"/>) from the
-    /// <see cref="Reception.Models.Entities.Album"/> identified by its PK <paramref name="albumId"/>.
+    /// Update what tags are associated with this <see cref="Album"/> via <paramref name="tags"/> (<see cref="IEnumerable{Reception.Database.Models.Tag}"/>).
     /// </summary>
-    public async Task<ActionResult> RemoveTag(int albumId, string tag)
+    public async Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int albumId, IEnumerable<Tag> tags)
     {
         ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
 
-        if (string.IsNullOrWhiteSpace(tag))
+        if (tags.Count() > 9999)
         {
-            string message = $"Parameter '{nameof(tag)}' was null/empty!";
-            logging
-                .Action(nameof(RemoveTag))
-                .InternalDebug(message)
-                .LogAndEnqueue();
-
-            return new BadRequestObjectResult(message);
+            tags = tags
+                .Take(9999)
+                .ToArray();
         }
 
         if (albumId <= 0)
         {
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
             logging
-                .Action(nameof(RemoveTag))
+                .Action(nameof(RemoveTags))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
         }
 
-        Album? existingAlbum = await db.Albums
-            .Include(album => album.AlbumTags)
-            .FirstOrDefaultAsync(album => album.Id == albumId);
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
 
         if (existingAlbum is null)
         {
             string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
             logging
-                .Action(nameof(RemoveTag))
+                .Action(nameof(RemoveTags))
                 .InternalDebug(message)
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
 
-        Tag? tagToRemove = existingAlbum.AlbumTags
-            .FirstOrDefault(t => t.Name == tag);
+        foreach(var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
 
-        if (tagToRemove is null) {
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(RemoveTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = existingAlbum.RequiredPrivilege;
+
+        if (existingAlbum.CreatedBy != user.Id) {
+            privilegeRequired = (byte)
+                (Privilege.UPDATE | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(RemoveTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var tagIds = tags
+            .Select(tag => tag.Id)
+            .Distinct();
+
+        if (tagIds.Count() <= 0) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
-        existingAlbum.AlbumTags.Remove(tagToRemove);
+        var newRelations = existingAlbum.Tags
+            .IntersectBy(tagIds, tag => tag.TagId)
+            .ToList();
 
+        existingAlbum.Tags = newRelations;
         try
         {
             db.Update(existingAlbum);
 
             logging
-                .Action(nameof(RemoveTag))
-                .InternalTrace($"A tag was just removed from {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id})");
+                .Action(nameof(RemoveTags))
+                .ExternalTrace(
+                    $"The tags in {nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove a tag from Album '{existingAlbum.Title}'. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove photos from the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(RemoveTag))
+                .Action(nameof(RemovePhotos))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1064,12 +1577,13 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove a tag from Album '{existingAlbum.Title}'. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove photos from the existing Album '{existingAlbum.Title}'. ";
             logging
-                .Action(nameof(RemoveTag))
+                .Action(nameof(RemovePhotos))
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1081,11 +1595,13 @@ public class AlbumService(
             };
         }
 
-        return new OkResult();
+        return existingAlbum.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
     }
 
     /// <summary>
-    /// Deletes the <see cref="Reception.Models.Entities.Album"/> identified by <paramref name="albumId"/>
+    /// Deletes the <see cref="Reception.Database.Models.Album"/> identified by <paramref name="albumId"/>
     /// </summary>
     public async Task<ActionResult> DeleteAlbum(int albumId)
     {
@@ -1115,13 +1631,61 @@ public class AlbumService(
             return new NotFoundObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(DeleteAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.DELETE | existingAlbum.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreateAlbum))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         try
         {
             db.Remove(existingAlbum);
 
             logging
                 .Action(nameof(DeleteAlbum))
-                .InternalWarning($"The {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just deleted.");
+                .ExternalWarning(
+                    $"The {nameof(Album)} ('{existingAlbum.Title}', #{existingAlbum.Id}) was just deleted.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }

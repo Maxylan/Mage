@@ -41,7 +41,7 @@ public partial class Category : IDatabaseEntity<Category>
     public DateTime UpdatedAt { get; set; }
 
     [Column("required_privilege")]
-    public short RequiredPrivilege { get; set; }
+    public byte RequiredPrivilege { get; set; }
 }
 
 /// <summary>

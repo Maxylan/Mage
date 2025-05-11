@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Swashbuckle.AspNetCore.Annotations;
 */
 
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 [Table("logs", Schema = "magedb")]
@@ -53,7 +53,7 @@ public class LogEntry
     public LogFormat Format => new(this);
 
     /// <summary>
-    /// Set the <see cref="Reception.Models.Entities.Method"/> of this entity using a string (<paramref name="method"/>)
+    /// Set the <see cref="Reception.Database.Models.Method"/> of this entity using a string (<paramref name="method"/>)
     /// </summary>
     public void SetMethod(string? method) => this.Method = method?.ToUpper() switch
     {
@@ -84,26 +84,26 @@ public class LogEntry
                 .HasColumnName("created_at");
             entity.Property(e => e.LogLevel)
                 .HasColumnName("log_level")
-                .HasDefaultValue(Reception.Models.Entities.Severity.INFORMATION)
+                .HasDefaultValue(Reception.Database.Models.Severity.INFORMATION)
                 .HasSentinel(null)
                 /* .HasConversion(
-                    x => x.ToString() ?? Reception.Models.Entities.Severity.ERROR.ToString(),
+                    x => x.ToString() ?? Reception.Database.Models.Severity.ERROR.ToString(),
                     y => Enum.Parse<Severity>(y, true)
                 ) *//*;
             entity.Property(e => e.Source)
                 .HasColumnName("source")
-                .HasDefaultValue(Reception.Models.Entities.Source.INTERNAL)
+                .HasDefaultValue(Reception.Database.Models.Source.INTERNAL)
                 .HasSentinel(null)
                 /* .HasConversion(
-                    x => x.ToString() ?? Reception.Models.Entities.Source.INTERNAL.ToString(),
+                    x => x.ToString() ?? Reception.Database.Models.Source.INTERNAL.ToString(),
                     y => Enum.Parse<Source>(y, true)
                 ) *//*;
             entity.Property(e => e.Method)
                 .HasColumnName("method")
-                .HasDefaultValue(Reception.Models.Entities.Method.UNKNOWN)
+                .HasDefaultValue(Reception.Database.Models.Method.UNKNOWN)
                 .HasSentinel(null)
                 /* .HasConversion(
-                    x => x.ToString() ?? Reception.Models.Entities.Method.UNKNOWN.ToString(),
+                    x => x.ToString() ?? Reception.Database.Models.Method.UNKNOWN.ToString(),
                     y => Enum.Parse<Method>(y, true)
                 ) *//*;
             entity.Property(e => e.Log).HasColumnName("log");

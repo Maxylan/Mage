@@ -37,8 +37,8 @@ public interface ICategoryService
     public abstract Task<ActionResult<Category>> UpdateCategory(MutateCategory mut);
 
     /// <summary>
-    /// Removes an <see cref="Reception.Models.Entities.Album"/> (..identified by PK <paramref name="albumId"/>) from the
-    /// <see cref="Reception.Models.Entities.Category"/> identified by its PK <paramref name="categoryId"/>.
+    /// Removes an <see cref="Reception.Database.Models.Album"/> (..identified by PK <paramref name="albumId"/>) from the
+    /// <see cref="Reception.Database.Models.Category"/> identified by its PK <paramref name="categoryId"/>.
     /// </summary>
     public abstract Task<ActionResult> RemoveAlbum(int categoryId, int albumId);
 

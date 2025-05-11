@@ -76,7 +76,7 @@ public partial class Filepath
                 .HasDefaultValue(Reception.Database.Dimension.SOURCE)
                 .HasSentinel(null)
                 /* .HasConversion(
-                    x => x.ToString() ?? Reception.Models.Entities.Dimension.SOURCE.ToString(),
+                    x => x.ToString() ?? Reception.Database.Models.Dimension.SOURCE.ToString(),
                     y => Enum.Parse<Dimension>(y, true)
                 ) */;
         }

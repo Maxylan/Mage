@@ -57,7 +57,7 @@ public partial class Photo : IDatabaseEntity<Photo>
     public DateTime? AnalyzedAt { get; set; }
 
     [Column("required_privilege")]
-    public short RequiredPrivilege { get; set; }
+    public byte RequiredPrivilege { get; set; }
 }
 
 /// <summary>

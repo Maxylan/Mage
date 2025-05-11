@@ -1,4 +1,4 @@
-// namespace Reception.Models.EntitiesBackup;
+// namespace Reception.Database.ModelsBackup;
 
 /*
 public enum Dimension
