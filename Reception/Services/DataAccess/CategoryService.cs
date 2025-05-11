@@ -1,10 +1,12 @@
-using Reception.Middleware.Authentication;
-using Reception.Interfaces.DataAccess;
-using Reception.Models;
-using Reception.Database.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using Microsoft.AspNetCore.Mvc;
+using Reception.Middleware.Authentication;
+using Microsoft.EntityFrameworkCore;
+using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
 
 namespace Reception.Services.DataAccess;
 
@@ -16,21 +18,75 @@ public class CategoryService(
 {
     /// <summary>
     /// Get all categories.
+    /// Optionally filtered by '<paramref ref="search"/>' (string) and/or paginated with '<paramref ref="offset"/>' (int) &amp; '<paramref ref="limit"/>' (int)
     /// </summary>
-    public async Task<IEnumerable<Category>> GetCategories(bool trackEntities = false)
+    public async Task<IEnumerable<Category>> GetCategories(string? search = null, int? offset = null, int? limit = null)
     {
-        var categories = await (
-            trackEntities
-                ? db.Categories.AsTracking()
-                : db.Categories.AsNoTracking()
-        )
+        IQueryable<Category> categoriesQuery = db.Categories
+            .Include(category => category.Albums)
+            .ThenInclude(album => new { album.Tags, album.Photos });
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                logging
+                    .Action(nameof(GetCategories))
+                    .InternalSuspicious("Prevented attempted unauthorized access.")
+                    .LogAndEnqueue();
+
+                return [];
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetCategories))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return [];
+        }
+
+        // Filter by privilege
+        categoriesQuery = categoriesQuery
+            .Where(cat => (user.Privilege & (cat.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (cat.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
+
+        if (!string.IsNullOrWhiteSpace(search)) {
+            categoriesQuery = categoriesQuery
+                .Where(category => category.Title.Contains(search));
+        }
+
+        if (offset is not null) {
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Pagination Parameter {nameof(offset)} has to be a positive integer!");
+            }
+
+            categoriesQuery = categoriesQuery
+                .Skip(offset.Value);
+        }
+        if (limit is not null) {
+            if (limit <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(limit), limit, $"Pagination Parameter {nameof(limit)} has to be a non-zero positive integer!");
+            }
+
+            categoriesQuery = categoriesQuery
+                .Take(limit.Value);
+        }
+
+        var categories = await categoriesQuery
             .Include(category => category.Albums)
             .ThenInclude(album => new { album.Tags, album.Photos })
             .ToArrayAsync();
 
         return categories
             .OrderBy(category => category.Title)
-            .OrderByDescending(category => category.Items);
+            .OrderByDescending(category => category.Albums.Count);
     }
 
     /// <summary>
@@ -56,6 +112,48 @@ public class CategoryService(
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetCategory))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredViewPrivilege = (byte)
+            (category.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetCategory))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         // Load missing navigation entries.
@@ -128,22 +226,69 @@ public class CategoryService(
             return new NotFoundObjectResult(message);
         }
 
-        return category;
-    }
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
 
-    /// <summary>
-    /// Get the <see cref="Cateogry"/> with '<paramref ref="categoryId"/> (int) along with a collection of all associated Albums.
-    /// </summary>
-    public async Task<ActionResult<CategoryAlbumCollection>> GetCategoryAlbumCollection(int categoryId)
-    {
-        var getCategory = await GetCategory(categoryId);
-        var category = getCategory.Value;
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetCategoryByTitle))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
 
-        if (category is null) {
-            return getCategory.Result!;
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
-        return new CategoryAlbumCollection(category);
+        byte requiredViewPrivilege = (byte)
+            (category.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetCategoryByTitle))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        // Load missing navigation entries.
+        foreach (var navigation in db.Entry(category).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
+        }
+
+        foreach (var album in category.Albums)
+        {
+            foreach (var navigation in db.Entry(album).Navigations)
+            {
+                if (!navigation.IsLoaded)
+                {
+                    await navigation.LoadAsync();
+                }
+            }
+        }
+
+        return category;
     }
 
     /// <summary>
@@ -153,11 +298,10 @@ public class CategoryService(
     {
         ArgumentNullException.ThrowIfNull(mut, nameof(mut));
 
-        if (mut.Albums?.Length > 9999)
+        if (mut.Albums?.Count() > 9999)
         {
             mut.Albums = mut.Albums
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
 
         var httpContext = contextAccessor.HttpContext;
@@ -174,21 +318,46 @@ public class CategoryService(
             );
         }
 
-        Account? user = null;
-
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        Account? user;
+        try
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
             }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(CreateCategory))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreateCategory))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredPrivilege = (byte)
+            (Privilege.CREATE | mut.RequiredPrivilege);
+
+        if ((user.Privilege & requiredPrivilege) != requiredPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreateCategory))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (string.IsNullOrWhiteSpace(mut.Title))
@@ -223,7 +392,7 @@ public class CategoryService(
             return new BadRequestObjectResult(message);
         }
 
-        bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
+        bool titleTaken = await db.Categories.AnyAsync(album => album.Title == mut.Title);
         if (titleTaken)
         {
             string message = $"{nameof(Category.Title)} was already taken!";
@@ -269,7 +438,7 @@ public class CategoryService(
         }
 
 
-        List<Album>? validAlbums = null;
+        List<Album> validAlbums = [];
         if (mut.Albums?.Any() == true)
         {
             mut.Albums = mut.Albums
@@ -289,7 +458,8 @@ public class CategoryService(
             CreatedBy = user?.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            Albums = validAlbums ?? []
+            UpdatedBy = user?.Id,
+            Albums = validAlbums
         };
 
         try
@@ -298,7 +468,7 @@ public class CategoryService(
 
             logging
                 .Action(nameof(CreateCategory))
-                .InternalInformation($"A new {nameof(Category)} named '{newCategory.Title}' was created.", opts =>
+                .InternalTrace($"A new {nameof(Category)} named '{newCategory.Title}' was created.", opts =>
                 {
                     opts.SetUser(user);
                 })
@@ -356,11 +526,10 @@ public class CategoryService(
         ArgumentNullException.ThrowIfNull(mut, nameof(mut));
         ArgumentNullException.ThrowIfNull(mut.Id, nameof(mut.Id));
 
-        if (mut.Albums?.Length > 9999)
+        if (mut.Albums?.Count() > 9999)
         {
             mut.Albums = mut.Albums
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
 
         var httpContext = contextAccessor.HttpContext;
@@ -377,21 +546,28 @@ public class CategoryService(
             );
         }
 
-        Account? user = null;
-
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        Account? user;
+        try
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
             }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(UpdateCategory))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(UpdateCategory))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (mut.Id <= 0)
@@ -420,6 +596,29 @@ public class CategoryService(
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | mut.RequiredPrivilege | mut.RequiredPrivilege);
+
+        if ((mut.RequiredPrivilege & existingCategory.RequiredPrivilege) != existingCategory.RequiredPrivilege) {
+            privilegeRequired = (byte)
+                (Privilege.ADMIN | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdateCategory))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         foreach(var navigation in db.Entry(existingCategory).Navigations)
@@ -463,7 +662,7 @@ public class CategoryService(
 
         if (mut.Title != existingCategory.Title)
         {
-            bool titleTaken = await db.Albums.AnyAsync(album => album.Title == mut.Title);
+            bool titleTaken = await db.Categories.AnyAsync(album => album.Title == mut.Title);
             if (titleTaken)
             {
                 string message = $"{nameof(Category.Title)} was already taken!";
@@ -509,40 +708,38 @@ public class CategoryService(
                 .Trim();
         }
 
-        List<Album>? validAlbums = null;
-        if (mut.Albums?.Any() == true)
-        {
-            mut.Albums = mut.Albums
-                .Where(photoId => photoId > 0)
-                .ToArray();
-
-            validAlbums = await db.Albums
-                .Where(album => mut.Albums.Contains(album.Id))
-                .ToListAsync();
-        }
-
         existingCategory.Title = mut.Title;
         existingCategory.Summary = mut.Summary;
         existingCategory.Description = mut.Description;
         existingCategory.UpdatedAt = DateTime.UtcNow;
+        existingCategory.UpdatedBy = user.Id;
 
         if (mut.Albums is not null) {
-            existingCategory.Albums = validAlbums ?? [];
+            if (mut.Albums?.Any() == true)
+            {
+                mut.Albums = mut.Albums
+                    .Where(photoId => photoId > 0)
+                    .ToArray();
+
+                existingCategory.Albums = await db.Albums
+                    .Where(album => mut.Albums.Contains(album.Id))
+                    .ToListAsync();
+            }
+            else {
+                existingCategory.Albums = [];
+            }
         }
 
         try
         {
             db.Update(existingCategory);
 
-            if (Program.IsDevelopment)
-            {
-                logging
-                    .Action(nameof(UpdateCategory))
-                    .InternalDebug($"An {nameof(Category)} ('{existingCategory.Title}', #{existingCategory.Id}) was just updated.", opts =>
-                    {
-                        opts.SetUser(user);
-                    });
-            }
+            logging
+                .Action(nameof(UpdateCategory))
+                .InternalTrace($"An {nameof(Category)} ('{existingCategory.Title}', #{existingCategory.Id}) was just updated.", opts =>
+                {
+                    opts.SetUser(user);
+                });
 
             await db.SaveChangesAsync();
         }
@@ -597,12 +794,53 @@ public class CategoryService(
         ArgumentNullException.ThrowIfNull(categoryId, nameof(categoryId));
         ArgumentNullException.ThrowIfNull(albumId, nameof(albumId));
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(RemoveAlbum))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(RemoveAlbum))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         if (categoryId <= 0)
         {
             string message = $"Parameter '{nameof(categoryId)}' has to be a non-zero positive integer! (Photo ID)";
             logging
                 .Action(nameof(RemoveAlbum))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -613,7 +851,9 @@ public class CategoryService(
             string message = $"Parameter '{nameof(albumId)}' has to be a non-zero positive integer! (Album ID)";
             logging
                 .Action(nameof(RemoveAlbum))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -628,7 +868,9 @@ public class CategoryService(
             string message = $"{nameof(Category)} with ID #{categoryId} could not be found!";
             logging
                 .Action(nameof(RemoveAlbum))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
@@ -661,6 +903,7 @@ public class CategoryService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -679,6 +922,7 @@ public class CategoryService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -711,6 +955,45 @@ public class CategoryService(
             return new BadRequestObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(DeleteCategory))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.DELETE) != Privilege.DELETE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.DELETE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeleteCategory))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         Category? existingCategory = await db.Categories.FindAsync(id);
 
         if (existingCategory is null)
@@ -718,7 +1001,9 @@ public class CategoryService(
             string message = $"{nameof(Category)} with ID #{id} could not be found!";
             logging
                 .Action(nameof(DeleteCategory))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
@@ -730,7 +1015,12 @@ public class CategoryService(
 
             logging
                 .Action(nameof(DeleteCategory))
-                .InternalWarning($"The {nameof(Category)} ('{existingCategory.Title}', #{existingCategory.Id}) was just deleted.");
+                .InternalWarning(
+                    $"The {nameof(Category)} ('{existingCategory.Title}', #{existingCategory.Id}) was just deleted.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                );
 
             await db.SaveChangesAsync();
         }
@@ -742,6 +1032,7 @@ public class CategoryService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -760,6 +1051,7 @@ public class CategoryService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 

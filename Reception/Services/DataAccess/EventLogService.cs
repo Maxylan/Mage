@@ -1,9 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Reception.Models;
 using Reception.Middleware.Authentication;
+using Microsoft.EntityFrameworkCore;
+using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
 
 namespace Reception.Services.DataAccess;
 
@@ -126,11 +128,11 @@ public class EventLogService(
     /// <summary>
     /// Log a custom <see cref="LogEntry"/>-event to the database.
     /// </summary>
-    public StoreLogsInDatabase LogEvent(string message, Action<LogEntryOptions>? predicate = null)
+    public async Task<ActionResult<LogEntry>> CreateEventLog(string message, Action<LogEntryOptions>? predicate = null)
     {
         LogEntryOptions entry = new()
         {
-            Log = message,
+            Message = message,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -164,31 +166,32 @@ public class EventLogService(
             entry.Action = "Unknown";
         }
 
-        return LogEvents(entry);
+        var logResult = await CreateEventLogs(entry);
+        if (logResult.Value is null) {
+            return logResult.Result!;
+        }
+
+        return logResult.Value.First();
     }
 
     /// <summary>
-    /// Log any number of custom <see cref="LogEntry"/>-events. Tracks entities as <see cref="EntityState.Added"/>,
-    /// but does *<strong>not</strong>* call <see cref="DbContext.SaveChangesAsync"/>.
+    /// Log any number of custom <see cref="LogEntry"/>-events.
     /// </summary>
-    public StoreLogsInDatabase LogEvents(params LogEntryOptions[] entries)
+    public async Task<ActionResult<IEnumerable<LogEntry>>> CreateEventLogs(params LogEntryOptions[] entries)
     {
+        List<LogEntry> logs = [];
+
         foreach (var entry in entries)
         {
-            /* TODO -
-             * Seems this is not as straight forward as I first thought.
-             * Possible solution would be a seperate DbContext for logging that's a singleton, perhaps?
-             * @see https://go.microsoft.com/fwlink/?linkid=869049
-             */
             bool isNew = db.Entry(entry).State == EntityState.Detached;
             bool shouldStore = (
-                entry.LogLevel != Severity.DEBUG ||
-                Program.IsDevelopment
+                Program.IsDevelopment ||
+                entry.LogLevel != Severity.DEBUG
             );
 
             if (isNew && shouldStore)
             {
-                switch (db.Logs.Contains(entry))
+                switch (db.Logs.Contains((LogEntry)entry))
                 {
                     case true: // Exists
                         db.Update(entry);
@@ -229,14 +232,17 @@ public class EventLogService(
                     logger.LogCritical(entry.Exception, entry.Format.Full());
                     break;
                 default:
-                    entry.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    entry.Message += $" ({nameof(LogEntry)} format defaulted)";
                     logger.LogInformation(entry.Exception, entry.Format.Short(true));
                     break;
 #pragma warning restore CA2254
             }
+
+            logs.Add(entry);
         }
 
-        return new(/*db*/);
+        await db.SaveChangesAsync();
+        return logs.ToArray();
     }
 
     // throw new NotImplementedException("TODO - Seems this is not as straight forward as I first thought.\rPossible solution would be a seperate DbContext for logging that's a singleton, perhaps?\rhttps://go.microsoft.com/fwlink/?linkid=869049");

@@ -65,7 +65,7 @@ public class AlbumService(
         {
             string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
             logging
-                .Action(nameof(CreateAlbum))
+                .Action(nameof(GetAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })
                 .LogAndEnqueue();
 
@@ -148,7 +148,7 @@ public class AlbumService(
         {
             string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
             logging
-                .Action(nameof(CreateAlbum))
+                .Action(nameof(GetAlbums))
                 .ExternalError(message, opts => { opts.Exception = ex; })
                 .LogAndEnqueue();
 
@@ -271,17 +271,15 @@ public class AlbumService(
     {
         ArgumentNullException.ThrowIfNull(mut, nameof(mut));
 
-        if (mut.Photos?.Length > 9999)
+        if (mut.Photos?.Count() > 9999)
         {
             mut.Photos = mut.Photos
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
-        if (mut.Tags?.Length > 9999)
+        if (mut.Tags?.Count() > 9999)
         {
             mut.Tags = mut.Tags
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
 
         var httpContext = contextAccessor.HttpContext;
@@ -570,17 +568,15 @@ public class AlbumService(
         ArgumentNullException.ThrowIfNull(mut, nameof(mut));
         ArgumentNullException.ThrowIfNull(mut.Id, nameof(mut.Id));
 
-        if (mut.Photos?.Length > 9999)
+        if (mut.Photos?.Count() > 9999)
         {
             mut.Photos = mut.Photos
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
-        if (mut.Tags?.Length > 9999)
+        if (mut.Tags?.Count() > 9999)
         {
             mut.Tags = mut.Tags
-                .Take(9999)
-                .ToArray();
+                .Take(9999);
         }
 
         var httpContext = contextAccessor.HttpContext;
@@ -650,12 +646,8 @@ public class AlbumService(
         }
 
         byte privilegeRequired = (byte)
-            (mut.RequiredPrivilege | existingAlbum.RequiredPrivilege);
+            (Privilege.UPDATE | mut.RequiredPrivilege | existingAlbum.RequiredPrivilege);
 
-        if (existingAlbum.CreatedBy != user.Id) {
-            privilegeRequired = (byte)
-                (Privilege.UPDATE | privilegeRequired);
-        }
         if ((mut.RequiredPrivilege & existingAlbum.RequiredPrivilege) != existingAlbum.RequiredPrivilege) {
             privilegeRequired = (byte)
                 (Privilege.ADMIN | privilegeRequired);

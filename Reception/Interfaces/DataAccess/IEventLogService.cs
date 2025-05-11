@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
+using Reception.Database;
 using Reception.Models;
 
 namespace Reception.Interfaces.DataAccess;
@@ -22,6 +23,16 @@ public interface IEventLogService
     /// <see cref="LogEntry"/>-entries, you may use it to freely fetch some logs.
     /// </summary>
     public abstract DbSet<LogEntry> GetEvents();
+
+    /// <summary>
+    /// Log a custom <see cref="LogEntry"/>-event to the database.
+    /// </summary>
+    public abstract Task<ActionResult<LogEntry>> CreateEventLog(string message, Action<LogEntryOptions>? predicate = null);
+
+    /// <summary>
+    /// Log any number of custom <see cref="LogEntry"/>-events.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<LogEntry>>> CreateEventLogs(params LogEntryOptions[] entries);
 
     /// <summary>
     /// Deletes all provided <see cref="LogEntry"/>-entries.

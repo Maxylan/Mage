@@ -8,8 +8,9 @@ public interface ICategoryService
 {
     /// <summary>
     /// Get all categories.
+    /// Optionally filtered by '<paramref ref="search"/>' (string) and/or paginated with '<paramref ref="offset"/>' (int) &amp; '<paramref ref="limit"/>' (int)
     /// </summary>
-    public abstract Task<IEnumerable<Category>> GetCategories(bool trackEntities = false);
+    public abstract Task<IEnumerable<Category>> GetCategories(string? search = null, int? offset = null, int? limit = null);
 
     /// <summary>
     /// Get the <see cref="Category"/> with Primary Key '<paramref ref="id"/>' (int)
@@ -20,11 +21,6 @@ public interface ICategoryService
     /// Get the <see cref="Category"/> with Unique '<paramref ref="title"/>' (string)
     /// </summary>
     public abstract Task<ActionResult<Category>> GetCategoryByTitle(string title);
-
-    /// <summary>
-    /// Get the <see cref="Cateogry"/> with '<paramref ref="categoryId"/> (int) along with a collection of all associated Albums.
-    /// </summary>
-    public abstract Task<ActionResult<CategoryAlbumCollection>> GetCategoryAlbumCollection(int categoryId);
 
     /// <summary>
     /// Create a new <see cref="Category"/>.

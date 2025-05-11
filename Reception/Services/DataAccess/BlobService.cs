@@ -5,11 +5,14 @@ using Reception.Interfaces.DataAccess;
 using Reception.Database;
 using Reception.Database.Models;
 using Reception.Utilities;
+using Reception.Middleware.Authentication;
+using System.Net;
 
 namespace Reception.Services.DataAccess;
 
 public class BlobService(
     ILoggingService<BlobService> logging,
+    IHttpContextAccessor contextAccessor,
     IPhotoService photoService
 ) : IBlobService
 {
@@ -179,6 +182,48 @@ public class BlobService(
     {
         ArgumentNullException.ThrowIfNull(photo, nameof(Photo));
         ArgumentNullException.ThrowIfNull(photo.Filepaths, nameof(Photo.Filepaths));
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetBlob))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredViewPrivilege = (byte)
+            (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetBlob))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
 
         Filepath? filepath = photo.Filepaths.First(path => path.Dimension == dimension);
         if (filepath is null) {

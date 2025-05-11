@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
+using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
 
@@ -70,6 +71,23 @@ public partial class LogEntry : IDatabaseEntity<LogEntry>
 /// </summary>
 public partial class LogEntry
 {
+    [JsonIgnore, SwaggerIgnore]
+    public LogFormat Format => new(this);
+
+    /// <summary>
+    /// Set the <see cref="Reception.Database.Models.Method"/> of this entity using a string (<paramref name="method"/>)
+    /// </summary>
+    public void SetMethod(string? method) => this.Method = method?.ToUpper() switch
+    {
+        "HEAD" => Reception.Database.Method.HEAD,
+        "GET" => Reception.Database.Method.GET,
+        "POST" => Reception.Database.Method.POST,
+        "PUT" => Reception.Database.Method.PUT,
+        "PATCH" => Reception.Database.Method.PATCH,
+        "DELETE" => Reception.Database.Method.DELETE,
+        _ => Reception.Database.Method.UNKNOWN
+    };
+
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="LogEntry"/>
     /// </summary>
