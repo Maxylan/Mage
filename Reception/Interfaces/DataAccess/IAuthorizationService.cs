@@ -1,8 +1,6 @@
-
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Reception.Database;
 
 namespace Reception.Interfaces.DataAccess;
 

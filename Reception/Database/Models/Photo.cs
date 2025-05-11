@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -86,13 +87,26 @@ public partial class Photo
     [InverseProperty("Photo")]
     public virtual ICollection<PhotoTagRelation> Tags { get; set; } = new List<PhotoTagRelation>();
 
+    [SwaggerIgnore]
     [ForeignKey("UpdatedBy")]
     [InverseProperty("PhotosUpdated")]
     public virtual Account? UpdatedByNavigation { get; set; }
 
+    [SwaggerIgnore]
     [ForeignKey("UploadedBy")]
     [InverseProperty("PhotosUploaded")]
     public virtual Account? UploadedByNavigation { get; set; }
+
+    // Lil' helpers
+    [SwaggerIgnore]
+    public bool SourceExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.SOURCE) == true;
+    [SwaggerIgnore]
+    public bool MediumExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.MEDIUM) == true;
+    [SwaggerIgnore]
+    public bool ThumbnailExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.THUMBNAIL) == true;
 
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Photo"/>

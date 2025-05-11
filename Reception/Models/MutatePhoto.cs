@@ -4,10 +4,10 @@ using Reception.Database.Models;
 
 namespace Reception.Models;
 
-public class MutatePhoto : PhotoEntity
+public class MutatePhoto : PhotoDTO
 {
     public new int? Id { get; set; }
-    public new Tag[]? Tags { get; set; }
+    public new IEnumerable<MutateTag>? Tags { get; set; }
 
     /*
     public string Slug { get; set; } = null!;
@@ -18,6 +18,9 @@ public class MutatePhoto : PhotoEntity
 
     [JsonIgnore, SwaggerIgnore]
     public new int? UploadedBy { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new int? UpdatedBy { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
     public new DateTime? UploadedAt { get; set; }

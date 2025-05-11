@@ -69,6 +69,9 @@ public partial class Account
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<Category> CreatedCategories { get; set; } = new List<Category>();
 
+    [InverseProperty("UpdatedByNavigation")]
+    public virtual ICollection<Category> UpdatedCategories { get; set; } = new List<Category>();
+
     [InverseProperty("Account")]
     public virtual ICollection<FavoriteAlbumRelation> FavoriteAlbums { get; set; } = new List<FavoriteAlbumRelation>();
 

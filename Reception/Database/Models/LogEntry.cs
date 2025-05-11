@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -43,6 +44,18 @@ public partial class LogEntry : IDatabaseEntity<LogEntry>
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
+
+    [Column("log_level")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Severity? LogLevel { get; set; }
+
+    [Column("source")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Source? Source { get; set; }
+
+    [Column("method")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Method? Method { get; set; }
 
     [Column("action")]
     [StringLength(255)]

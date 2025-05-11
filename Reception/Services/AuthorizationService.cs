@@ -1,16 +1,17 @@
-
+using System.Net;
+using System.Text;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
-using Reception.Database.Models;
 using Reception.Middleware.Authentication;
+using Reception.Database;
+using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
 using Reception.Utilities;
 using Reception.Caching;
-using System.Net;
-using Reception.Models;
 
-namespace Reception.Services.DataAccess;
+namespace Reception.Services;
 
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
@@ -64,7 +65,9 @@ public class AuthorizationService(
             );
         }
 
-        var user = authenticationProperties!.GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+        var user = authenticationProperties!.GetParameter<Account>(
+            Reception.Middleware.Authentication.Constants.ACCOUNT_CONTEXT_KEY
+        );
         if (user is not null)
         {
             var getSession = await sessions.GetSessionByUser(user);
@@ -77,7 +80,9 @@ public class AuthorizationService(
             }
         }
 
-        var session = authenticationProperties!.GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
+        var session = authenticationProperties!.GetParameter<Session>(
+            Reception.Middleware.Authentication.Constants.SESSION_CONTEXT_KEY
+        );
         if (session is not null)
         {
             return await ValidateSession(
@@ -86,7 +91,10 @@ public class AuthorizationService(
             );
         }
 
-        bool tokenExists = authenticationProperties!.Items.TryGetValue(Parameters.TOKEN_CONTEXT_KEY, out string? token);
+        bool tokenExists = authenticationProperties!.Items.TryGetValue(
+            Reception.Middleware.Authentication.Constants.TOKEN_CONTEXT_KEY,
+            out string? token
+        );
         if (tokenExists && !string.IsNullOrWhiteSpace(token))
         {
             return await ValidateSession(
@@ -121,10 +129,17 @@ public class AuthorizationService(
 
         if (getSession.Result is NotFoundObjectResult)
         {
+            string message = $"Failed to get a {nameof(Session)} from the {nameof(sessionCode)} '{nameof(sessionCode)}'";
+            logging
+                .LogInformation(message, m =>
+                {
+                    m.Action = nameof(ValidateSession);
+                    m.Source = source;
+                })
+                .LogAndEnqueue();
+
             return new UnauthorizedObjectResult(
-                Program.IsDevelopment
-                    ? $"Failed to get a {nameof(Session)} from the {nameof(sessionCode)} '{nameof(sessionCode)}'"
-                    : HttpStatusCode.Unauthorized.ToString()
+                Program.IsDevelopment ? message : HttpStatusCode.Unauthorized.ToString()
             );
         }
 
@@ -156,7 +171,7 @@ public class AuthorizationService(
 
         if (session.ExpiresAt <= DateTime.UtcNow)
         {
-            message = $"{nameof(Session)} Validation Failed: Expired";
+            message = $"{nameof(Session)} Validation Failed: Expired (Expired @'{session.ExpiresAt.ToString()}')";
             logging
                 .LogInformation(message, m =>
                 {
@@ -170,11 +185,51 @@ public class AuthorizationService(
             );
         }
 
-        if (session.HasUserAgent)
-        {
-            if (session.UserAgent != httpContext.Request.Headers.UserAgent.ToString())
+        if (session.Client is not null &&
+            string.IsNullOrWhiteSpace(session.Client.Address) &&
+            string.IsNullOrWhiteSpace(session.Client.UserAgent)
+        ) {
+            string? userAgent = httpContext.Request.Headers.UserAgent.ToString();
+            if (!string.IsNullOrWhiteSpace(userAgent))
             {
-                message = $"{nameof(Session)} Validation Failed: UserAgent missmatch";
+                userAgent = userAgent
+                    .Normalize()
+                    .Subsmart(0, 1023)
+                    .Replace(@"\", string.Empty)
+                    .Replace("&&", string.Empty)
+                    .Trim();
+            }
+
+            if (session.Client.UserAgent != userAgent)
+            {
+                message = $"{nameof(Session)} Validation Failed: UserAgent missmatch ({session.Client.UserAgent} != {userAgent})";
+                logging
+                    .LogSuspicious(message, m =>
+                    {
+                        m.Action = nameof(ValidateSession);
+                        m.Source = source;
+                    })
+                    .LogAndEnqueue();
+
+                return new UnauthorizedObjectResult(
+                    Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+                );
+            }
+
+            string? userAddress = MageAuthentication.GetRemoteAddress(httpContext);
+            if (!string.IsNullOrWhiteSpace(userAddress))
+            {
+                userAddress = userAddress
+                    .Normalize()
+                    .Subsmart(0, 255)
+                    .Replace(@"\", string.Empty)
+                    .Replace("&&", string.Empty)
+                    .Trim();
+            }
+
+            if (session.Client.Address != userAddress)
+            {
+                message = $"{nameof(Session)} Validation Failed: Address missmatch ({session.Client.Address} != {userAddress})";
                 logging
                     .LogSuspicious(message, m =>
                     {
@@ -189,9 +244,9 @@ public class AuthorizationService(
             }
 
             // Check if 24h expiry is valid..
-            if (session.ExpiresAt > DateTime.UtcNow + TimeSpan.FromDays(1))
+            if (session.ExpiresAt > (DateTime.UtcNow + TimeSpan.FromDays(1)))
             {
-                message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
+                message = $"{nameof(Session)} Validation Failed: Invalid Expiry (Expiry @'{session.ExpiresAt.ToString()}')";
                 logging
                     .LogSuspicious(message, m =>
                     {
@@ -207,9 +262,9 @@ public class AuthorizationService(
         }
         // Check if 1h expiry is valid..
         // (Expiry-time is shortened when UserAgent is omitted, to minimize the damage that can be done by unauthorized access)
-        else if (session.ExpiresAt > DateTime.UtcNow + TimeSpan.FromHours(1))
+        else if (session.ExpiresAt > (DateTime.UtcNow + TimeSpan.FromHours(1)))
         {
-            message = $"{nameof(Session)} Validation Failed: Invalid Expiry";
+            message = $"{nameof(Session)} Validation Failed: Invalid Expiry (Expiry @'{session.ExpiresAt.ToString()}')";
             logging
                 .LogSuspicious(message, m =>
                 {
@@ -241,12 +296,16 @@ public class AuthorizationService(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
             );
         }
-        else if (session.User is null)
+        else if (session.Account is null)
         {
-            session.User = account;
+            session.Account = account;
         }
 
-        logging.Logger.LogTrace($"{nameof(Session)} Validation Success");
+        logging
+            .Action(nameof(ValidateSession))
+            .ExternalTrace($"Validation of {nameof(Session)} '{session}' successful")
+            .LogAndEnqueue();
+
         return session;
     }
 
@@ -254,31 +313,34 @@ public class AuthorizationService(
     /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.
     /// </summary>
     /// <param name="userName">Unique Username of an <see cref="Account"/></param>
-    /// <param name="hash">SHA-256</param>
-    public async Task<ActionResult<Session>> Login(string userName, string hash)
+    /// <param name="password">SHA-256 Digest of a password</param>
+    public async Task<ActionResult<Session>> Login(string userName, string password)
     {
-        /* Account? account = await db.Accounts
-            .Include(acc => acc.Sessions)
-            .FirstOrDefaultAsync(acc => acc.Username == userName); */
         var getAccount = await accounts.GetAccountByUsername(userName);
         Account? account = getAccount.Value;
 
         if (account is null)
         {
-            // To rate-limit password attempts, even in this early fail-fast check..
+            // To rate-limit password attempts, even in this fail-fast check..
             Thread.Sleep(512);
+            logging
+                .Action(nameof(Login))
+                .ExternalDebug($"Login Failed: No {nameof(Account)} matching username '{userName}' found.")
+                .LogAndEnqueue();
+
             return getAccount.Result!;
         }
 
-        return await Login(account, hash);
+        return await Login(account, password);
     }
     /// <summary>
     /// Attempt to "login" (..refresh the session) ..of a given <see cref="Account"/> and its hashed password.
     /// </summary>
-    /// <param name="hash">SHA-256</param>
-    public async Task<ActionResult<Session>> Login(Account account, string hash)
+    /// <param name="password">SHA-256 Digest of a password</param>
+    public async Task<ActionResult<Session>> Login(Account account, string password)
     {
-        Thread.Sleep(512); // To sortof rate-limit password attempts..
+        // To sortof rate-limit password attempts..
+        Thread.Sleep(512);
 
         if (contextAccessor.HttpContext is null)
         {
@@ -290,24 +352,103 @@ public class AuthorizationService(
 
             return new ObjectResult(
                 Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message
-            )
-            {
+            ) {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
         }
 
-        string? userAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
-        string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
+        if (!account.Username.IsNormalized())
+        {
+            account.Username = account.Username
+                .Normalize()
+                .Trim();
+        }
+        if (account.Username.Length > 127)
+        {
+            string message = $"{nameof(Account.Username)} exceeds maximum allowed length of 127.";
+            logging
+                .Action(nameof(Login))
+                .ExternalSuspicious(message)
+                .LogAndEnqueue();
 
+            return new BadRequestObjectResult(message);
+        }
+
+        if (!account.Password.IsNormalized())
+        {
+            account.Password = account.Password
+                .Normalize()
+                .Trim();
+        }
+        if (account.Password.Length > 127)
+        {
+            string message = $"{nameof(Account.Password)} exceeds maximum allowed length of 127.";
+            logging
+                .Action(nameof(Login))
+                .ExternalSuspicious(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        if (!string.IsNullOrWhiteSpace(account.Email))
+        {
+            if (!account.Email.IsNormalized())
+            {
+                account.Email = account.Email
+                    .Normalize()
+                    .Trim();
+            }
+            if (account.Email.Length > 255)
+            {
+                string message = $"{nameof(Account.Email)} exceeds maximum allowed length of 255.";
+                logging
+                    .Action(nameof(Login))
+                    .ExternalSuspicious(message)
+                    .LogAndEnqueue();
+
+                return new BadRequestObjectResult(message);
+            }
+        }
+        else {
+            account.Email = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(account.FullName))
+        {
+            if (!account.FullName.IsNormalized())
+            {
+                account.FullName = account.FullName
+                    .Normalize()
+                    .Trim();
+            }
+            if (account.FullName.Length > 255)
+            {
+                string message = $"{nameof(Account.FullName)} exceeds maximum allowed length of 255.";
+                logging
+                    .Action(nameof(Login))
+                    .ExternalSuspicious(message)
+                    .LogAndEnqueue();
+
+                return new BadRequestObjectResult(message);
+            }
+        }
+        else {
+            account.FullName = null;
+        }
+
+        string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
         if (!string.IsNullOrWhiteSpace(userAddress))
         {
-            userAgent = userAgent
+            userAddress = userAddress
                 .Normalize()
                 .Subsmart(0, 255)
                 .Replace(@"\", string.Empty)
                 .Replace("&&", string.Empty)
                 .Trim();
         }
+
+        string? userAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
         if (!string.IsNullOrWhiteSpace(userAgent))
         {
             userAgent = userAgent
@@ -320,7 +461,7 @@ public class AuthorizationService(
 
         if (loginTracker.Attempts(account.Username, userAddress) >= 3)
         {
-            string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout due to repeatedly failed attempts.";
+            string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout for addr '{userAddress}' due to repeatedly failed attempts.";
             logging
                 .Action(nameof(Login))
                 .ExternalSuspicious(message)
@@ -334,7 +475,10 @@ public class AuthorizationService(
             };
         }
 
-        if (account.Password != hash)
+        byte[] digest = SHA256.HashData(Encoding.Default.GetBytes(password));
+        string hashedPassword = Encoding.Default.GetString(digest);
+
+        if (account.Password != hashedPassword)
         {
             loginTracker.RecordAttempt(account.Username, userAddress, userAgent);
 

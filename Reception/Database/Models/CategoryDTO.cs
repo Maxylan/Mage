@@ -31,6 +31,9 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
     [JsonPropertyName("updated_at")]
     public new DateTime UpdatedAt { get; set; }
 
+    [JsonPropertyName("updated_at")]
+    public new DateTime UpdatedBy { get; set; }
+
     [JsonPropertyName("required_privilege")]
     public new byte RequiredPrivilege { get; set; }
     */
@@ -46,6 +49,7 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
         CreatedBy = this.CreatedBy,
         CreatedAt = this.CreatedAt,
         UpdatedAt = this.UpdatedAt,
+        UpdatedBy = this.UpdatedBy,
         RequiredPrivilege = this.RequiredPrivilege
     };
 

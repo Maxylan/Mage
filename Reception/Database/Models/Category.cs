@@ -40,6 +40,9 @@ public partial class Category : IDatabaseEntity<Category>
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
 
+    [Column("updated_by")]
+    public int? UpdatedBy { get; set; }
+
     [Column("required_privilege")]
     public byte RequiredPrivilege { get; set; }
 }
@@ -56,6 +59,10 @@ public partial class Category
     [InverseProperty("CreatedCategories")]
     public virtual Account? CreatedByNavigation { get; set; }
 
+    [ForeignKey("UpdatedBy")]
+    [InverseProperty("UpdatedCategories")]
+    public virtual Account? UpdatedByNavigation { get; set; }
+
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Category"/>
     /// </summary>
@@ -70,7 +77,11 @@ public partial class Category
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.CreatedCategories)
                 .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_user");
+                .HasConstraintName("fk_created_by_user");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.UpdatedCategories)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_updated_by_user");
         }
     );
 }

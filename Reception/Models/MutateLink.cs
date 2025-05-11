@@ -1,6 +1,6 @@
 namespace Reception.Models;
 
-public class MutateLink
+public struct MutateLink()
 {
     public DateTime? ExpiresAt { get; set; } = null;
 

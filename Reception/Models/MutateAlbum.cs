@@ -4,11 +4,11 @@ using Reception.Database.Models;
 
 namespace Reception.Models;
 
-public class MutateAlbum : Album
+public class MutateAlbum : AlbumDTO
 {
     public new int? Id { get; set; }
-    public new string[]? Tags { get; set; }
-    public new int[]? Photos { get; set; }
+    public new IEnumerable<MutateTag>? Tags { get; set; }
+    public new IEnumerable<int>? Photos { get; set; }
 
     /*
     public int Id { get; set; }
@@ -21,6 +21,9 @@ public class MutateAlbum : Album
 
     [JsonIgnore, SwaggerIgnore]
     public new int? CreatedBy { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new int? UpdatedBy { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
     public new DateTime? CreatedAt { get; set; }

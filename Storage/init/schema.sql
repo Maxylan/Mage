@@ -144,11 +144,16 @@ CREATE TABLE IF NOT EXISTS categories (
     description TEXT,
     created_by INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_by INT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     required_privilege SMALLINT NOT NULL DEFAULT 0 CHECK (required_privilege >= 0 AND required_privilege <= 15),
     PRIMARY KEY(id),
-    CONSTRAINT fk_user
+    CONSTRAINT fk_created_by_user
         FOREIGN KEY(created_by)
+        REFERENCES accounts(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_updated_by_user
+        FOREIGN KEY(updated_by)
         REFERENCES accounts(id)
         ON DELETE SET NULL
 );

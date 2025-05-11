@@ -1,6 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using Reception.Database.Models;
+using System.Text.Json.Serialization;
 using Swashbuckle.AspNetCore.Annotations;
+using Reception.Database.Models;
 
 namespace Reception.Models;
 

@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
-using Reception.Database.Models;
 using Swashbuckle.AspNetCore.Annotations;
+using Reception.Database.Models;
 
 namespace Reception.Models;
 
-public class MutateTag : Tag
+public class MutateTag : TagDTO
 {
     [JsonIgnore, SwaggerIgnore]
     public new int? Id { get; set; }

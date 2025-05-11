@@ -139,7 +139,7 @@ public class PhotoService(
 
 
     /// <summary>
-    /// Get the <see cref="Reception.Models.Photo"/> with Primary Key '<paramref ref="photoId"/>'
+    /// Get the <see cref="Reception.Database.Models.Photo"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
     public async Task<ActionResult<Photo>> GetSinglePhoto(int photoId, Dimension dimension = Dimension.SOURCE)
     {
@@ -168,7 +168,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Get the <see cref="Reception.Models.Photo"/> with Slug '<paramref ref="slug"/>' (string)
+    /// Get the <see cref="Reception.Database.Models.Photo"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
     public async Task<ActionResult<Photo>> GetSinglePhoto(string slug, Dimension dimension = Dimension.SOURCE)
     {
@@ -312,7 +312,7 @@ public class PhotoService(
 
     #region Get many photos.
     /// <summary>
-    /// Get all <see cref="Reception.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// Get all <see cref="Reception.Database.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public Task<ActionResult<IEnumerable<Photo>>> GetSingles(string? search, Action<FilterPhotosOptions> opts)
     {
@@ -323,7 +323,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Get all <see cref="Reception.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// Get all <see cref="Reception.Database.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public async Task<ActionResult<IEnumerable<Photo>>> GetSingles(string? search, FilterPhotosOptions filter)
     {
@@ -469,7 +469,7 @@ public class PhotoService(
 
 
     /// <summary>
-    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
+    /// Assemble an <see cref="IEnumerable{Reception.Models.DisplayPhoto}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, Action<FilterPhotosOptions> opts)
@@ -481,7 +481,7 @@ public class PhotoService(
     }
 
     /// <summary>
-    /// Assemble an <see cref="IEnumerable{Reception.Models.PhotoCollection}"/> collection of Photos matching a wide range of optional
+    /// Assemble an <see cref="IEnumerable{Reception.Models.DisplayPhoto}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
     public async Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, FilterPhotosOptions filter)

@@ -1,4 +1,4 @@
-﻿using Reception.Database.Models;
+using Reception.Database;
 
 namespace Reception.Models;
 

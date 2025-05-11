@@ -1,11 +1,14 @@
-﻿using System.Diagnostics.CodeAnalysis;
+/*
+using System.Diagnostics.CodeAnalysis;
 using Reception.Database.Models;
+*/
 
-namespace Reception.Models;
+// namespace Reception.Models;
 
 /// <summary>
 /// Collection of all different sizes of a <see cref="Reception.Models.Photo"/>.
 /// </summary>
+/*
 public record PhotoCollection
 {
     [SetsRequiredMembers]
@@ -62,12 +65,12 @@ public record PhotoCollection
 
     public int PhotoId { get => Source.PhotoId; }
 
-    /* // Unsure about repeating these two here..
-    public string Slug { get => Source.Slug; }
-    public string Title { get => Source.Title; }
-    */
+    // // Unsure about repeating these two here..
+    // public string Slug { get => Source.Slug; }
+    // public string Title { get => Source.Title; }
 
     public required Photo Source { get; init; }
     public Photo? Medium { get; init; }
     public Photo? Thumbnail { get; init; }
 }
+*/

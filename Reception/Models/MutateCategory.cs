@@ -4,10 +4,10 @@ using Reception.Database.Models;
 
 namespace Reception.Models;
 
-public class MutateCategory : Category
+public class MutateCategory : CategoryDTO
 {
     public new int? Id { get; set; }
-    public new int[]? Albums { get; set; }
+    public new IEnumerable<int>? Albums { get; set; }
 
     /*
     public int Id { get; set; }
@@ -18,6 +18,9 @@ public class MutateCategory : Category
 
     [JsonIgnore, SwaggerIgnore]
     public new int? CreatedBy { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new int? UpdatedBy { get; set; }
 
     [JsonIgnore, SwaggerIgnore]
     public new DateTime? CreatedAt { get; set; }

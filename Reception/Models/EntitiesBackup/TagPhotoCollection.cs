@@ -1,13 +1,16 @@
+/*
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Reception.Database.Models;
 using Swashbuckle.AspNetCore.Annotations;
+*/
 
-namespace Reception.Models;
+// namespace Reception.Models;
 
 /// <summary>
 /// Collection of all photos (<see cref="Reception.Models.PhotoCollection"/>) tagged with the given <paramref name="tag"/>.
 /// </summary>
+/*
 public record TagPhotoCollection
 {
     private Tag _tag;
@@ -43,3 +46,4 @@ public record TagPhotoCollection
         get => this._collection.Value.ElementAt(index);
     }
 }
+*/
