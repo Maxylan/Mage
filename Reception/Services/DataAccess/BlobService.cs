@@ -16,6 +16,56 @@ public class BlobService(
     IPhotoService photoService
 ) : IBlobService
 {
+    #region Get base filepaths.
+    public const string FILE_STORAGE_NAME = "Postbox";
+    public static readonly Dictionary<Dimension, string> StorageDirectories = new() {
+        { Dimension.SOURCE, "source" },
+        { Dimension.MEDIUM, "medium" },
+        { Dimension.THUMBNAIL, "thumbnail" }
+    };
+
+    /// <summary>
+    /// Get the name (only) of the base directory of my file storage
+    /// </summary>
+    public string GetBaseDirectoryName() => FILE_STORAGE_NAME;
+    /// <summary>
+    /// Get the name (only) of the Thumbnail directory of my file storage
+    /// </summary>
+    public string GetThumbnailDirectoryName() => StorageDirectories[Dimension.THUMBNAIL];
+    /// <summary>
+    /// Get the name (only) of the Medium directory of my file storage
+    /// </summary>
+    public string GetMediumDirectoryName() => StorageDirectories[Dimension.MEDIUM];
+    /// <summary>
+    /// Get the name (only) of the Source directory of my file storage
+    /// </summary>
+    public string GetSourceDirectoryName() => StorageDirectories[Dimension.SOURCE];
+    /// <summary>
+    /// Get the path (directories, plural) to the directory relative to a <see cref="DateTime"/>
+    /// </summary>
+    public string GetDatePath(DateTime dateTime) => Path.Combine(
+        dateTime.Year.ToString(),
+        dateTime.Month.ToString(),
+        dateTime.Day.ToString()
+    );
+    /// <summary>
+    /// Get the <strong>combined</strong> relative path (<c>Base + Thumbnail/Medium/Source + DatePath</c>) to a directory in my file storage.
+    /// </summary>
+    public string GetCombinedPath(Dimension dimension, DateTime? dateTime = null, string filename = "") => Path.Combine(
+        GetBaseDirectoryName(),
+        dimension switch
+        {
+            Dimension.THUMBNAIL => GetThumbnailDirectoryName(),
+            Dimension.MEDIUM => GetMediumDirectoryName(),
+            Dimension.SOURCE => GetSourceDirectoryName(),
+            _ => GetSourceDirectoryName()
+        },
+        GetDatePath(dateTime ?? DateTime.UtcNow),
+        filename
+    );
+    #endregion
+
+
     /// <summary>
     /// Get the source blob associated with the <see cref="Photo"/> identified by its unique <paramref name="slug"/>.
     /// </summary>
@@ -27,7 +77,7 @@ public class BlobService(
             return new BadRequestResult(); // TODO! Log & Handle..
         }
 
-        var getSourcePhoto = await photoService.GetPhotoEntity(slug);
+        var getSourcePhoto = await photoService.GetPhoto(slug);
         var source = getSourcePhoto.Value;
         if (source is null)
         {
@@ -41,7 +91,7 @@ public class BlobService(
     /// </summary>
     public async Task<ActionResult> GetSourceBlob(int photoId)
     {
-        var getSourcePhoto = await photoService.GetPhotoEntity(photoId);
+        var getSourcePhoto = await photoService.GetPhoto(photoId);
         var source = getSourcePhoto.Value;
         if (source is null)
         {
@@ -79,7 +129,7 @@ public class BlobService(
             return new BadRequestResult(); // TODO! Log & Handle..
         }
 
-        var getMediumPhoto = await photoService.GetPhotoEntity(slug);
+        var getMediumPhoto = await photoService.GetPhoto(slug);
         var medium = getMediumPhoto.Value;
         if (medium is null)
         {
@@ -93,7 +143,7 @@ public class BlobService(
     /// </summary>
     public async Task<ActionResult> GetMediumBlob(int photoId)
     {
-        var getMediumPhoto = await photoService.GetPhotoEntity(photoId);
+        var getMediumPhoto = await photoService.GetPhoto(photoId);
         var medium = getMediumPhoto.Value;
         if (medium is null)
         {
@@ -131,7 +181,7 @@ public class BlobService(
             return new BadRequestResult(); // TODO! Log & Handle..
         }
 
-        var getThumbnailPhoto = await photoService.GetPhotoEntity(slug);
+        var getThumbnailPhoto = await photoService.GetPhoto(slug);
         var thumbnail = getThumbnailPhoto.Value;
         if (thumbnail is null)
         {
@@ -145,7 +195,7 @@ public class BlobService(
     /// </summary>
     public async Task<ActionResult> GetThumbnailBlob(int photoId)
     {
-        var getThumbnailPhoto = await photoService.GetPhotoEntity(photoId);
+        var getThumbnailPhoto = await photoService.GetPhoto(photoId);
         var thumbnail = getThumbnailPhoto.Value;
         if (thumbnail is null)
         {

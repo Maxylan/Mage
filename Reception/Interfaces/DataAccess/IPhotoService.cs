@@ -1,61 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
-using Reception.Database;
 using Reception.Models;
 
 namespace Reception.Interfaces.DataAccess;
 
 public interface IPhotoService
 {
-    #region Get base filepaths.
-    /// <summary>
-    /// Get the name (only) of the base directory of my file storage
-    /// </summary>
-    public abstract string GetBaseDirectoryName();
-    /// <summary>
-    /// Get the name (only) of the Thumbnail directory of my file storage
-    /// </summary>
-    public abstract string GetThumbnailDirectoryName();
-    /// <summary>
-    /// Get the name (only) of the Medium directory of my file storage
-    /// </summary>
-    public abstract string GetMediumDirectoryName();
-    /// <summary>
-    /// Get the name (only) of the Source directory of my file storage
-    /// </summary>
-    public abstract string GetSourceDirectoryName();
-    /// <summary>
-    /// Get the path (directories, plural) to the directory relative to a <see cref="DateTime"/>
-    /// </summary>
-    public abstract string GetDatePath(DateTime dateTime);
-    /// <summary>
-    /// Get the <strong>combined</strong> relative path (<c>Base + Thumbnail/Medium/Source + DatePath</c>) to a directory in my file storage.
-    /// </summary>
-    public abstract string GetCombinedPath(Dimension dimension, DateTime? dateTime = null, string filename = "");
-    #endregion
-
-
     #region Get single photos.
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> with Primary Key '<paramref ref="photoId"/>'
+    /// Get the <see cref="Photo"/> with Primary Key '<paramref ref="photoId"/>'
     /// </summary>
-    public abstract Task<ActionResult<Photo>> GetPhotoEntity(int photoId);
+    public abstract Task<ActionResult<Photo>> GetPhoto(int photoId);
 
     /// <summary>
-    /// Get the <see cref="PhotoEntity"/> with Slug '<paramref ref="slug"/>' (string)
+    /// Get the <see cref="Photo"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
-    public abstract Task<ActionResult<Photo>> GetPhotoEntity(string slug);
-
-
-    /// <summary>
-    /// Get the <see cref="DisplayPhoto"/> with Primary Key '<paramref ref="photoId"/>'
-    /// </summary>
-    public abstract Task<ActionResult<DisplayPhoto>> GetPhoto(int photoId);
-
-    /// <summary>
-    /// Get the <see cref="DisplayPhoto"/> with Slug '<paramref ref="slug"/>' (string)
-    /// </summary>
-    public abstract Task<ActionResult<DisplayPhoto>> GetPhoto(string slug);
+    public abstract Task<ActionResult<Photo>> GetPhoto(string slug);
     #endregion
 
 
@@ -63,38 +23,37 @@ public interface IPhotoService
     /// <summary>
     /// Get all <see cref="Reception.Database.Models.Photo"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public virtual Task<ActionResult<IEnumerable<Photo>>> GetPhotoEntities(string? search, Action<FilterPhotosOptions> opts)
+    public virtual Task<ActionResult<IEnumerable<Photo>>> GetPhotos(Action<FilterPhotosOptions> opts)
     {
         FilterPhotosOptions filtering = new();
         opts(filtering);
 
-        return GetPhotoEntities(search, filtering);
+        return GetPhotos(filtering);
     }
 
     /// <summary>
     /// Assemble a <see cref="IEnumerable{Reception.Database.Models.Photo}"/> collection of Photos matching a wide range of optional
     /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Photo>>> GetPhotoEntities(string? search, FilterPhotosOptions filter);
+    public abstract Task<ActionResult<IEnumerable<Photo>>> GetPhotos(FilterPhotosOptions filter);
 
 
     /// <summary>
-    /// Assemble an <see cref="IEnumerable{Reception.Models.DisplayPhoto}"/> collection of Photos matching a wide range of optional
-    /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// Get all <see cref="Reception.Database.Models.Photo"/> instances by evaluating a wide range of optional search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public virtual Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, Action<FilterPhotosOptions> opts)
+    public virtual Task<ActionResult<IEnumerable<Photo>>> PhotoSearch(Action<PhotoSearchQuery> opts)
     {
-        FilterPhotosOptions filtering = new();
-        opts(filtering);
+        PhotoSearchQuery search = new();
+        opts(search);
 
-        return GetPhotos(search, filtering);
+        return PhotoSearch(search);
     }
 
     /// <summary>
-    /// Assemble a <see cref="IEnumerable{Reception.Models.DisplayPhoto}"/> collection of Photos matching a wide range of optional
-    /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// Assemble a <see cref="IEnumerable{Reception.Database.Models.Photo}"/> collection of Photos by evaluating a wide range of optional
+    /// search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<PhotoCollection>>> GetPhotos(string? search, FilterPhotosOptions filter);
+    public abstract Task<ActionResult<IEnumerable<Photo>>> PhotoSearch(PhotoSearchQuery searchQuery);
     #endregion
 
 
@@ -102,7 +61,7 @@ public interface IPhotoService
     /// <summary>
     /// Create a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
-    public abstract Task<ActionResult<Photo>> CreatePhotoEntity(MutatePhoto mut);
+    public abstract Task<ActionResult<Photo>> CreatePhoto(MutatePhoto mut);
     #endregion
 
 
@@ -110,7 +69,7 @@ public interface IPhotoService
     /// <summary>
     /// Updates a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
-    public abstract Task<ActionResult<Photo>> UpdatePhotoEntity(MutatePhoto mut);
+    public abstract Task<ActionResult<Photo>> UpdatePhoto(MutatePhoto mut);
 
 
     /// <summary>
@@ -157,7 +116,7 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhotoEntity(int photoId);
+    protected abstract Task<ActionResult> DeletePhoto(int photoId);
 
     /// <summary>
     /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..and associated <see cref="Reception.Database.Models.Filepath"/> entities) ..from the database.
@@ -165,6 +124,6 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhotoEntity(Photo entity);
+    protected abstract Task<ActionResult> DeletePhoto(Photo entity);
     #endregion
 }

@@ -8,6 +8,7 @@ public class MutatePhoto : PhotoDTO
 {
     public new int? Id { get; set; }
     public new IEnumerable<MutateTag>? Tags { get; set; }
+    public new IEnumerable<int>? Albums { get; set; }
 
     /*
     public string Slug { get; set; } = null!;

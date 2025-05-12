@@ -6,6 +6,34 @@ namespace Reception.Interfaces.DataAccess;
 
 public interface IBlobService
 {
+    #region Get base filepaths.
+    /// <summary>
+    /// Get the name (only) of the base directory of my file storage
+    /// </summary>
+    public abstract string GetBaseDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Thumbnail directory of my file storage
+    /// </summary>
+    public abstract string GetThumbnailDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Medium directory of my file storage
+    /// </summary>
+    public abstract string GetMediumDirectoryName();
+    /// <summary>
+    /// Get the name (only) of the Source directory of my file storage
+    /// </summary>
+    public abstract string GetSourceDirectoryName();
+    /// <summary>
+    /// Get the path (directories, plural) to the directory relative to a <see cref="DateTime"/>
+    /// </summary>
+    public abstract string GetDatePath(DateTime dateTime);
+    /// <summary>
+    /// Get the <strong>combined</strong> relative path (<c>Base + Thumbnail/Medium/Source + DatePath</c>) to a directory in my file storage.
+    /// </summary>
+    public abstract string GetCombinedPath(Dimension dimension, DateTime? dateTime = null, string filename = "");
+    #endregion
+
+
     /// <summary>
     /// Get the source blob associated with the <see cref="Photo"/> identified by its unique <paramref name="slug"/>.
     /// </summary>
