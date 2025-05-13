@@ -76,7 +76,7 @@ public interface IPhotoService
     /// Adds the given <see cref="IEnumerable{Reception.Database.Models.Tag}"/> collection (<paramref name="tags"/>) to the
     /// <see cref="Reception.Database.Models.Photo"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<Tag> tag);
+    public abstract Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<Tag> tags);
 
 
     /// <summary>
@@ -105,7 +105,7 @@ public interface IPhotoService
     /// <summary>
     /// Deletes the blob of a <see cref="Reception.Database.Models.Photo"/> from disk.
     /// </summary>
-    protected abstract Task<ActionResult> DeletePhotoBlob(Filepath entity);
+    public abstract Task<ActionResult> DeletePhotoBlob(Filepath entity);
     #endregion
 
 
@@ -116,7 +116,7 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhoto(int photoId);
+    public abstract Task<ActionResult> DeletePhotoEntity(int photoId);
 
     /// <summary>
     /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..and associated <see cref="Reception.Database.Models.Filepath"/> entities) ..from the database.
@@ -124,6 +124,6 @@ public interface IPhotoService
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhoto(Photo entity);
+    public abstract Task<ActionResult> DeletePhotoEntity(Photo entity);
     #endregion
 }

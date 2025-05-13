@@ -12,6 +12,7 @@ public interface ISessionService
     /// <see cref="Session"/>-entries, you may use it to freely fetch some sessions.
     /// </summary>
     public abstract DbSet<Session> GetSessions();
+
     /// <summary>
     /// Get the <see cref="Session"/> with matching '<paramref ref="code"/>'
     /// </summary>

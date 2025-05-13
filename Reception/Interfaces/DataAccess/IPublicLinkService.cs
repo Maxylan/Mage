@@ -1,38 +1,40 @@
-using Reception.Models;
-using Reception.Database.Models;
 using Microsoft.AspNetCore.Mvc;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
 
 namespace Reception.Interfaces.DataAccess;
 
 public interface IPublicLinkService
 {
     /// <summary>
-    /// Get the <see cref="Uri"/> of a <see cref="Link"/>
+    /// Get the <see cref="Uri"/> of a <see cref="PublicLink"/>
     /// </summary>
-    public abstract Uri LinkUri(string code, Dimension? dimension = null);
+    public abstract Uri GetUri(string code, Dimension? dimension = null);
 
     /// <summary>
-    /// Get all <see cref="Link"/> entries.
-    /// <br/><paramref name="includeInactive"/><c> = false</c> can be used to only view active links.
+    /// Get the <see cref="Uri"/> of a <paramref name="link"/> (<see cref="PublicLink"/>)
     /// </summary>
-    /// <param name="includeInactive">
-    /// Passing <c>false</c> would be equivalent to filtering by active links.
-    /// </param>
-    public abstract Task<ActionResult<IEnumerable<Link>>> GetLinks(bool includeInactive, int limit = 99, int offset = 0);
+    public abstract Uri GetUri(PublicLink link, Dimension? dimension = null);
 
     /// <summary>
-    /// Get the <see cref="Link"/> with Primary Key '<paramref ref="linkId"/>'
+    /// Get the <see cref="PublicLink"/> with Primary Key '<paramref ref="linkId"/>'
     /// </summary>
-    public abstract Task<ActionResult<Link>> GetLink(int linkId);
+    public abstract Task<ActionResult<PublicLink>> GetLink(int linkId);
     /// <summary>
-    /// Get the <see cref="Link"/> with Unique '<paramref ref="code"/>'
+    /// Get the <see cref="PublicLink"/> with Unique '<paramref ref="code"/>'
     /// </summary>
-    public abstract Task<ActionResult<Link>> GetLinkByCode(string code);
+    public abstract Task<ActionResult<PublicLink>> GetLinkByCode(string code);
 
     /// <summary>
-    /// Create a <see cref="Link"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
+    /// Get all <see cref="PublicLink"/> entries.
     /// </summary>
-    public virtual Task<ActionResult<Link>> CreateLink(int photoId, Action<MutateLink> opts)
+    public abstract Task<ActionResult<IEnumerable<PublicLink>>> GetLinks(int limit = 99, int offset = 0);
+
+    /// <summary>
+    /// Create a <see cref="PublicLink"/> to the <see cref="Photo"/> with ID '<paramref name="photoId"/>'.
+    /// </summary>
+    public virtual Task<ActionResult<PublicLink>> CreateLink(int photoId, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -40,19 +42,19 @@ public interface IPublicLinkService
         return CreateLink(photoId, mutationOptions);
     }
     /// <summary>
-    /// Create a <see cref="Link"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
+    /// Create a <see cref="PublicLink"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
     /// </summary>
-    public abstract Task<ActionResult<Link>> CreateLink(int photoId, MutateLink mut);
+    public abstract Task<ActionResult<PublicLink>> CreateLink(int photoId, MutateLink mut);
 
     /// <summary>
-    /// Increment the <see cref="Link.Accessed"/> property of a <see cref="Link"/>.
+    /// Increment the <see cref="Link.Accessed"/> property of a <see cref="PublicLink"/>.
     /// </summary>
-    public abstract Task<Link> IncrementLinkAccessed(Link link, bool reload = true);
+    public abstract Task<PublicLink> LinkAccessed(PublicLink link);
 
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public virtual Task<ActionResult<Link>> UpdateLink(int linkId, Action<MutateLink> opts)
+    public virtual Task<ActionResult<PublicLink>> UpdateLink(int linkId, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -60,14 +62,14 @@ public interface IPublicLinkService
         return UpdateLink(linkId, mutationOptions);
     }
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public abstract Task<ActionResult<Link>> UpdateLink(int linkId, MutateLink mut);
+    public abstract Task<ActionResult<PublicLink>> UpdateLink(int linkId, MutateLink mut);
 
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public virtual Task<ActionResult<Link>> UpdateLinkByCode(string code, Action<MutateLink> opts)
+    public virtual Task<ActionResult<PublicLink>> UpdateLinkByCode(string code, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -75,9 +77,9 @@ public interface IPublicLinkService
         return UpdateLinkByCode(code, mutationOptions);
     }
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public abstract Task<ActionResult<Link>> UpdateLinkByCode(string code, MutateLink mut);
+    public abstract Task<ActionResult<PublicLink>> UpdateLinkByCode(string code, MutateLink mut);
 
     /// <summary>
     /// Delete the <see cref="Link"/> with Primary Key '<paramref ref="linkId"/>'

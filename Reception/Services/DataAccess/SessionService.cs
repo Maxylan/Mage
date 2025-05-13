@@ -1,14 +1,17 @@
-
+using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
-using System.Net;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Middleware.Authentication;
 
 namespace Reception.Services.DataAccess;
 
 public class SessionService(
     ILoggingService<SessionService> logging,
+    IHttpContextAccessor contextAccessor,
     MageDb db
 ) : ISessionService
 {
@@ -36,7 +39,8 @@ public class SessionService(
         }
 
         Session? session = await db.Sessions
-            .Include(session => session.User)
+            .Include(session => session.Account)
+            .Include(session => session.Client)
             .FirstOrDefaultAsync(s => s.Code == code);
 
         if (session is null)
@@ -71,7 +75,8 @@ public class SessionService(
     public async Task<ActionResult<Session>> GetSessionById(int id)
     {
         Session? session = await db.Sessions
-            .Include(session => session.User)
+            .Include(session => session.Account)
+            .Include(session => session.Client)
             .FirstOrDefaultAsync(session => session.Id == id);
 
         if (session is null)
@@ -102,6 +107,7 @@ public class SessionService(
     {
         Account? account = await db.Accounts
             .Include(account => account.Sessions)
+            .ThenInclude(session => session.Client)
             .FirstOrDefaultAsync(account => account.Id == userId);
 
         if (account is null)
@@ -160,6 +166,7 @@ public class SessionService(
     {
         Account? account = await db.Accounts
             .Include(account => account.Sessions)
+            .ThenInclude(session => session.Client)
             .FirstOrDefaultAsync(account => account.Username == userName);
 
         if (account is null)
@@ -224,6 +231,17 @@ public class SessionService(
             {
                 await navigationEntry.LoadAsync();
             }
+
+            if (account.Sessions is not null)
+            {
+                foreach(var session in account.Sessions)
+                {
+                    foreach (var navigationEntry in db.Entry(session).Navigations)
+                    {
+                        await navigationEntry.LoadAsync();
+                    }
+                }
+            }
         }
 
         if (account.Sessions is not null && account.Sessions.Count > 0)
@@ -256,7 +274,7 @@ public class SessionService(
         }
 
         var sessions = await db.Sessions
-            .Where(session => session.UserId == account.Id)
+            .Where(session => session.AccountId == account.Id)
             .OrderByDescending(session => session.CreatedAt)
             .ToListAsync();
 
@@ -289,7 +307,7 @@ public class SessionService(
     /// </summary>
     public async Task<ActionResult<Account>> GetUserBySession(Session session)
     {
-        Account? user = session.User;
+        Account? user = session.Account;
         if (user is not null)
         {
             bool exists = await db.Accounts.ContainsAsync(user);
@@ -300,11 +318,11 @@ public class SessionService(
             }
         }
 
-        user = await db.Accounts.FindAsync(session.UserId);
+        user = await db.Accounts.FindAsync(session.AccountId);
 
         if (user is null)
         {
-            string message = $"Failed to find an {nameof(Account)} matching the given {nameof(Session)}'s {nameof(Session.UserId)} #{session.UserId}.";
+            string message = $"Failed to find an {nameof(Account)} matching the given {nameof(Session)}'s {nameof(Session.AccountId)} #{session.AccountId}.";
             logging
                 .Action(nameof(GetSession))
                 .ExternalDebug(message);
@@ -336,11 +354,55 @@ public class SessionService(
             userAgentHeader = request.Headers.UserAgent.ToString();
         }
 
+        string? address = null;
+        if (contextAccessor.HttpContext is not null)
+        {
+            address = MageAuthentication.GetRemoteAddress(contextAccessor);
+        }
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return new ObjectResult("Cannot get requesting address, refusing to create session.")
+            {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        List<Client> clientAccounts = await db.Clients
+            .Include(c => c.Accounts)
+            .OrderByDescending(c => c.CreatedAt)
+            .OrderByDescending(c => c.LastVisit)
+            .Where(c => c.Address == address)
+            .Where(c => c.UserAgent == userAgentHeader)
+            .ToListAsync();
+
+        Client? client = clientAccounts
+            .Where(c => c.Accounts.Any(a => a.Id == account.Id))
+            .FirstOrDefault();
+
+        if (client is not null) {
+            client.LastVisit = DateTime.Now;
+            client.Logins++;
+
+            db.Update(client);
+        }
+        else {
+            client = new Client()
+            {
+                Trusted = false,
+                UserAgent = userAgentHeader,
+                Address = address,
+                CreatedAt = DateTime.Now,
+                LastVisit = DateTime.Now,
+                Logins = 1
+            };
+        }
+
         Session newSession = new()
         {
-            UserId = account.Id,
+            AccountId = account.Id,
             Code = Guid.NewGuid().ToString("D"),
-            UserAgent = userAgentHeader,
+            Client = client,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow + (
                 string.IsNullOrWhiteSpace(userAgentHeader)
@@ -350,7 +412,7 @@ public class SessionService(
         };
 
         db.Add(newSession);
-        account.LastVisit = DateTime.UtcNow;
+        account.LastLogin = DateTime.UtcNow;
 
         string message = $"Created new {nameof(Session)} '{newSession.Code}' for user '{account.Username}' (#{account.Id})";
         if (source == Source.EXTERNAL)

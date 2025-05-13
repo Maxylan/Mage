@@ -158,7 +158,7 @@ public class AlbumService(
         }
 
         // Filter by privilege
-        albumQuery = db.Albums
+        albumQuery = albumQuery
             .Where(album => (user.Privilege & (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
 
         // Filtering
@@ -976,12 +976,8 @@ public class AlbumService(
             };
         }
 
-        byte privilegeRequired = existingAlbum.RequiredPrivilege;
-
-        if (existingAlbum.CreatedBy != user.Id) {
-            privilegeRequired = (byte)
-                (Privilege.UPDATE | privilegeRequired);
-        }
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingAlbum.RequiredPrivilege);
 
         if ((user.Privilege & privilegeRequired) != privilegeRequired)
         {
@@ -1159,12 +1155,8 @@ public class AlbumService(
             };
         }
 
-        byte privilegeRequired = existingAlbum.RequiredPrivilege;
-
-        if (existingAlbum.CreatedBy != user.Id) {
-            privilegeRequired = (byte)
-                (Privilege.UPDATE | privilegeRequired);
-        }
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingAlbum.RequiredPrivilege);
 
         if ((user.Privilege & privilegeRequired) != privilegeRequired)
         {
@@ -1321,12 +1313,8 @@ public class AlbumService(
             };
         }
 
-        byte privilegeRequired = existingAlbum.RequiredPrivilege;
-
-        if (existingAlbum.CreatedBy != user.Id) {
-            privilegeRequired = (byte)
-                (Privilege.UPDATE | privilegeRequired);
-        }
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingAlbum.RequiredPrivilege);
 
         if ((user.Privilege & privilegeRequired) != privilegeRequired)
         {
@@ -1497,12 +1485,8 @@ public class AlbumService(
             };
         }
 
-        byte privilegeRequired = existingAlbum.RequiredPrivilege;
-
-        if (existingAlbum.CreatedBy != user.Id) {
-            privilegeRequired = (byte)
-                (Privilege.UPDATE | privilegeRequired);
-        }
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingAlbum.RequiredPrivilege);
 
         if ((user.Privilege & privilegeRequired) != privilegeRequired)
         {

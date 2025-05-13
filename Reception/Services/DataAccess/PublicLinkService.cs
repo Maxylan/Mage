@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reception.Middleware.Authentication;
 using Reception.Interfaces.DataAccess;
-using Reception.Models;
+using Reception.Interfaces;
 using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
 
 namespace Reception.Services.DataAccess;
 
@@ -16,9 +18,9 @@ public class PublicLinkService(
 ) : IPublicLinkService
 {
     /// <summary>
-    /// Get the <see cref="Uri"/> of a <see cref="Link"/>
+    /// Get the <see cref="Uri"/> of a <see cref="PublicLink"/>
     /// </summary>
-    public static Uri GenerateLinkUri(string code, Dimension? dimension = null)
+    public Uri GetUri(string code, Dimension? dimension = null)
     {
         string dim = dimension switch
         {
@@ -32,55 +34,21 @@ public class PublicLinkService(
     }
 
     /// <summary>
-    /// Get the <see cref="Uri"/> of a <see cref="Link"/>
+    /// Get the <see cref="Uri"/> of a <paramref name="link"/> (<see cref="PublicLink"/>)
     /// </summary>
-    public Uri LinkUri(string code, Dimension? dimension = null) =>
-        GenerateLinkUri(code, dimension);
+    public Uri GetUri(PublicLink link, Dimension? dimension = null) =>
+        this.GetUri(link.Code, dimension);
 
     /// <summary>
-    /// Get all <see cref="Link"/> entries.
-    /// <br/><paramref name="includeInactive"/><c> = false</c> can be used to only view active links.
+    /// Get the <see cref="PublicLink"/> with Primary Key '<paramref ref="linkId"/>'
     /// </summary>
-    /// <param name="includeInactive">
-    /// Passing <c>false</c> would be equivalent to filtering by active links.
-    /// </param>
-    public async Task<ActionResult<IEnumerable<Link>>> GetLinks(bool includeInactive, int limit = 99, int offset = 0)
-    {
-        if (limit <= 0) {
-            throw new ArgumentOutOfRangeException(nameof(limit), $"Parameter {nameof(limit)} has to be a non-zero positive integer!");
-        }
-        if (offset < 0) {
-            throw new ArgumentOutOfRangeException(nameof(offset), $"Parameter {nameof(offset)} has to be a positive integer!");
-        }
-
-        if (!includeInactive)
-        {
-            return await db.Links
-                .Where(link => link.ExpiresAt > DateTime.UtcNow)
-                .Where(link => link.AccessLimit == null || link.AccessLimit <= 0 || link.Accessed < link.AccessLimit)
-                .OrderBy(link => link.ExpiresAt)
-                .Skip(offset)
-                .Take(limit)
-                .ToArrayAsync();
-        }
-
-        return await db.Links
-            .OrderByDescending(link => link.CreatedAt)
-            .Skip(offset)
-            .Take(limit)
-            .ToArrayAsync();
-    }
-
-    /// <summary>
-    /// Get the <see cref="Link"/> with Primary Key '<paramref ref="linkId"/>'
-    /// </summary>
-    public async Task<ActionResult<Link>> GetLink(int linkId)
+    public async Task<ActionResult<PublicLink>> GetLink(int linkId)
     {
         if (linkId <= 0) {
             throw new ArgumentOutOfRangeException(nameof(linkId), $"Parameter {nameof(linkId)} has to be a non-zero positive integer!");
         }
 
-        Link? link = await db.Links.FindAsync(linkId);
+        PublicLink? link = await db.Links.FindAsync(linkId);
 
         if (link is null)
         {
@@ -89,15 +57,15 @@ public class PublicLinkService(
                 .InternalDebug($"Link with ID #{linkId} could not be found.")
                 .LogAndEnqueue();
 
-            return new NotFoundObjectResult($"{nameof(Link)} with ID #{linkId} not found!");
+            return new NotFoundObjectResult($"{nameof(PublicLink)} with ID #{linkId} not found!");
         }
 
         return link;
     }
     /// <summary>
-    /// Get the <see cref="Link"/> with Unique '<paramref ref="code"/>'
+    /// Get the <see cref="PublicLink"/> with Unique '<paramref ref="code"/>'
     /// </summary>
-    public async Task<ActionResult<Link>> GetLinkByCode(string code)
+    public async Task<ActionResult<PublicLink>> GetLinkByCode(string code)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code, $"Parameter {nameof(code)} cannot be null/empty!");
 
@@ -108,7 +76,7 @@ public class PublicLinkService(
                 .Trim();
         }
 
-        Link? link = await db.Links.FirstOrDefaultAsync(link => link.Code == code);
+        PublicLink? link = await db.Links.FirstOrDefaultAsync(link => link.Code == code);
 
         if (link is null)
         {
@@ -117,16 +85,35 @@ public class PublicLinkService(
                 .InternalDebug($"Link with code '{code}' could not be found.")
                 .LogAndEnqueue();
 
-            return new NotFoundObjectResult($"{nameof(Link)} with unique code '{code}' could not be found!");
+            return new NotFoundObjectResult($"{nameof(PublicLink)} with unique code '{code}' could not be found!");
         }
 
         return link;
     }
 
     /// <summary>
-    /// Create a <see cref="Link"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
+    /// Get all <see cref="PublicLink"/> entries.
     /// </summary>
-    public virtual Task<ActionResult<Link>> CreateLink(int photoId, Action<MutateLink> opts)
+    public async Task<ActionResult<IEnumerable<PublicLink>>> GetLinks(int limit = 99, int offset = 0)
+    {
+        if (limit <= 0) {
+            throw new ArgumentOutOfRangeException(nameof(limit), $"Parameter {nameof(limit)} has to be a non-zero positive integer!");
+        }
+        if (offset < 0) {
+            throw new ArgumentOutOfRangeException(nameof(offset), $"Parameter {nameof(offset)} has to be a positive integer!");
+        }
+
+        return await db.Links
+            .OrderByDescending(link => link.CreatedAt)
+            .Skip(offset)
+            .Take(limit)
+            .ToArrayAsync();
+    }
+
+    /// <summary>
+    /// Create a <see cref="PublicLink"/> to the <see cref="Photo"/> with ID '<paramref name="photoId"/>'.
+    /// </summary>
+    public virtual Task<ActionResult<PublicLink>> CreateLink(int photoId, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -134,15 +121,15 @@ public class PublicLinkService(
         return CreateLink(photoId, mutationOptions);
     }
     /// <summary>
-    /// Create a <see cref="Link"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
+    /// Create a <see cref="PublicLink"/> to the <see cref="PhotoEntity"/> with ID '<paramref name="photoId"/>'.
     /// </summary>
-    public async Task<ActionResult<Link>> CreateLink(int photoId, MutateLink mut)
+    public async Task<ActionResult<PublicLink>> CreateLink(int photoId, MutateLink mut)
     {
         if (photoId <= 0) {
             throw new ArgumentOutOfRangeException(nameof(photoId), $"Parameter {nameof(photoId)} has to be a non-zero positive integer!");
         }
 
-        var getPhoto = await photos.GetPhotoEntity(photoId);
+        var getPhoto = await photos.GetPhoto(photoId);
         var photo = getPhoto.Value;
 
         if (photo is null) {
@@ -198,7 +185,7 @@ public class PublicLinkService(
             mut.AccessLimit = null;
         }
 
-        Link link = new()
+        PublicLink link = new()
         {
             PhotoId = photoId,
             Code = Guid.NewGuid().ToString("N"),
@@ -211,7 +198,7 @@ public class PublicLinkService(
 
         try
         {
-            photo.Links.Add(link);
+            photo.PublicLinks.Add(link);
             db.Update(photo);
 
             await db.SaveChangesAsync();
@@ -259,13 +246,13 @@ public class PublicLinkService(
     }
 
     /// <summary>
-    /// Increment the <see cref="Link.Accessed"/> property of a <see cref="Link"/>.
+    /// Increment the <see cref="Link.Accessed"/> property of a <see cref="PublicLink"/>.
     /// </summary>
-    public async Task<Link> IncrementLinkAccessed(Link link, bool reload = true)
+    public async Task<PublicLink> LinkAccessed(PublicLink link)
     {
-        if (reload) {
-            await db.Links.Entry(link).ReloadAsync();
-        }
+        await db.Links
+            .Entry(link)
+            .ReloadAsync();
 
         link.Accessed++;
         db.Links.Update(link);
@@ -274,9 +261,9 @@ public class PublicLinkService(
     }
 
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public virtual Task<ActionResult<Link>> UpdateLink(int linkId, Action<MutateLink> opts)
+    public virtual Task<ActionResult<PublicLink>> UpdateLink(int linkId, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -284,9 +271,9 @@ public class PublicLinkService(
         return UpdateLink(linkId, mutationOptions);
     }
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public async Task<ActionResult<Link>> UpdateLink(int linkId, MutateLink mut)
+    public async Task<ActionResult<PublicLink>> UpdateLink(int linkId, MutateLink mut)
     {
         ArgumentNullException.ThrowIfNull(mut);
         ArgumentNullException.ThrowIfNull(linkId);
@@ -302,11 +289,11 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
-        Link? existingLink = await db.Links.FindAsync(linkId);
+        PublicLink? existingLink = await db.Links.FindAsync(linkId);
 
         if (existingLink is null)
         {
-            string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
+            string message = $"{nameof(PublicLink)} with ID #{linkId} could not be found!";
             logging
                 .Action(nameof(UpdateLink))
                 .InternalDebug(message)
@@ -352,7 +339,7 @@ public class PublicLinkService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + updateException.Message, opts =>
@@ -370,7 +357,7 @@ public class PublicLinkService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(UpdateLink))
                 .InternalError(message + " " + ex.Message, opts =>
@@ -391,9 +378,9 @@ public class PublicLinkService(
     }
 
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public virtual Task<ActionResult<Link>> UpdateLinkByCode(string code, Action<MutateLink> opts)
+    public virtual Task<ActionResult<PublicLink>> UpdateLinkByCode(string code, Action<MutateLink> opts)
     {
         MutateLink mutationOptions = new();
         opts(mutationOptions);
@@ -401,9 +388,9 @@ public class PublicLinkService(
         return UpdateLinkByCode(code, mutationOptions);
     }
     /// <summary>
-    /// Update the properties of a <see cref="Link"/> to a <see cref="PhotoEntity"/>.
+    /// Update the properties of a <see cref="PublicLink"/> to a <see cref="Photo"/>.
     /// </summary>
-    public async Task<ActionResult<Link>> UpdateLinkByCode(string code, MutateLink mut)
+    public async Task<ActionResult<PublicLink>> UpdateLinkByCode(string code, MutateLink mut)
     {
         ArgumentNullException.ThrowIfNull(mut);
 
@@ -428,12 +415,12 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
-        Link? existingLink = await db.Links
+        PublicLink? existingLink = await db.Links
             .FirstOrDefaultAsync(link => link.Code == code);
 
         if (existingLink is null)
         {
-            string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
+            string message = $"{nameof(PublicLink)} with unique code '{code}' could not be found!";
             logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalDebug(message)
@@ -479,7 +466,7 @@ public class PublicLinkService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalError(message + " " + updateException.Message, opts =>
@@ -497,7 +484,7 @@ public class PublicLinkService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(UpdateLinkByCode))
                 .InternalError(message + " " + ex.Message, opts =>
@@ -535,11 +522,11 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
-        Link? existingLink = await db.Links.FindAsync(linkId);
+        PublicLink? existingLink = await db.Links.FindAsync(linkId);
 
         if (existingLink is null)
         {
-            string message = $"{nameof(Link)} with ID #{linkId} could not be found!";
+            string message = $"{nameof(PublicLink)} with ID #{linkId} could not be found!";
             logging
                 .Action(nameof(DeleteLink))
                 .InternalDebug(message)
@@ -560,7 +547,7 @@ public class PublicLinkService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(DeleteLink))
                 .InternalError(message + " " + updateException.Message, opts =>
@@ -578,7 +565,7 @@ public class PublicLinkService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(DeleteLink))
                 .InternalError(message + " " + ex.Message, opts =>
@@ -623,12 +610,12 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
-        Link? existingLink = await db.Links
+        PublicLink? existingLink = await db.Links
             .FirstOrDefaultAsync(link => link.Code == code);
 
         if (existingLink is null)
         {
-            string message = $"{nameof(Link)} with unique code '{code}' could not be found!";
+            string message = $"{nameof(PublicLink)} with unique code '{code}' could not be found!";
             logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalDebug(message)
@@ -649,7 +636,7 @@ public class PublicLinkService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalError(message + " " + updateException.Message, opts =>
@@ -667,7 +654,7 @@ public class PublicLinkService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Link)} '{existingLink.Code}' (#{existingLink.Id}).";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}).";
             logging
                 .Action(nameof(DeleteLinkByCode))
                 .InternalError(message + " " + ex.Message, opts =>

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Reception.Middleware.Authentication;
 using Reception.Interfaces.DataAccess;
 using Reception.Interfaces;
-using Reception.Services;
 using Reception.Database.Models;
 using Reception.Database;
 using Reception.Models;
@@ -42,6 +41,48 @@ public class PhotoService(
             return new NotFoundObjectResult(
                 Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
             );
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetPhoto))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredViewPrivilege = (byte)
+            (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetPhoto))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (photo.Filepaths is null || photo.Filepaths.Count == 0)
@@ -85,6 +126,48 @@ public class PhotoService(
             );
         }
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetPhoto))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte requiredViewPrivilege = (byte)
+            (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetPhoto))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         return photo;
     }
     #endregion
@@ -117,7 +200,33 @@ public class PhotoService(
             .Include(photo => photo.Tags)
             .Where(photo => photo.Filepaths.Any(path => path.Dimension == filter.Dimension));
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
 
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(GetPhotos))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        // Filter by privilege
+        photoQuery = photoQuery
+            .Where(album => (user.Privilege & (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
 
         // Filtering (AND)
         if (!string.IsNullOrWhiteSpace(filter.Slug))
@@ -275,6 +384,48 @@ public class PhotoService(
     {
         Photo entity = (Photo)mut;
 
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreatePhoto))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.CREATE | mut.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreatePhoto))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         if (mut.Tags is not null)
         {
             if (mut.Tags.Count() > 9999)
@@ -372,6 +523,48 @@ public class PhotoService(
                     };
                 }
             }
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(CreatePhoto))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.CREATE | entity.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreatePhoto))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         try
@@ -472,21 +665,28 @@ public class PhotoService(
             );
         }
 
-        Account? user = null;
-
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        Account? user;
+        try
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
             }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(UpdatePhoto))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(UpdatePhoto))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         if (mut.Id <= 0)
@@ -517,6 +717,29 @@ public class PhotoService(
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | mut.RequiredPrivilege | existingPhoto.RequiredPrivilege);
+
+        if ((mut.RequiredPrivilege & existingPhoto.RequiredPrivilege) != existingPhoto.RequiredPrivilege) {
+            privilegeRequired = (byte)
+                (Privilege.ADMIN | privilegeRequired);
+        }
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdatePhoto))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         foreach (var navigation in db.Entry(existingPhoto).Navigations)
@@ -736,14 +959,335 @@ public class PhotoService(
     /// Adds the given <see cref="IEnumerable{Reception.Database.Models.Tag}"/> collection (<paramref name="tags"/>) to the
     /// <see cref="Reception.Database.Models.Photo"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<Tag> tag);
+    public async Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<Tag> tags)
+    {
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
 
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999)
+                .ToArray();
+        }
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(AddTags))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Photo? existingPhoto = await db.Photos.FindAsync(photoId);
+
+        if (existingPhoto is null)
+        {
+            string message = $"{nameof(Photo)} with ID #{photoId} could not be found!";
+            logging
+                .Action(nameof(AddTags))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        foreach(var navigation in db.Entry(existingPhoto).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(AddTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingPhoto.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(AddTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var existingIds = existingPhoto.Tags
+            .Select(tag => tag.TagId);
+
+        tags = tags
+            .Where(tag => (user.Privilege & (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)))
+            .Distinct()
+            .IntersectBy(existingIds, tag => tag.Id)
+            .ToList();
+
+        if (tags.Count() <= 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        var newTagRelations =
+            tags.Select(tag => new PhotoTagRelation() {
+                TagId = tag.Id,
+                Tag = tag,
+                PhotoId = existingPhoto.Id,
+                Photo = existingPhoto,
+                Added = DateTime.Now
+            })
+            .Concat(existingPhoto.Tags)
+            .ToList();
+
+        existingPhoto.Tags = newTagRelations;
+        try
+        {
+            db.Update(existingPhoto);
+
+            logging
+                .Action(nameof(AddTags))
+                .ExternalTrace(
+                    $"The tags of {nameof(Photo)} '{existingPhoto.Title}' (#{existingPhoto.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to add tags to the existing Photo '{existingPhoto.Title}'. ";
+            logging
+                .Action(nameof(AddTags))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to add tags to the existing Photo '{existingPhoto.Title}'. ";
+            logging
+                .Action(nameof(AddTags))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return existingPhoto.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
+    }
 
     /// <summary>
     /// Removes the given <see cref="IEnumerable{Reception.Database.Models.Tag}"/> collection (<paramref name="tags"/>) from
     /// the <see cref="Reception.Database.Models.Photo"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int photoId, IEnumerable<Tag> tags);
+    public async Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int photoId, IEnumerable<Tag> tags)
+    {
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999)
+                .ToArray();
+        }
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(RemoveTags))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Photo? existingPhoto = await db.Photos.FindAsync(photoId);
+
+        if (existingPhoto is null)
+        {
+            string message = $"{nameof(Photo)} with ID #{photoId} could not be found!";
+            logging
+                .Action(nameof(RemoveTags))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        foreach(var navigation in db.Entry(existingPhoto).Navigations)
+        {
+            if (!navigation.IsLoaded) {
+                await navigation.LoadAsync();
+            }
+        }
+
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(RemoveTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingPhoto.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(RemoveTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var tagIds = tags
+            .Select(tag => tag.Id)
+            .Distinct();
+
+        if (tagIds.Count() <= 0) {
+            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        }
+
+        var newRelations = existingPhoto.Tags
+            .IntersectBy(tagIds, tag => tag.TagId)
+            .ToList();
+
+        existingPhoto.Tags = newRelations;
+        try
+        {
+            db.Update(existingPhoto);
+
+            logging
+                .Action(nameof(RemoveTags))
+                .ExternalTrace(
+                    $"The tags in {nameof(Photo)} '{existingPhoto.Title}' (#{existingPhoto.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to remove photos from the existing Photo '{existingPhoto.Title}'. ";
+            logging
+                .Action(nameof(RemoveTags))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to remove photos from the existing Photos '{existingPhoto.Title}'. ";
+            logging
+                .Action(nameof(RemoveTags))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return existingPhoto.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
+    }
     #endregion
 
 
@@ -752,12 +1296,68 @@ public class PhotoService(
     /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..identified by PK <paramref name="photoId"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public abstract Task<ActionResult> DeletePhoto(int photoId);
+    public async Task<ActionResult> DeletePhoto(int photoId)
+    {
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(DeletePhoto))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Photo? photo = await db.Photos.FindAsync(photoId);
+
+        if (photo is null)
+        {
+            string message = $"{nameof(Photo)} with ID #{photoId} could not be found!";
+            logging
+                .Action(nameof(DeletePhoto))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        return await DeletePhoto(photo);
+    }
     /// <summary>
     /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..identified by PK <paramref name="entity"/>) ..completely,
     /// removing both the blob on-disk, and its database entry.
     /// </summary>
-    public abstract Task<ActionResult> DeletePhoto(Photo entity);
+    public async Task<ActionResult> DeletePhoto(Photo entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+
+        foreach (var navigation in db.Entry(entity).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
+        }
+
+        foreach (var path in entity.Filepaths)
+        {
+            if (path.Photo is null) {
+                path.Photo = entity;
+            }
+
+            var deleteBlobResult = await DeletePhotoBlob(path);
+
+            if (deleteBlobResult is not NoContentResult)
+            {
+                return deleteBlobResult;
+            }
+        }
+
+        return await DeletePhotoEntity(entity);
+    }
     #endregion
 
 
@@ -765,7 +1365,136 @@ public class PhotoService(
     /// <summary>
     /// Deletes the blob of a <see cref="Reception.Database.Models.Photo"/> from disk.
     /// </summary>
-    protected abstract Task<ActionResult> DeletePhotoBlob(Filepath entity);
+    public async Task<ActionResult> DeletePhotoBlob(Filepath entity)
+    {
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(DeletePhotoBlob))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.DELETE | entity.Photo.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeletePhotoBlob))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        string fullPath = Path.Combine(entity.Path, entity.Filename);
+        if (fullPath.Contains("&&") || fullPath.Contains("..") || fullPath.Length > 511)
+        {
+            logging
+                .Action(nameof(DeletePhotoBlob))
+                .ExternalSuspicious($"Sussy filpath '{fullPath}' (TODO! HANDLE)", opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            throw new NotImplementedException("Suspicious?"); // TODO! Handle!!
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            string message = string.Empty;
+
+            if (!fullPath.Contains(BlobService.FILE_STORAGE_NAME))
+            {
+                message = $"Suspicious! Attempt was made to delete missing File '{fullPath}'! Is there a broken database entry, or did someone manage to escape a path string?";
+                logging.Action(nameof(DeletePhotoBlob));
+            }
+            else
+            {
+                message = $"Attempt to delete File '{fullPath}' failed (file missing)! Assuming there's a dangling database entry..";
+                logging.Action("Dangle -" + nameof(DeletePhotoBlob));
+                // TODO! Automatically delete dangling entity?
+                // Would need access to `PhotoEntity.Id` or slug here..
+            }
+
+            logging
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            if (Program.IsProduction)
+            {
+                return new NotFoundResult();
+            }
+
+            return new NotFoundObjectResult(message);
+        }
+
+        try
+        {
+            await Task.Run(() => File.Delete(fullPath));
+
+            logging
+                .Action(nameof(DeletePhotoBlob))
+                .InternalInformation($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.", opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+        }
+        /* // TODO! Handle a gazillion different possible errors.
+            ArgumentException
+            ArgumentNullException
+            DirectoryNotFoundException
+            IOException
+            NotSupportedException
+            PathTooLongException
+            UnauthorizedAccessException
+        */
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete the blob on filepath '{fullPath}' (#{entity.Id}). ";
+            logging
+                .Action(nameof(DeletePhotoBlob))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
+    }
     #endregion
 
 
@@ -776,7 +1505,36 @@ public class PhotoService(
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhoto(int photoId);
+    public async Task<ActionResult> DeletePhotoEntity(int photoId)
+    {
+        ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(message);
+        }
+
+        Photo? photo = await db.Photos.FindAsync(photoId);
+
+        if (photo is null)
+        {
+            string message = $"{nameof(Photo)} with ID #{photoId} could not be found!";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        return await DeletePhotoEntity(photo);
+    }
 
     /// <summary>
     /// Deletes a <see cref="Reception.Database.Models.Photo"/> (..and associated <see cref="Reception.Database.Models.Filepath"/> entities) ..from the database.
@@ -784,6 +1542,99 @@ public class PhotoService(
     /// <remarks>
     /// <strong>Note:</strong> Since this does *not* delete the blob on-disk, be mindful you don't leave anything dangling..
     /// </remarks>
-    protected abstract Task<ActionResult> DeletePhoto(Photo entity);
+    public async Task<ActionResult> DeletePhotoEntity(Photo entity)
+    {
+        Account? user;
+        try
+        {
+            user = MageAuthentication.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.DELETE | entity.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        try
+        {
+            db.Remove(entity);
+
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalInformation($"The {nameof(Photo)} ('{entity.Title}', #{entity.Id}) was just deleted.")
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to delete {nameof(Photo)} '{entity.Title}'. ";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to delete {nameof(Photo)} '{entity.Title}'. ";
+            logging
+                .Action(nameof(DeletePhotoEntity))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new NoContentResult();
+    }
     #endregion
 }
