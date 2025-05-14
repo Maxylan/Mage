@@ -48,13 +48,48 @@ public class PublicLinkService(
             throw new ArgumentOutOfRangeException(nameof(linkId), $"Parameter {nameof(linkId)} has to be a non-zero positive integer!");
         }
 
+        Account? user = null;
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(GetLink)} Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(GetLink))
+                .InternalError(message)
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        if (MemoAuth.IsAuthenticated(contextAccessor))
+        {
+            try
+            {
+                user = MemoAuth.GetAccount(contextAccessor);
+            }
+            catch (Exception ex)
+            {
+                logging
+                    .Action(nameof(GetLink))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => {
+                        opts.Exception = ex;
+                        opts.SetUser(user);
+                    })
+                    .LogAndEnqueue();
+            }
+        }
+
         PublicLink? link = await db.Links.FindAsync(linkId);
 
         if (link is null)
         {
             logging
                 .Action(nameof(GetLink))
-                .InternalDebug($"Link with ID #{linkId} could not be found.")
+                .InternalDebug($"Link with ID #{linkId} could not be found.", opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult($"{nameof(PublicLink)} with ID #{linkId} not found!");
@@ -76,13 +111,48 @@ public class PublicLinkService(
                 .Trim();
         }
 
+        Account? user = null;
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(GetLinkByCode)} Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(GetLinkByCode))
+                .InternalError(message)
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        if (MemoAuth.IsAuthenticated(contextAccessor))
+        {
+            try
+            {
+                user = MemoAuth.GetAccount(contextAccessor);
+            }
+            catch (Exception ex)
+            {
+                logging
+                    .Action(nameof(GetLinkByCode))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => {
+                        opts.Exception = ex;
+                        opts.SetUser(user);
+                    })
+                    .LogAndEnqueue();
+            }
+        }
+
         PublicLink? link = await db.Links.FirstOrDefaultAsync(link => link.Code == code);
 
         if (link is null)
         {
             logging
                 .Action(nameof(GetLinkByCode))
-                .InternalDebug($"Link with code '{code}' could not be found.")
+                .InternalDebug($"Link with code '{code}' could not be found.", opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult($"{nameof(PublicLink)} with unique code '{code}' could not be found!");
@@ -136,37 +206,46 @@ public class PublicLinkService(
             return getPhoto.Result!;
         }
 
-        Account? user = null;
-        var httpContext = contextAccessor.HttpContext;
-        if (httpContext is null)
+        Account? user;
+        try
         {
-            string message = $"{nameof(CreateLink)} Failed: No {nameof(HttpContext)} found.";
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(CreateLink))
-                .InternalError(message)
+                .ExternalError(message, opts => { opts.Exception = ex; })
                 .LogAndEnqueue();
 
-            return new ObjectResult(Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message) {
-                StatusCode = StatusCodes.Status500InternalServerError
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
             };
         }
 
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        byte requiredViewPrivilege = (byte)
+            (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL));
+
+        if ((user.Privilege & requiredViewPrivilege) != requiredViewPrivilege)
         {
-            try
-            {
-                user = MageAuthentication.GetAccount(contextAccessor);
-            }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(CreateLink))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => {
-                        opts.Exception = ex;
-                        opts.SetUser(user);
-                    })
-                    .LogAndEnqueue();
-            }
+            string message = $"Prevented action with 'RequiredPrivilege' ({requiredViewPrivilege}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(CreateLink))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
         }
 
         foreach(var navigation in db.Entry(photo).Navigations) {
@@ -180,13 +259,14 @@ public class PublicLinkService(
             mut.ExpiresAt = DateTime.UtcNow.AddMonths(3);
         }
 
-        if (mut.AccessLimit == 0)
+        if (mut.AccessLimit <= 0)
         {   // Default omitted AccessLimit to null..
             mut.AccessLimit = null;
         }
 
         PublicLink link = new()
         {
+            Photo = photo,
             PhotoId = photoId,
             Code = Guid.NewGuid().ToString("N"),
             CreatedBy = user?.Id,
@@ -199,9 +279,17 @@ public class PublicLinkService(
         try
         {
             photo.PublicLinks.Add(link);
-            db.Update(photo);
+            // db.Update(photo);
 
             await db.SaveChangesAsync();
+
+            logging
+                .Action(nameof(CreateLink))
+                .InternalTrace($"Created new {nameof(PublicLink)} '{link.Code}' (#{link.Id}) with expiry '{link.ExpiresAt.ToString()}'", opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
         }
         catch (DbUpdateException updateException)
         {
@@ -254,8 +342,54 @@ public class PublicLinkService(
             .Entry(link)
             .ReloadAsync();
 
+        Account? user = null;
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(LinkAccessed)} Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(LinkAccessed))
+                .InternalError(message)
+                .LogAndEnqueue();
+
+            return link;
+        }
+
+        if (MemoAuth.IsAuthenticated(contextAccessor))
+        {
+            try
+            {
+                user = MemoAuth.GetAccount(contextAccessor);
+            }
+            catch (Exception ex)
+            {
+                logging
+                    .Action(nameof(LinkAccessed))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => {
+                        opts.Exception = ex;
+                        opts.SetUser(user);
+                    })
+                    .LogAndEnqueue();
+            }
+        }
+
         link.Accessed++;
         db.Links.Update(link);
+
+        string messagePhotoLinkId = link.Code;
+        if (link.Photo is not null) {
+            messagePhotoLinkId = link.Photo.Slug;
+        }
+
+        logging
+            .Action(nameof(LinkAccessed))
+            .InternalTrace($"#{link.Accessed} access of {nameof(PublicLink)} '{messagePhotoLinkId}' ('{link.Code}')", opts =>
+            {
+                opts.SetUser(user);
+            })
+            .LogAndEnqueue();
+
+        await db.SaveChangesAsync();
 
         return link;
     }
@@ -289,6 +423,45 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(UpdateLink))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdateLink))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         PublicLink? existingLink = await db.Links.FindAsync(linkId);
 
         if (existingLink is null)
@@ -296,7 +469,9 @@ public class PublicLinkService(
             string message = $"{nameof(PublicLink)} with ID #{linkId} could not be found!";
             logging
                 .Action(nameof(UpdateLink))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
@@ -318,7 +493,9 @@ public class PublicLinkService(
             string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
             logging
                 .Action(nameof(UpdateLink))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -330,9 +507,17 @@ public class PublicLinkService(
         try
         {
             db.Update(existingLink);
+
+            string expiry = existingLink.ExpiresAt.ToString();
+            string accessLimit = existingLink.AccessLimit?.ToString() ?? "null";
             logging
                 .Action(nameof(UpdateLink))
-                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.")
+                .InternalTrace(
+                    $"{nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}) updated; Expires: {expiry}, AccessLimit: {accessLimit}.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
                 .LogAndEnqueue();
 
             await db.SaveChangesAsync();
@@ -345,6 +530,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -363,6 +549,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -415,6 +602,45 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(UpdateLinkByCode))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdateLinkByCode))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         PublicLink? existingLink = await db.Links
             .FirstOrDefaultAsync(link => link.Code == code);
 
@@ -423,7 +649,9 @@ public class PublicLinkService(
             string message = $"{nameof(PublicLink)} with unique code '{code}' could not be found!";
             logging
                 .Action(nameof(UpdateLinkByCode))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
@@ -445,7 +673,9 @@ public class PublicLinkService(
             string message = $"Parameter '{nameof(mut.ExpiresAt)}' cannot be a past date!";
             logging
                 .Action(nameof(UpdateLinkByCode))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -457,9 +687,17 @@ public class PublicLinkService(
         try
         {
             db.Update(existingLink);
+
+            string expiry = existingLink.ExpiresAt.ToString();
+            string accessLimit = existingLink.AccessLimit?.ToString() ?? "null";
             logging
                 .Action(nameof(UpdateLinkByCode))
-                .InternalInformation($"Expiry settings on link '{existingLink.Code}' (#{existingLink.Id}) updated to; Expires: {existingLink.ExpiresAt}, AccessLimit: {(existingLink.AccessLimit?.ToString() ?? "null")}.")
+                .InternalTrace(
+                    $"{nameof(PublicLink)} '{existingLink.Code}' (#{existingLink.Id}) updated; Expires: {expiry}, AccessLimit: {accessLimit}.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
                 .LogAndEnqueue();
 
             await db.SaveChangesAsync();
@@ -472,6 +710,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -490,6 +729,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -522,6 +762,45 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(DeleteLink))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.DELETE) != Privilege.DELETE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.DELETE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeleteLink))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         PublicLink? existingLink = await db.Links.FindAsync(linkId);
 
         if (existingLink is null)
@@ -529,18 +808,31 @@ public class PublicLinkService(
             string message = $"{nameof(PublicLink)} with ID #{linkId} could not be found!";
             logging
                 .Action(nameof(DeleteLink))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
 
+        string messagePhotoLinkId = existingLink.Code;
+        if (existingLink.Photo is not null) {
+            messagePhotoLinkId = existingLink.Photo.Slug;
+        }
+
         try
         {
             db.Update(existingLink);
+
             logging
                 .Action(nameof(DeleteLink))
-                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.")
+                .InternalTrace(
+                    $"{nameof(PublicLink)} '{messagePhotoLinkId}' ('{existingLink.Code}', #{existingLink.Id}) was just removed.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
                 .LogAndEnqueue();
 
             await db.SaveChangesAsync();
@@ -553,6 +845,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -571,6 +864,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -610,6 +904,45 @@ public class PublicLinkService(
             return new BadRequestObjectResult(message);
         }
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(DeleteLinkByCode))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.DELETE) != Privilege.DELETE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.DELETE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeleteLinkByCode))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         PublicLink? existingLink = await db.Links
             .FirstOrDefaultAsync(link => link.Code == code);
 
@@ -618,18 +951,31 @@ public class PublicLinkService(
             string message = $"{nameof(PublicLink)} with unique code '{code}' could not be found!";
             logging
                 .Action(nameof(DeleteLinkByCode))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(message);
         }
 
+        string messagePhotoLinkId = existingLink.Code;
+        if (existingLink.Photo is not null) {
+            messagePhotoLinkId = existingLink.Photo.Slug;
+        }
+
         try
         {
             db.Remove(existingLink);
+
             logging
                 .Action(nameof(DeleteLinkByCode))
-                .InternalInformation($"Link '{existingLink.Code}' (#{existingLink.Id}) was just removed.")
+                .InternalTrace(
+                    $"{nameof(PublicLink)} '{messagePhotoLinkId}' ('{existingLink.Code}', #{existingLink.Id}) was just removed.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
                 .LogAndEnqueue();
 
             await db.SaveChangesAsync();
@@ -642,6 +988,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -660,6 +1007,7 @@ public class PublicLinkService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 

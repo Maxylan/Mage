@@ -104,7 +104,7 @@ public class EventLogService(
     /// </remarks>
     protected Account? GetAccount()
     {
-        if (!MageAuthentication.IsAuthenticated(contextAccessor))
+        if (!MemoAuth.IsAuthenticated(contextAccessor))
         {
             if (Program.IsDevelopment)
             {
@@ -116,7 +116,7 @@ public class EventLogService(
 
         try
         {
-            return MageAuthentication.GetAccount(contextAccessor);
+            return MemoAuth.GetAccount(contextAccessor);
         }
         catch (Exception ex)
         {
@@ -140,10 +140,10 @@ public class EventLogService(
         {
             entry.SetMethod(contextAccessor.HttpContext.Request.Method);
 
-            entry.RequestAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
+            entry.RequestAddress = MemoAuth.GetRemoteAddress(contextAccessor.HttpContext);
             entry.RequestUserAgent = contextAccessor.HttpContext.Request.Headers.UserAgent.ToString();
 
-            if (MageAuthentication.IsAuthenticated(contextAccessor))
+            if (MemoAuth.IsAuthenticated(contextAccessor))
             {
                 Account? user = GetAccount();
                 if (user is not null)
@@ -204,7 +204,7 @@ public class EventLogService(
 
             bool isUserAuthenticated = (
                 contextAccessor.HttpContext is not null &&
-                MageAuthentication.IsAuthenticated(contextAccessor.HttpContext!)
+                MemoAuth.IsAuthenticated(contextAccessor.HttpContext!)
             );
 
             switch (entry.LogLevel)

@@ -7,7 +7,7 @@ namespace Reception.Database.Models;
 /// <summary>
 /// The <see cref="Tag"/> data transfer object (DTO).
 /// </summary>
-public class TagDTO : Tag, IDataTransferObject<Tag>
+public class TagDTO : Tag, IDataTransferObject<Tag>, ITag
 {
     [JsonPropertyName("id")]
     public new int? Id { get; set; }

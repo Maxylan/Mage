@@ -236,7 +236,7 @@ public class BlobService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -246,7 +246,7 @@ public class BlobService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetBlob))
                 .ExternalError(message, opts => { opts.Exception = ex; })

@@ -84,8 +84,8 @@ public class ViewService(
 
         Link? link = null;
         Account? user = null; // Authentication is *not* a requirement here, but it we can *try* to enhance logging..
-        bool isAuthenticated = MageAuthentication.TryGetAccount(contextAccessor, out user);
-        string? userAddress = MageAuthentication.GetRemoteAddress(httpContext);
+        bool isAuthenticated = MemoAuth.TryGetAccount(contextAccessor, out user);
+        string? userAddress = MemoAuth.GetRemoteAddress(httpContext);
         string? userAgent = httpContext.Request.Headers.UserAgent.ToString();
 
         try {

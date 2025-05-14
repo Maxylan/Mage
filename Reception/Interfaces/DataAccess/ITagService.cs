@@ -9,7 +9,7 @@ public interface ITagService
     /// <summary>
     /// Get all tags.
     /// </summary>
-    public abstract Task<IEnumerable<Tag>> GetTags(bool trackEntities = false);
+    public abstract Task<IEnumerable<Tag>> GetTags(int? offset = null, int? limit = 9999);
 
     /// <summary>
     /// Get the <see cref="Tag"/> with Unique '<paramref ref="name"/>' (string)
@@ -24,22 +24,22 @@ public interface ITagService
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Albums.
     /// </summary>
-    public abstract Task<ActionResult<TagAlbumCollection>> GetTagAlbumCollection(string name);
+    public abstract Task<ActionResult<(Tag, IEnumerable<Album>)>> GetTagAlbums(string name);
 
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Photos.
     /// </summary>
-    public abstract Task<ActionResult<TagPhotoCollection>> GetTagPhotoCollection(string name);
+    public abstract Task<ActionResult<(Tag, IEnumerable<Photo>)>> GetTagPhotos(string name);
 
     /// <summary>
     /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (string[]) array.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(string[] tagNames);
+    public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(IEnumerable<string> tagNames);
 
     /// <summary>
-    /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (<see cref="IEnumerable{Tag}"/>) array.
+    /// Create all non-existing tags in the '<paramref ref="tags"/>' (<see cref="IEnumerable{ITag}"/>) array.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(IEnumerable<Tag> tags);
+    public abstract Task<ActionResult<IEnumerable<Tag>>> CreateTags(IEnumerable<ITag> tags);
 
     /// <summary>
     /// Update the properties of the <see cref="Tag"/> with '<paramref ref="name"/>' (string), *not* its members (i.e Photos or Albums).
@@ -49,12 +49,22 @@ public interface ITagService
     /// <summary>
     /// Edit what tags are associated with a <see cref="Album"/> identified by PK <paramref name="albumId"/>.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(int albumId, string[] tagNames);
+    public abstract Task<ActionResult<(Album, IEnumerable<Tag>)>> MutateAlbumTags(int albumId, IEnumerable<ITag> tags);
 
     /// <summary>
-    /// Edit tags associated with a <see cref="PhotoEntity"/> identified by PK <paramref name="photoId"/>.
+    /// Edit tags associated with the <paramref name="album"/> (<see cref="Album"/>).
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(int photoId, string[] tagNames);
+    public abstract Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(Album album, IEnumerable<ITag> tags);
+
+    /// <summary>
+    /// Edit tags associated with a <see cref="Photo"/> identified by PK <paramref name="photoId"/>.
+    /// </summary>
+    public abstract Task<ActionResult<(Photo, IEnumerable<Tag>)>> MutatePhotoTags(int photoId, IEnumerable<ITag> tags);
+
+    /// <summary>
+    /// Edit tags associated with the <paramref name="photo"/> (<see cref="Photo"/>).
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(Photo photo, IEnumerable<ITag> tags);
 
     /// <summary>
     /// Delete the <see cref="Tag"/> with '<paramref ref="name"/>' (string).

@@ -85,17 +85,17 @@ public class PhotoStreamingService(
 
         Account? user = null;
 
-        if (MageAuthentication.IsAuthenticated(contextAccessor))
+        if (MemoAuth.IsAuthenticated(contextAccessor))
         {
             try
             {
-                user = MageAuthentication.GetAccount(contextAccessor);
+                user = MemoAuth.GetAccount(contextAccessor);
             }
             catch (Exception ex)
             {
                 logging
                     .Action(nameof(UploadPhotos))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!", opts => { opts.Exception = ex; })
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => { opts.Exception = ex; })
                     .LogAndEnqueue();
             }
         }

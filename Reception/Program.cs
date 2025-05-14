@@ -72,7 +72,7 @@ public sealed class Program
                 conf.DefaultAuthenticateScheme = Parameters.SCHEME;
                 // conf.DefaultScheme = Parameters.SCHEME;
             })
-            .AddScheme<AuthenticationSchemeOptions, MageAuthentication>(
+            .AddScheme<AuthenticationSchemeOptions, MemoAuth>(
                 Parameters.SCHEME,
                 opts => { opts.Validate(); }
             );

@@ -46,7 +46,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -56,7 +56,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetPhoto))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -129,7 +129,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -139,7 +139,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetPhoto))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -203,7 +203,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -213,7 +213,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetPhotos))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -226,7 +226,7 @@ public class PhotoService(
 
         // Filter by privilege
         photoQuery = photoQuery
-            .Where(album => (user.Privilege & (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (album.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
+            .Where(photo => (user.Privilege & (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (photo.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)));
 
         // Filtering (AND)
         if (!string.IsNullOrWhiteSpace(filter.Slug))
@@ -387,7 +387,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -397,7 +397,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(CreatePhoto))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -528,7 +528,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -538,7 +538,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(CreatePhoto))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -576,6 +576,14 @@ public class PhotoService(
             {
                 await db.Entry(entity).ReloadAsync();
             }
+
+            logging
+                .Action(nameof(CreatePhoto))
+                .InternalTrace($"Created new {nameof(Photo)} '{entity.Slug}' (#{entity.Id})", opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
         }
         catch (DbUpdateConcurrencyException concurrencyException)
         {
@@ -668,7 +676,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -678,7 +686,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(UpdatePhoto))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -904,7 +912,7 @@ public class PhotoService(
 
             logging
                 .Action(nameof(UpdatePhoto))
-                .InternalInformation($"{nameof(Photo)} '{existingPhoto.Slug}' (#{existingPhoto.Id}) was just updated.", opts =>
+                .InternalTrace($"{nameof(Photo)} '{existingPhoto.Slug}' (#{existingPhoto.Id}) was just updated.", opts =>
                 {
                     opts.SetUser(user);
                 })
@@ -1004,7 +1012,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1014,7 +1022,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(AddTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1177,7 +1185,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1187,7 +1195,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(RemoveTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1370,7 +1378,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1380,7 +1388,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(DeletePhotoBlob))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1459,7 +1467,7 @@ public class PhotoService(
 
             logging
                 .Action(nameof(DeletePhotoBlob))
-                .InternalInformation($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.", opts => {
+                .InternalTrace($"The blob on path '{fullPath}' (Filepath ID #{entity.Id}) was just deleted.", opts => {
                     opts.SetUser(user);
                 })
                 .LogAndEnqueue();
@@ -1547,7 +1555,7 @@ public class PhotoService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1557,7 +1565,7 @@ public class PhotoService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(DeletePhotoEntity))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1592,7 +1600,7 @@ public class PhotoService(
 
             logging
                 .Action(nameof(DeletePhotoEntity))
-                .InternalInformation($"The {nameof(Photo)} ('{entity.Title}', #{entity.Id}) was just deleted.")
+                .InternalTrace($"The {nameof(Photo)} '{entity.Title}' (#{entity.Slug}, #{entity.Id}) was just deleted.")
                 .LogAndEnqueue();
 
             await db.SaveChangesAsync();

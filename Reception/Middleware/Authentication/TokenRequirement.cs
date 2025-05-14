@@ -11,7 +11,7 @@ public class TokenRequirement : IAuthorizationRequirement
 
 public class HandleTokenRequirement(
     IHttpContextAccessor contextAccessor,
-    ILoggingService<MageAuthentication> logging
+    ILoggingService<MemoAuth> logging
 ) : AuthorizationHandler<TokenRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, TokenRequirement requirement)

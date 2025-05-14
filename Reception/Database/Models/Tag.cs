@@ -13,7 +13,7 @@ namespace Reception.Database.Models;
 [Table("tags", Schema = "magedb")]
 [Index("Name", Name = "idx_tags_name")]
 [Index("Name", Name = "tags_name_key", IsUnique = true)]
-public partial class Tag : IDatabaseEntity<Tag>
+public partial class Tag : IDatabaseEntity<Tag>, ITag
 {
     [Key]
     [Column("id")]
@@ -40,6 +40,8 @@ public partial class Tag
 
     [InverseProperty("Tag")]
     public virtual ICollection<PhotoTagRelation> UsedByPhotos { get; set; } = new List<PhotoTagRelation>();
+
+    public int Items => this.UsedByAlbums.Count + this.UsedByPhotos.Count;
 
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Tag"/>

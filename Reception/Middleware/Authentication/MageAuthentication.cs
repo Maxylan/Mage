@@ -16,8 +16,8 @@ namespace Reception.Middleware.Authentication;
 /// Custom implementation of the opinionated <see cref="IAuthenticationHandler"/> '<see cref="AuthenticationHandler{AuthenticationSchemeOptions}"/>'.
 /// Intercepts incoming requests and checks if a valid session token is provided with the request.
 /// </summary>
-public class MageAuthentication(
-    ILoggingService<MageAuthentication> logging,
+public class MemoAuth(
+    ILoggingService<MemoAuth> logging,
     ReceptionAuthorizationService service,
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -113,7 +113,7 @@ public class MageAuthentication(
         if (user.Sessions is null || user.Sessions.Count == 0)
         {
             AuthenticationException.Throw(Messages.UnknownErrorCode);
-            /* Logger.LogInformation($"[{nameof(MageAuthentication)}] ({nameof(GenerateAuthenticationTicket)}) Loading missing navigation entries.");
+            /* Logger.LogInformation($"[{nameof(MemoAuth)}] ({nameof(GenerateAuthenticationTicket)}) Loading missing navigation entries.");
 
             foreach (var navigationEntry in db.Entry(user).Navigations)
             {
@@ -204,7 +204,7 @@ public class MageAuthentication(
 
         if (Program.IsDevelopment)
         {
-            Console.WriteLine($"[{nameof(MageAuthentication)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a remote-address header. ({remoteAddressValue})");
+            Console.WriteLine($"[{nameof(MemoAuth)}] (Debug) {nameof(GetRemoteAddress)} -> Returning a remote-address header. ({remoteAddressValue})");
         }
 
         return remoteAddressValue.Split(',')[^1].Trim();
@@ -272,7 +272,7 @@ public class MageAuthentication(
     /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
     /// </summary>
     /// <remarks>
-    /// Unlike <seealso cref="MageAuthentication.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// Unlike <seealso cref="MemoAuth.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
     public static bool TryGetProperties(IHttpContextAccessor contextAccessor, [NotNullWhen(true)] out AuthenticationProperties? properties) =>
         TryGetProperties(contextAccessor.HttpContext!, out properties);
@@ -280,7 +280,7 @@ public class MageAuthentication(
     /// Attempt to get the <see cref="AuthenticationProperties"/> associated with this request.
     /// </summary>
     /// <remarks>
-    /// Unlike <seealso cref="MageAuthentication.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// Unlike <seealso cref="MemoAuth.Properties"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
     public static bool TryGetProperties(HttpContext context, [NotNullWhen(true)] out AuthenticationProperties? properties)
     {
@@ -304,7 +304,7 @@ public class MageAuthentication(
     /// Attempt to get the current user's <see cref="Account"/> from the '<see cref="AuthenticationProperties"/>'
     /// </summary>
     /// <remarks>
-    /// Unlike <seealso cref="MageAuthentication.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// Unlike <seealso cref="MemoAuth.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
     public static bool TryGetAccount(IHttpContextAccessor contextAccessor, [NotNullWhen(true)] out Account? account) =>
         TryGetAccount(contextAccessor.HttpContext!, out account);
@@ -312,7 +312,7 @@ public class MageAuthentication(
     /// Attempt to get the current user's <see cref="Account"/> from the '<see cref="AuthenticationProperties"/>'
     /// </summary>
     /// <remarks>
-    /// Unlike <seealso cref="MageAuthentication.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
+    /// Unlike <seealso cref="MemoAuth.GetAccount"/>, this returns a <c>bool</c> flagging success instead of throwing when missing.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -322,7 +322,7 @@ public class MageAuthentication(
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
         account = null;
 
-        if (MageAuthentication.TryGetProperties(httpContext, out var properties))
+        if (MemoAuth.TryGetProperties(httpContext, out var properties))
         {
             account = properties.GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
             return account is not null;
@@ -336,7 +336,7 @@ public class MageAuthentication(
     /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -347,7 +347,7 @@ public class MageAuthentication(
     /// Get the current user's <see cref="Account"/> from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -355,7 +355,7 @@ public class MageAuthentication(
     public static Account? GetAccount(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MageAuthentication.Properties(httpContext!).GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+        return MemoAuth.Properties(httpContext!).GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
     }
 
 
@@ -363,7 +363,7 @@ public class MageAuthentication(
     /// Get the current user's <see cref="Session"/> from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -374,7 +374,7 @@ public class MageAuthentication(
     /// Get the current user's <see cref="Session"/> from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -382,14 +382,14 @@ public class MageAuthentication(
     public static Session? GetSession(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MageAuthentication.Properties(httpContext!).GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
+        return MemoAuth.Properties(httpContext!).GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
     }
 
     /// <summary>
     /// Get the current user's Token (string) from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -400,7 +400,7 @@ public class MageAuthentication(
     /// Get the current user's Token (string) from the '<see cref="HttpContext"/>'
     /// </summary>
     /// <remarks>
-    /// Uses '<see cref="MageAuthentication.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// If provided '<see cref="HttpContext"/>' is null
@@ -408,6 +408,6 @@ public class MageAuthentication(
     public static string? GetToken(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MageAuthentication.Properties(httpContext!).Items[Parameters.ACCOUNT_CONTEXT_KEY];
+        return MemoAuth.Properties(httpContext!).Items[Parameters.ACCOUNT_CONTEXT_KEY];
     }
 }

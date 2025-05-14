@@ -357,7 +357,7 @@ public class SessionService(
         string? address = null;
         if (contextAccessor.HttpContext is not null)
         {
-            address = MageAuthentication.GetRemoteAddress(contextAccessor);
+            address = MemoAuth.GetRemoteAddress(contextAccessor);
         }
 
         if (string.IsNullOrWhiteSpace(address))

@@ -53,7 +53,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -63,7 +63,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -136,7 +136,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -146,7 +146,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetAlbums))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -299,7 +299,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -309,7 +309,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(CreateAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -596,7 +596,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -606,7 +606,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(UpdateAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -955,7 +955,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -965,7 +965,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(AddPhotos))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1134,7 +1134,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1144,7 +1144,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(RemovePhotos))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1292,7 +1292,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1302,7 +1302,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(AddTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1464,7 +1464,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1474,7 +1474,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(RemoveTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -1610,7 +1610,7 @@ public class AlbumService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -1620,7 +1620,7 @@ public class AlbumService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(DeleteAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })

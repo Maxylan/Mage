@@ -48,7 +48,7 @@ public class AuthorizationService(
             );
         }
 
-        bool getAuthenticationProperties = MageAuthentication.TryGetProperties(httpContext, out AuthenticationProperties? authenticationProperties);
+        bool getAuthenticationProperties = MemoAuth.TryGetProperties(httpContext, out AuthenticationProperties? authenticationProperties);
         if (!getAuthenticationProperties)
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(AuthenticationProperties)} found.";
@@ -216,7 +216,7 @@ public class AuthorizationService(
                 );
             }
 
-            string? userAddress = MageAuthentication.GetRemoteAddress(httpContext);
+            string? userAddress = MemoAuth.GetRemoteAddress(httpContext);
             if (!string.IsNullOrWhiteSpace(userAddress))
             {
                 userAddress = userAddress
@@ -437,7 +437,7 @@ public class AuthorizationService(
             account.FullName = null;
         }
 
-        string? userAddress = MageAuthentication.GetRemoteAddress(contextAccessor.HttpContext);
+        string? userAddress = MemoAuth.GetRemoteAddress(contextAccessor.HttpContext);
         if (!string.IsNullOrWhiteSpace(userAddress))
         {
             userAddress = userAddress

@@ -29,7 +29,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 logging
@@ -42,7 +42,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetCategories))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -117,7 +117,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -127,7 +127,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetCategory))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -229,7 +229,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -239,7 +239,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(GetCategoryByTitle))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -321,7 +321,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -331,7 +331,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(CreateCategory))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -549,7 +549,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -559,7 +559,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(UpdateCategory))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -797,7 +797,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -807,7 +807,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(RemoveAlbum))
                 .ExternalError(message, opts => { opts.Exception = ex; })
@@ -958,7 +958,7 @@ public class CategoryService(
         Account? user;
         try
         {
-            user = MageAuthentication.GetAccount(contextAccessor);
+            user = MemoAuth.GetAccount(contextAccessor);
 
             if (user is null) {
                 return new ObjectResult("Prevented attempted unauthorized access.") {
@@ -968,7 +968,7 @@ public class CategoryService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MageAuthentication.GetAccount)}!";
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
                 .Action(nameof(DeleteCategory))
                 .ExternalError(message, opts => { opts.Exception = ex; })
