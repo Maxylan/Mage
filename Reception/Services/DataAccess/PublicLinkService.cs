@@ -95,6 +95,18 @@ public class PublicLinkService(
             return new NotFoundObjectResult($"{nameof(PublicLink)} with ID #{linkId} not found!");
         }
 
+        if (link.Photo is null)
+        {
+            // Load missing navigation entries.
+            foreach (var navigation in db.Entry(link).Navigations)
+            {
+                if (!navigation.IsLoaded)
+                {
+                    await navigation.LoadAsync();
+                }
+            }
+        }
+
         return link;
     }
     /// <summary>
@@ -144,7 +156,9 @@ public class PublicLinkService(
             }
         }
 
-        PublicLink? link = await db.Links.FirstOrDefaultAsync(link => link.Code == code);
+        PublicLink? link = await db.Links
+            .Include(link => link.Photo)
+            .FirstOrDefaultAsync(link => link.Code == code);
 
         if (link is null)
         {

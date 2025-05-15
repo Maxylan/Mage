@@ -3,24 +3,26 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reception.Middleware.Authentication;
 using Reception.Database.Models;
+using Reception.Database;
 using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
 using Reception.Utilities;
 
-namespace Reception.Services.DataAccess;
+namespace Reception.Services;
 
-public class ViewService(
-    ILoggingService<ViewService> logging,
+public class ViewLinkService(
+    ILoggingService<ViewLinkService> logging,
     IHttpContextAccessor contextAccessor,
     IPhotoService photoService,
-    ILinkService linkService,
+    IPublicLinkService linkService,
     IBlobService blobs
-) : IViewService
+) : IViewLinkService
 {
     /// <summary>
-    /// View the Source <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// View the Source <see cref="Photo"/> (blob) associated with the <see cref="PublicLink"/> with Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
     /// <remarks>
-    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's, I don't want to encourage pen-testing or scraping.
+    /// Disguises a lot of responses outside of Development, since this deals with publically available URL's, I don't want to encourage pen-testing or scraping.
     /// <para>
     ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
     /// </para>
@@ -29,10 +31,10 @@ public class ViewService(
         View(Dimension.SOURCE, code);
 
     /// <summary>
-    /// View the Medium <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// View the Medium <see cref="Photo"/> (blob) associated with the <see cref="PublicLink"/> with Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
     /// <remarks>
-    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's, I don't want to encourage pen-testing or scraping.
+    /// Disguises a lot of responses outside of Development, since this deals with publically available URL's, I don't want to encourage pen-testing or scraping.
     /// <para>
     ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
     /// </para>
@@ -41,10 +43,10 @@ public class ViewService(
         View(Dimension.MEDIUM, code);
 
     /// <summary>
-    /// View the Medium <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// View the Medium <see cref="Photo"/> (blob) associated with the <see cref="PublicLink"/> with Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
     /// <remarks>
-    /// Disguises a lot of responses outside of Development, since this is deals with publically available URL's, I don't want to encourage pen-testing or scraping.
+    /// Disguises a lot of responses outside of Development, since this deals with publically available URL's, I don't want to encourage pen-testing or scraping.
     /// <para>
     ///     A valid <see cref="Link"/> that's expired will return an HTTP 410 'Gone' response status.
     /// </para>
@@ -53,13 +55,13 @@ public class ViewService(
         View(Dimension.THUMBNAIL, code);
 
     /// <summary>
-    /// View the <see cref="PhotoEntity"/> (<paramref name="dimension"/>, blob) associated with the <see cref="Link"/> with
+    /// View the <see cref="Photo"/> (<paramref name="dimension"/>, blob) associated with the <see cref="PublicLink"/> with
     /// Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
     /// <remarks>
     /// <paramref name="dimension"/> Controls what image size is returned.
     /// <para>
-    ///     Disguises a lot of responses outside of Development, since this is deals with publically available URL's,
+    ///     Disguises a lot of responses outside of Development, since this deals with publically available URL's,
     ///     I don't want to encourage pen-testing or scraping.
     /// </para>
     /// <para>
@@ -71,9 +73,9 @@ public class ViewService(
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
         {
-            string message = $"{nameof(ViewService.View)} Failed to generate {dimension.ToString()} view: No {nameof(HttpContext)} found.";
+            string message = $"{nameof(ViewLinkService.View)} Failed to generate {dimension.ToString()} view: No {nameof(HttpContext)} found.";
             logging
-                .Action(nameof(ViewService.View))
+                .Action(nameof(ViewLinkService.View))
                 .InternalError(message)
                 .LogAndEnqueue();
 
@@ -82,11 +84,35 @@ public class ViewService(
             };
         }
 
-        Link? link = null;
+        PublicLink? link = null;
         Account? user = null; // Authentication is *not* a requirement here, but it we can *try* to enhance logging..
-        bool isAuthenticated = MemoAuth.TryGetAccount(contextAccessor, out user);
-        string? userAddress = MemoAuth.GetRemoteAddress(httpContext);
-        string? userAgent = httpContext.Request.Headers.UserAgent.ToString();
+        bool isAuthenticated = MemoAuth.TryGetSession(contextAccessor, out Session? session);
+        if (isAuthenticated)
+        {
+            try
+            {
+                user = MemoAuth.GetAccount(contextAccessor);
+            }
+            catch (Exception ex)
+            {
+                logging
+                    .Action(nameof(ViewLinkService.View))
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => {
+                        opts.Exception = ex;
+                        opts.SetUser(user);
+                    })
+                    .LogAndEnqueue();
+            }
+        }
+        string? userAddress = session?.Client.Address;
+        if (string.IsNullOrWhiteSpace(userAddress)) {
+            MemoAuth.GetRemoteAddress(httpContext);
+        }
+
+        string? userAgent = session?.Client.UserAgent;
+        if (string.IsNullOrWhiteSpace(userAgent)) {
+            userAgent = httpContext.Request.Headers.UserAgent.ToString();
+        }
 
         try {
             if (!string.IsNullOrWhiteSpace(userAgent))
@@ -105,7 +131,7 @@ public class ViewService(
             if (string.IsNullOrWhiteSpace(linkCode) || linkCode.Length != 32)
             {
                 logging
-                    .Action(nameof(ViewService.View))
+                    .Action(nameof(ViewLinkService.View))
                     .ExternalSuspicious($"Bad attempt to view a source ('{(linkCode ?? "null")}')", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
@@ -127,12 +153,24 @@ public class ViewService(
                     : getLink.Result!;
             }
 
+            if (link.Photo is null || link.PhotoId == default)
+            {
+                logging
+                    .Action(nameof(ViewLinkService.View))
+                    .ExternalInformation($"Link '{linkCode}' has no associated {nameof(Photo)}.", opts => {
+                        opts.RequestAddress = userAddress;
+                        opts.RequestUserAgent = userAgent;
+                        opts.SetUser(user);
+                    })
+                    .LogAndEnqueue();
+            }
+
             bool expired = false;
             if (link.ExpiresAt < DateTime.UtcNow)
             {
                 logging
-                    .Action(nameof(ViewService.View))
-                    .ExternalInformation($"Link '{linkCode}' has expired. {nameof(Link.ExpiresAt)} date has passed.", opts => {
+                    .Action(nameof(ViewLinkService.View))
+                    .ExternalInformation($"Link '{linkCode}' has expired. {nameof(PublicLink.ExpiresAt)} date has passed.", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
                         opts.SetUser(user);
@@ -144,8 +182,8 @@ public class ViewService(
             else if (link.AccessLimit is not null && link.Accessed >= link.AccessLimit)
             {
                 logging
-                    .Action(nameof(ViewService.View))
-                    .ExternalInformation($"Link '{linkCode}' has expired. {nameof(Link.AccessLimit)} reached.", opts => {
+                    .Action(nameof(ViewLinkService.View))
+                    .ExternalInformation($"Link '{linkCode}' has expired. {nameof(PublicLink.AccessLimit)} reached.", opts => {
                         opts.RequestAddress = userAddress;
                         opts.RequestUserAgent = userAgent;
                         opts.SetUser(user);
@@ -166,12 +204,12 @@ public class ViewService(
         catch (Exception ex)
         {
             string uriForDebugging = (
-                link is null ? "null" : LinkService.GenerateLinkUri(link.Code, dimension).ToString()
+                link is null ? "null" : linkService.GetUri(link.Code, dimension).ToString()
             );
 
             logging
-                .Action(nameof(ViewService.View))
-                .ExternalCritical($"A way to induce/throw an {ex.GetType().Name} in {nameof(ViewService.View)} was found! ('{uriForDebugging}') " + ex.Message, opts =>
+                .Action(nameof(ViewLinkService.View))
+                .ExternalCritical($"A way to induce/throw an {ex.GetType().Name} in {nameof(ViewLinkService.View)} was found! ('{uriForDebugging}') " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
                     opts.RequestAddress = userAddress;
@@ -186,11 +224,13 @@ public class ViewService(
 
         try {
             // Log the visit.
-            link = await linkService.IncrementLinkAccessed(link);
+            link = await linkService.LinkAccessed(link);
 
+            // P.S - This *can* return null if there's no authorized user, or if the user is dissallowed to view this photo
+            // Luckily, this is only a fallback, Photo *should* be fetched by `<see cref="IPublicLinkService.GetLinkByCode"/>`
             if (link.Photo is null)
             {
-                var getPhoto = await photoService.GetPhotoEntity(link.PhotoId);
+                var getPhoto = await photoService.GetPhoto(link.PhotoId);
                 if (getPhoto.Value is null) {
                     return new NotFoundResult();
                 }
@@ -198,7 +238,7 @@ public class ViewService(
                 link.Photo = getPhoto.Value;
             }
 
-            string uri = LinkService.GenerateLinkUri(link.Code, dimension).ToString();
+            string uri = linkService.GetUri(link.Code, dimension).ToString();
             string visitMessage = $"Link '{uri}' visited (Total visits: {link.Accessed})";
 
             if (user is not null) {
@@ -207,8 +247,8 @@ public class ViewService(
 
             if (!string.IsNullOrWhiteSpace(userAgent))
             {
-                if (userAgent.Length >= 48) {
-                    visitMessage += $". UserAgent '{userAgent.Substring(0, 46)}..'";
+                if (userAgent.Length >= 50) {
+                    visitMessage += $". UserAgent '{userAgent.Substring(0, 48)}..'";
 
                 }
                 else {
@@ -218,8 +258,8 @@ public class ViewService(
 
             if (!string.IsNullOrWhiteSpace(userAddress))
             {
-                if (userAddress.Length >= 48) {
-                    visitMessage += $". Address: {userAddress.Substring(0, 46)}..'";
+                if (userAddress.Length >= 50) {
+                    visitMessage += $". Address: {userAddress.Substring(0, 48)}..'";
 
                 }
                 else {
@@ -228,7 +268,7 @@ public class ViewService(
             }
 
             logging
-                .Action(nameof(ViewService.View))
+                .Action(nameof(ViewLinkService.View))
                 .ExternalInformation(visitMessage + ".", opts =>
                 {
                     opts.RequestAddress = userAddress;
@@ -238,13 +278,13 @@ public class ViewService(
                 .LogAndEnqueue();
 
             // Get & Return the requested `Photo`..
-            return await blobs.GetBlobAsync(dimension, link.Photo);
+            return await blobs.GetBlobAsync(link.Photo, dimension);
         }
         catch (DbUpdateException ex)
         {
             logging
-                .Action(nameof(ViewService.View))
-                .InternalError($"Cought an {ex.GetType().Name} in {nameof(ViewService.View)} while querying the database! {ex.Message}", opts =>
+                .Action(nameof(ViewLinkService.View))
+                .InternalError($"Cought an {ex.GetType().Name} in {nameof(ViewLinkService.View)} while querying the database! {ex.Message}", opts =>
                 {
                     opts.Exception = ex;
                     opts.RequestAddress = userAddress;
@@ -260,8 +300,8 @@ public class ViewService(
         catch (Exception ex)
         {
             logging
-                .Action(nameof(ViewService.View))
-                .InternalError($"Cought an unknown exception of type {ex.GetType().Name} in {nameof(ViewService.View)}! {ex.Message}", opts =>
+                .Action(nameof(ViewLinkService.View))
+                .InternalError($"Cought an unknown exception of type {ex.GetType().Name} in {nameof(ViewLinkService.View)}! {ex.Message}", opts =>
                 {
                     opts.Exception = ex;
                     opts.RequestAddress = userAddress;
