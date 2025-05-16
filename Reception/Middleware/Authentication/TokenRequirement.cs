@@ -1,6 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
-using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
 
 namespace Reception.Middleware.Authentication;
 
@@ -14,7 +14,7 @@ public class HandleTokenRequirement(
     ILoggingService<MemoAuth> logging
 ) : AuthorizationHandler<TokenRequirement>
 {
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, TokenRequirement requirement)
+    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, TokenRequirement requirement)
     {
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
@@ -29,10 +29,10 @@ public class HandleTokenRequirement(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message)
             );
 
-            return;
+            return Task.CompletedTask;
         }
 
-        bool tryGetSessionTokenHeader = httpContext.Request.Headers.TryGetValue(Parameters.SESSION_TOKEN_HEADER, out var extractedToken);
+        bool tryGetSessionTokenHeader = httpContext.Request.Headers.TryGetValue(Constants.SESSION_TOKEN_HEADER, out var extractedToken);
         bool sessionTokenExists = !string.IsNullOrWhiteSpace(extractedToken);
         if (tryGetSessionTokenHeader || sessionTokenExists)
         {
@@ -45,11 +45,13 @@ public class HandleTokenRequirement(
                 new AuthorizationFailureReason(this, Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : Messages.MissingHeader)
             );
 
-            return;
+            return Task.CompletedTask;
         }
 
         // Success!
         requirement.Token = extractedToken;
         context.Succeed(requirement);
+
+        return Task.CompletedTask;
     }
 }

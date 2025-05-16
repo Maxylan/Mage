@@ -17,8 +17,9 @@ public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
     ILoggingService<AuthorizationService> logging,
     LoginTracker loginTracker,
-    ISessionService sessions,
-    IAccountService accounts
+    ISessionService sessionService,
+    IClientService clientService,
+    IAccountService accountService
 ) : IAuthorizationService
 {
     /// <summary>
@@ -70,7 +71,7 @@ public class AuthorizationService(
         );
         if (user is not null)
         {
-            var getSession = await sessions.GetSessionByUser(user);
+            var getSession = await sessionService.GetSessionByUser(user);
             if (getSession.Value is not null)
             {
                 return await ValidateSession(
@@ -119,7 +120,7 @@ public class AuthorizationService(
     /// </summary>
     public async Task<ActionResult<Session>> ValidateSession(string sessionCode, Source source = Source.INTERNAL)
     {
-        var getSession = await sessions.GetSession(sessionCode);
+        var getSession = await sessionService.GetSession(sessionCode);
         var session = getSession.Value;
 
         if (session is not null)
@@ -157,10 +158,11 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: No {nameof(HttpContext)} found.";
             logging
+                .Action(nameof(ValidateSession))
                 .LogError(message, m =>
                 {
-                    m.Action = nameof(ValidateSession);
                     m.Source = source;
+                    m.SetUser(session.Account);
                 })
                 .LogAndEnqueue();
 
@@ -173,10 +175,11 @@ public class AuthorizationService(
         {
             message = $"{nameof(Session)} Validation Failed: Expired (Expired @'{session.ExpiresAt.ToString()}')";
             logging
+                .Action(nameof(ValidateSession))
                 .LogInformation(message, m =>
                 {
-                    m.Action = nameof(ValidateSession);
                     m.Source = source;
+                    m.SetUser(session.Account);
                 })
                 .LogAndEnqueue();
 
@@ -204,10 +207,31 @@ public class AuthorizationService(
             {
                 message = $"{nameof(Session)} Validation Failed: UserAgent missmatch ({session.Client.UserAgent} != {userAgent})";
                 logging
+                    .Action(nameof(ValidateSession))
                     .LogSuspicious(message, m =>
                     {
-                        m.Action = nameof(ValidateSession);
                         m.Source = source;
+                        m.SetUser(session.Account);
+                    })
+                    .LogAndEnqueue();
+
+                return new UnauthorizedObjectResult(
+                    Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+                );
+            }
+
+            var checkIsBanned = await clientService.IsBanned(session.Client);
+            BanEntry? banEntry = checkIsBanned.Value;
+
+            if (banEntry is not null)
+            {
+                message = $"{nameof(Session)} Validation Failed: Client ({session.Client.Id}) is banned.";
+                logging
+                    .Action(nameof(ValidateSession))
+                    .LogInformation(message, m =>
+                    {
+                        m.Source = source;
+                        m.SetUser(session.Account);
                     })
                     .LogAndEnqueue();
 
@@ -278,7 +302,7 @@ public class AuthorizationService(
             );
         }
 
-        var getAccount = await sessions.GetUserBySession(session);
+        var getAccount = await sessionService.GetUserBySession(session);
         var account = getAccount.Value;
 
         if (account is null)
@@ -316,7 +340,7 @@ public class AuthorizationService(
     /// <param name="password">SHA-256 Digest of a password</param>
     public async Task<ActionResult<Session>> Login(string userName, string password)
     {
-        var getAccount = await accounts.GetAccountByUsername(userName);
+        var getAccount = await accountService.GetAccountByUsername(userName);
         Account? account = getAccount.Value;
 
         if (account is null)
@@ -488,14 +512,14 @@ public class AuthorizationService(
                 .ExternalSuspicious(message)
                 .LogAndEnqueue();
 
-            await sessions.CleanupSessions();
+            await sessionService.CleanupSessions();
 
             return new UnauthorizedObjectResult(
                 Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
             );
         }
 
-        var createSession = await sessions.CreateSession(account, contextAccessor.HttpContext.Request, Source.EXTERNAL);
+        var createSession = await sessionService.CreateSession(account, contextAccessor.HttpContext.Request, Source.EXTERNAL);
         var session = createSession.Value;
 
         if (createSession.Result is NoContentResult)
@@ -505,7 +529,7 @@ public class AuthorizationService(
                 .ExternalTrace($"No new session created ({nameof(NoContentResult)})")
                 .LogAndEnqueue();
 
-            var getSession = await sessions.GetSessionByUser(account);
+            var getSession = await sessionService.GetSessionByUser(account);
             return getSession;
         }
         else if (session is null)
@@ -521,4 +545,92 @@ public class AuthorizationService(
 
         return session;
     }
+
+    /// <summary>
+    /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
+    /// <see cref="DateTime"/> as <paramref name="expiry"/>
+    /// </summary>
+    public async Task<ActionResult<BanEntry>> BanClientByFingerprint(string address, string? userAgent, DateTime? expiry = null)
+    {
+        if (contextAccessor.HttpContext is null)
+        {
+            string message = $"BanClient Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(BanClientByFingerprint))
+                .ExternalError(message)
+                .LogAndEnqueue();
+
+            return new ObjectResult(
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : message
+            ) {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Potential Unauthorized attempt at ${nameof(BanClientByFingerprint)}. Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(BanClientByFingerprint))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.ADMIN) != Privilege.ADMIN)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.ADMIN}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(BanClientByFingerprint))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var getClient = await clientService.GetClientByFingerprint(address, userAgent);
+        Client? client = getClient.Value;
+
+        if (client is null)
+        {
+            string message = $"Failed to find a {nameof(Client)} matching the given fingerprint.";
+            logging
+                .Action(nameof(BanClientByFingerprint))
+                .ExternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return await this.BanClient(client, expiry);
+    }
+
+    /// <summary>
+    /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
+    /// <see cref="DateTime"/> as <paramref name="expiry"/>
+    /// </summary>
+    public async Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null) =>
+        await clientService.CreateBanEntry(client, expiry);
 }

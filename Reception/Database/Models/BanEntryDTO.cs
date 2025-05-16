@@ -17,7 +17,7 @@ public class BanEntryDTO : BanEntry, IDataTransferObject<BanEntry>
     public new int ClientId { get; set; }
 
     [JsonPropertyName("expires_at")]
-    public new DateTime ExpiresAt { get; set; }
+    public new DateTime? ExpiresAt { get; set; }
 
     [JsonPropertyName("reason")]
     public new string? Reason { get; set; }

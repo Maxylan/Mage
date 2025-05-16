@@ -12,6 +12,7 @@ namespace Reception.Middleware.Authentication
         public const string TOKEN_CONTEXT_KEY = "token";
         public const string SESSION_CONTEXT_KEY = "session";
         public const string ACCOUNT_CONTEXT_KEY = "account";
+        public const string CLIENT_CONTEXT_KEY = "client";
     }
 
 

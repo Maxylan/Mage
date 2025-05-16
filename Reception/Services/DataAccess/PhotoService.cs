@@ -35,7 +35,7 @@ public class PhotoService(
             string message = $"Failed to find a {nameof(Photo)} matching the given {nameof(photoId)} #{photoId}.";
             logging
                 .Action(nameof(GetPhoto))
-                .LogDebug(message)
+                .ExternalDebug(message)
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(

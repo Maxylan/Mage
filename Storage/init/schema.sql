@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS clients (
 CREATE TABLE IF NOT EXISTS banned_clients (
     id SERIAL NOT NULL,
     client_id INT NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ,
     reason TEXT,
     PRIMARY KEY(id),
     CONSTRAINT fk_client

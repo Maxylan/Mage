@@ -36,7 +36,7 @@ public static class Messages
 
     public const int MissingHeaderCode = 3;
     public static string MissingHeader => Prefix(MissingHeaderCode) + (
-        Program.IsProduction ? "No Authentication Provided." : $"Missing {nameof(Parameters.SESSION_TOKEN_HEADER)} Authentication Header."
+        Program.IsProduction ? "No Authentication Provided." : $"Missing {nameof(Constants.SESSION_TOKEN_HEADER)} Authentication Header."
     );
 
     public const int MissingSessionCode = 4;

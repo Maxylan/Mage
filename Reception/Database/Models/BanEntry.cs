@@ -22,7 +22,7 @@ public partial class BanEntry : IDatabaseEntity<BanEntry>
     public int ClientId { get; set; }
 
     [Column("expires_at")]
-    public DateTime ExpiresAt { get; set; }
+    public DateTime? ExpiresAt { get; set; }
 
     [Column("reason")]
     public string? Reason { get; set; }

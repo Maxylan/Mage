@@ -7,8 +7,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Authentication;
 using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService;
+using Reception.Database;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
 
 namespace Reception.Middleware.Authentication;
 
@@ -30,7 +31,7 @@ public class MemoAuth(
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         bool getSessionTokenHeader = Request.Headers.TryGetValue(
-            Parameters.SESSION_TOKEN_HEADER,
+            Constants.SESSION_TOKEN_HEADER,
             out StringValues headerValue
         );
 
@@ -59,7 +60,7 @@ public class MemoAuth(
         AuthenticationTicket? ticket = null;
         try
         {
-            ticket = GenerateAuthenticationTicket(session!.User, session);
+            ticket = GenerateAuthenticationTicket(session!.Account, session);
         }
         catch (AuthenticationException authException)
         {
@@ -126,6 +127,12 @@ public class MemoAuth(
             } */
         }
 
+        if (session.Client is null)
+        {
+            AuthenticationException.Throw(Messages.UnknownErrorCode);
+            /* ... */
+        }
+
         Claim[] identityClaims = [
             new Claim(ClaimTypes.NameIdentifier, user.Username, ClaimValueTypes.String, ClaimsIssuer),
             new Claim(ClaimTypes.Name, user.FullName, ClaimValueTypes.String, ClaimsIssuer)
@@ -137,12 +144,16 @@ public class MemoAuth(
 
         AuthenticationProperties properties = new(
             new Dictionary<string, string?>() {
-                { Parameters.SESSION_CONTEXT_KEY, "a" }
+                { Constants.TOKEN_CONTEXT_KEY, session.Code },
             },
             new Dictionary<string, object?>() {
-                { Parameters.ACCOUNT_CONTEXT_KEY, user }
+                { Constants.ACCOUNT_CONTEXT_KEY, user },
+                { Constants.SESSION_CONTEXT_KEY, session },
+                { Constants.CLIENT_CONTEXT_KEY, session.Client }
             }
-        );
+        ) {
+
+        };
 
         AuthenticationTicket ticket = new(principal, properties, Scheme.Name);
         return ticket;
@@ -324,7 +335,7 @@ public class MemoAuth(
 
         if (MemoAuth.TryGetProperties(httpContext, out var properties))
         {
-            account = properties.GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+            account = properties.GetParameter<Account>(Constants.ACCOUNT_CONTEXT_KEY);
             return account is not null;
         }
 
@@ -355,7 +366,34 @@ public class MemoAuth(
     public static Account? GetAccount(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MemoAuth.Properties(httpContext!).GetParameter<Account>(Parameters.ACCOUNT_CONTEXT_KEY);
+        return MemoAuth.Properties(httpContext!).GetParameter<Account>(Constants.ACCOUNT_CONTEXT_KEY);
+    }
+
+
+    /// <summary>
+    /// Get the current session's <see cref="Client"/> from the '<see cref="HttpContext"/>'
+    /// </summary>
+    /// <remarks>
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// If provided '<see cref="HttpContext"/>' is null
+    /// </exception>
+    public static Client? GetClient(IHttpContextAccessor contextAccessor) =>
+        GetClient(contextAccessor.HttpContext!);
+    /// <summary>
+    /// Get the current session's <see cref="Client"/> from the '<see cref="HttpContext"/>'
+    /// </summary>
+    /// <remarks>
+    /// Uses '<see cref="MemoAuth.Properties(HttpContext)"/>', which can throw a few different errors, depending on failure.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// If provided '<see cref="HttpContext"/>' is null
+    /// </exception>
+    public static Client? GetClient(HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
+        return MemoAuth.Properties(httpContext!).GetParameter<Client>(Constants.CLIENT_CONTEXT_KEY);
     }
 
 
@@ -382,7 +420,7 @@ public class MemoAuth(
     public static Session? GetSession(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MemoAuth.Properties(httpContext!).GetParameter<Session>(Parameters.SESSION_CONTEXT_KEY);
+        return MemoAuth.Properties(httpContext!).GetParameter<Session>(Constants.SESSION_CONTEXT_KEY);
     }
 
     /// <summary>
@@ -408,6 +446,6 @@ public class MemoAuth(
     public static string? GetToken(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext, nameof(httpContext));
-        return MemoAuth.Properties(httpContext!).Items[Parameters.ACCOUNT_CONTEXT_KEY];
+        return MemoAuth.Properties(httpContext!).Items[Constants.TOKEN_CONTEXT_KEY];
     }
 }

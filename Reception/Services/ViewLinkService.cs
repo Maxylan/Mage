@@ -84,20 +84,24 @@ public class ViewLinkService(
             };
         }
 
+        // Authentication is *not* a requirement here, but it we can *try* to enhance logging..
+        Account? user = null;
+        Session? session = null;
         PublicLink? link = null;
-        Account? user = null; // Authentication is *not* a requirement here, but it we can *try* to enhance logging..
-        bool isAuthenticated = MemoAuth.TryGetSession(contextAccessor, out Session? session);
+
+        bool isAuthenticated = MemoAuth.IsAuthenticated(contextAccessor);
         if (isAuthenticated)
         {
             try
             {
                 user = MemoAuth.GetAccount(contextAccessor);
+                session = MemoAuth.GetSession(contextAccessor);
             }
             catch (Exception ex)
             {
                 logging
                     .Action(nameof(ViewLinkService.View))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => {
+                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)} or {nameof(MemoAuth.GetSession)}!", opts => {
                         opts.Exception = ex;
                         opts.SetUser(user);
                     })

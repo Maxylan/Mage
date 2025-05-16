@@ -1,7 +1,5 @@
-using System.Threading;
-using System.Collections;
+using Reception.Database;
 using Reception.Database.Models;
-using Reception.Services.DataAccess;
 
 namespace Reception.Middleware;
 

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
 using Reception.Database;
 
-namespace Reception.Interfaces.DataAccess;
+namespace Reception.Interfaces;
 
 public interface IAuthorizationService
 {
@@ -34,4 +34,15 @@ public interface IAuthorizationService
     /// </summary>
     /// <param name="hash">SHA-256</param>
     public abstract Task<ActionResult<Session>> Login(Account account, string hash);
+
+    /// <summary>
+    /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
+    /// <see cref="DateTime"/> as <paramref name="expiry"/>
+    /// </summary>
+    public abstract Task<ActionResult<BanEntry>> BanClientByFingerprint(string address, string? userAgent, DateTime? expiry = null);
+    /// <summary>
+    /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
+    /// <see cref="DateTime"/> as <paramref name="expiry"/>
+    /// </summary>
+    public abstract Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null);
 }
