@@ -215,7 +215,7 @@ public class TagService(
             if (Program.IsDevelopment)
             {
                 logging
-                    .Action(nameof(GetTag))
+                    .Action(nameof(GetTagById))
                     .InternalDebug(message, opts => {
                         opts.SetUser(user);
                     })
@@ -509,7 +509,7 @@ public class TagService(
         {
             string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
-                .Action(nameof(GetTagPhotos))
+                .Action(nameof(CreateTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
                 .LogAndEnqueue();
 
@@ -578,7 +578,7 @@ public class TagService(
         {
             string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
             logging
-                .Action(nameof(GetTagPhotos))
+                .Action(nameof(CreateTags))
                 .ExternalError(message, opts => { opts.Exception = ex; })
                 .LogAndEnqueue();
 
@@ -604,7 +604,6 @@ public class TagService(
                 StatusCode = StatusCodes.Status403Forbidden
             };
         }
-
 
         int successfullyAddedTags = 0;
         int successfullyUpdatedTags = 0;
@@ -766,12 +765,53 @@ public class TagService(
     {
         ArgumentNullException.ThrowIfNull(mut);
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(UpdateTag))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UpdateTag))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         if (string.IsNullOrWhiteSpace(mut.Name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
             logging
-                .Action(nameof(GetTag))
-                .InternalDebug(message)
+                .Action(nameof(UpdateTag))
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -787,7 +827,9 @@ public class TagService(
             string message = $"{nameof(Tag)} name exceeds maximum allowed length of 127.";
             logging
                 .Action(nameof(UpdateTag))
-                .InternalDebug(message)
+                .InternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -807,13 +849,19 @@ public class TagService(
             {
                 string message = $"{nameof(Tag)} named '{existingTagName}' or identified by ID #{mut.Id} could not be found!";
 
-                /* if (Program.IsDevelopment)
-                {   // A failure *should* already be logged at `GetTag`
-                    await logging
+                // A failure *should* already be logged at `GetTag`
+                if (Program.IsDevelopment)
+                {
+                    logging
                         .Action(nameof(UpdateTag))
-                        .InternalDebug(message)
+                        .InternalDebug(message, opts => {
+                            opts.SetUser(user);
+                        })
                         .LogAndEnqueue();
-                } */
+                }
+                else {
+                    logging.Logger.LogDebug(message);
+                }
 
                 return getTag.Result!;
             }
@@ -835,7 +883,7 @@ public class TagService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -854,7 +902,7 @@ public class TagService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -878,14 +926,61 @@ public class TagService(
             throw new ArgumentException($"Parameter {nameof(albumId)} has to be a non-zero positive integer!", nameof(albumId));
         }
 
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999);
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(MutateAlbumTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(MutateAlbumTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         Album? album = await db.Albums.FindAsync(albumId);
 
         if (album is null)
         {
-            string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(albumId)} #{albumId}.";
+            string message = $"Failed to find a {nameof(Photo)} with {nameof(albumId)} #{albumId}.";
             logging
                 .Action(nameof(MutateAlbumTags))
-                .LogDebug(message)
+                .LogDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(
@@ -902,48 +997,107 @@ public class TagService(
             }
         }
 
-        var createAndSanitizeTags = await CreateTags(tagNames);
+        var albumTagsResult = await this.MutateAlbumTags(album, tags);
+        var albumTags = albumTagsResult.Value;
+
+        if (albumTags is null) {
+            return albumTagsResult.Result!;
+        }
+
+        return (album, albumTags);
+    }
+
+    /// <summary>
+    /// Edit tags associated with the <paramref name="album"/> (<see cref="Album"/>).
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(Album album, IEnumerable<ITag> tags)
+    {
+        ArgumentNullException.ThrowIfNull(album, nameof(album));
+
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999);
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(MutateAlbumTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(MutateAlbumTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var createAndSanitizeTags = await CreateTags(tags);
         var validTags = createAndSanitizeTags.Value;
 
         if (validTags is null /* || createAndSanitizeTags.Result is not OkObjectResult */) {
             return createAndSanitizeTags.Result!;
         }
 
-        foreach(var navigation in db.Entry(album).Navigations)
-        {
-            if (!navigation.IsLoaded) {
-                await navigation.LoadAsync();
-            }
-        }
-
-        if (album.AlbumTags.Intersect(validTags).Count() == validTags.Count()) { // ..no change
-            return new StatusCodeResult(StatusCodes.Status304NotModified);
-        }
-
-        album.AlbumTags = validTags.ToList();
+        album.Tags = validTags
+            .Select(tag => new AlbumTagRelation() {
+                Tag = tag,
+                Added = DateTime.Now
+            })
+            .ToList();
 
         try
         {
             db.Update(album);
 
-            if (Program.IsDevelopment)
-            {
-                logging
-                    .Action(nameof(MutateAlbumTags))
-                    .InternalDebug($"The tags associated with {nameof(Album)} '{album.Title}' (#{album.Id}) was just updated.");
-            }
+            logging
+                .Action(nameof(MutateAlbumTags))
+                .LogTrace(
+                    $"The tags associated with {nameof(Album)} '{album.Title}' (#{album.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Album)} with ID #{albumId}. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Album)} '{album.Title}' (#{album.Id}). ";
             logging
                 .Action(nameof(MutateAlbumTags))
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -956,13 +1110,13 @@ public class TagService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Album)} with ID #{albumId}. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Album)} '{album.Title}' (#{album.Id}). ";
             logging
                 .Action(nameof(MutateAlbumTags))
-                .InternalError(message + " " + ex.Message, opts =>
+                .InternalError(message + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -974,15 +1128,11 @@ public class TagService(
             };
         }
 
-        return album.AlbumTags.ToArray();
-    }
+        var albumTags = album.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
 
-    /// <summary>
-    /// Edit tags associated with the <paramref name="album"/> (<see cref="Album"/>).
-    /// </summary>
-    public abstract Task<ActionResult<IEnumerable<Tag>>> MutateAlbumTags(Album album, IEnumerable<ITag> tags)
-    {
-        throw new NotImplementedException();
+        return albumTags;
     }
 
     /// <summary>
@@ -994,14 +1144,61 @@ public class TagService(
             throw new ArgumentException($"Parameter {nameof(photoId)} has to be a non-zero positive integer!", nameof(photoId));
         }
 
-        PhotoEntity? photo = await db.Photos.FindAsync(photoId);
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999);
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(MutatePhotoTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(MutatePhotoTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        Photo? photo = await db.Photos.FindAsync(photoId);
 
         if (photo is null)
         {
-            string message = $"Failed to find a {nameof(PhotoEntity)} with {nameof(photoId)} #{photoId}.";
+            string message = $"Failed to find a {nameof(Photo)} with {nameof(photoId)} #{photoId}.";
             logging
                 .Action(nameof(MutatePhotoTags))
-                .LogDebug(message)
+                .LogDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new NotFoundObjectResult(
@@ -1018,10 +1215,10 @@ public class TagService(
             }
         }
 
-        var createAndSanitizeTags = await CreateTags(tagNames);
+        var createAndSanitizeTags = await CreateTags(tags);
         var validTags = createAndSanitizeTags.Value;
 
-        if (validTags is null /* || createAndSanitizeTags.Result is not OkObjectResult */) {
+        if (validTags is null) {
             return createAndSanitizeTags.Result!;
         }
 
@@ -1032,34 +1229,107 @@ public class TagService(
             }
         }
 
-        if (photo.Tags.Intersect(validTags).Count() == validTags.Count()) { // ..no change
-            return new StatusCodeResult(StatusCodes.Status304NotModified);
+        var photoTagsResult = await this.MutatePhotoTags(photo, tags);
+        var photoTags = photoTagsResult.Value;
+
+        if (photoTags is null) {
+            return photoTagsResult.Result!;
         }
 
-        photo.Tags = validTags.ToList();
+        return (photo, photoTags);
+    }
+
+    /// <summary>
+    /// Edit tags associated with the <paramref name="photo"/> (<see cref="Photo"/>).
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(Photo photo, IEnumerable<ITag> tags)
+    {
+        ArgumentNullException.ThrowIfNull(photo, nameof(photo));
+
+        if (tags.Count() > 9999)
+        {
+            tags = tags
+                .Take(9999);
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(MutatePhotoTags))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.UPDATE) != Privilege.UPDATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.UPDATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(MutatePhotoTags))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        var createAndSanitizeTags = await CreateTags(tags);
+        var validTags = createAndSanitizeTags.Value;
+
+        if (validTags is null) {
+            return createAndSanitizeTags.Result!;
+        }
+
+        photo.Tags = validTags
+            .Select(tag => new PhotoTagRelation() {
+                Tag = tag,
+                Added = DateTime.Now
+            })
+            .ToList();
 
         try
         {
             db.Update(photo);
 
-            if (Program.IsDevelopment)
-            {
-                logging
-                    .Action(nameof(MutatePhotoTags))
-                    .InternalDebug($"The tags associated with {nameof(PhotoEntity)} '{photo.Title}' (#{photo.Id}) was just updated.");
-            }
+            logging
+                .Action(nameof(MutatePhotoTags))
+                .LogTrace(
+                    $"The tags associated with {nameof(Photo)} '{photo.Title}' (#{photo.Id}) was just updated.",
+                    opts => {
+                        opts.SetUser(user);
+                    }
+                )
+                .LogAndEnqueue();
 
             await db.SaveChangesAsync();
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update the tags of a {nameof(Photo)} '{photo.Title}' (#{photo.Id}). ";
             logging
                 .Action(nameof(MutatePhotoTags))
-                .InternalError(message + " " + updateException.Message, opts =>
+                .InternalError(message + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1072,13 +1342,13 @@ public class TagService(
         }
         catch (Exception ex)
         {
-            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(PhotoEntity)} with ID #{photoId}. ";
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update tags of a {nameof(Photo)} '{photo.Title}' (#{photo.Id}). ";
             logging
                 .Action(nameof(MutatePhotoTags))
-                .InternalError(message + " " + ex.Message, opts =>
+                .InternalError(message + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1090,15 +1360,11 @@ public class TagService(
             };
         }
 
-        return photo.Tags.ToArray();
-    }
+        var photoTags = photo.Tags
+            .Select(relation => relation.Tag)
+            .ToArray();
 
-    /// <summary>
-    /// Edit tags associated with the <paramref name="photo"/> (<see cref="Photo"/>).
-    /// </summary>
-    public async Task<ActionResult<IEnumerable<Tag>>> MutatePhotoTags(Photo photo, IEnumerable<ITag> tags)
-    {
-        throw new NotImplementedException();
+        return photoTags;
     }
 
     /// <summary>
@@ -1106,12 +1372,53 @@ public class TagService(
     /// </summary>
     public async Task<ActionResult> DeleteTag(string name)
     {
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(DeleteTag))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.DELETE) != Privilege.DELETE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.DELETE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(DeleteTag))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         if (string.IsNullOrWhiteSpace(name))
         {
             string message = $"{nameof(Tag)} names cannot be null/empty.";
             logging
-                .Action(nameof(GetTag))
-                .InternalDebug(message)
+                .Action(nameof(DeleteTag))
+                .LogDebug(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(message);
@@ -1129,13 +1436,19 @@ public class TagService(
         {
             string message = $"{nameof(Tag)} named '{name}' could not be found!";
 
-            /* if (Program.IsDevelopment)
-            {   // A failure *should* already be logged at `GetTag`
-                await logging
+            // A failure *should* already be logged at `GetTag`
+            if (Program.IsDevelopment)
+            {
+                logging
                     .Action(nameof(DeleteTag))
-                    .InternalDebug(message)
+                    .LogDebug(message, opts => {
+                        opts.SetUser(user);
+                    })
                     .LogAndEnqueue();
-                } */
+            }
+            else {
+                logging.Logger.LogDebug(message);
+            }
 
             return getTag.Result!;
         }
@@ -1153,7 +1466,7 @@ public class TagService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1172,7 +1485,7 @@ public class TagService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
-                    // opts.SetUser(user);
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Reception.Middleware.Authentication;
 using Reception.Interfaces.DataAccess;
 using Reception.Interfaces;
+using Reception.Utilities;
 using Reception.Database.Models;
 using Reception.Database;
 using Reception.Models;
@@ -1434,7 +1435,7 @@ public class PhotoService(
         {
             string message = string.Empty;
 
-            if (!fullPath.Contains(BlobService.FILE_STORAGE_NAME))
+            if (!fullPath.Contains(Postbox.FILE_STORAGE_NAME))
             {
                 message = $"Suspicious! Attempt was made to delete missing File '{fullPath}'! Is there a broken database entry, or did someone manage to escape a path string?";
                 logging.Action(nameof(DeletePhotoBlob));

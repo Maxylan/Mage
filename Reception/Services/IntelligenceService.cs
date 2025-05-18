@@ -1,18 +1,20 @@
-using Reception.Models;
-using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Microsoft.AspNetCore.Mvc;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
+using Microsoft.AspNetCore.Mvc;
+using Reception.Utilities;
 
 namespace Reception.Services;
 
 public class IntelligenceService(
     ILoggingService<IntelligenceService> logging,
-    IPhotoService photos,
+    IPhotoService photoService,
+    ITagService tagService,
     IBlobService blobs
 ) : IIntelligenceService
 {
@@ -85,11 +87,11 @@ public class IntelligenceService(
 
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="Photo"/> (blob)
     /// </summary>
     public async Task<ActionResult<OllamaAnalysis>> InferSourceImage(int photoId, CancellationToken? token = null) {
-        var getPhoto = await photos.GetPhotoEntity(photoId);
-        PhotoEntity? entity = getPhoto.Value;
+        var getPhoto = await photoService.GetPhoto(photoId);
+        Photo? entity = getPhoto.Value;
 
         if (entity is null) {
             return getPhoto.Result!;
@@ -99,18 +101,18 @@ public class IntelligenceService(
     }
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Source'-quality <see cref="Photo"/> (blob)
     /// </summary>
-    public Task<ActionResult<OllamaAnalysis>> InferSourceImage(PhotoEntity entity, CancellationToken? token = null) =>
+    public Task<ActionResult<OllamaAnalysis>> InferSourceImage(Photo entity, CancellationToken? token = null) =>
         this.View(Dimension.SOURCE, entity, token);
 
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="Photo"/> (blob)
     /// </summary>
     public async Task<ActionResult<OllamaAnalysis>> InferMediumImage(int photoId, CancellationToken? token = null) {
-        var getPhoto = await photos.GetPhotoEntity(photoId);
-        PhotoEntity? entity = getPhoto.Value;
+        var getPhoto = await photoService.GetPhoto(photoId);
+        Photo? entity = getPhoto.Value;
 
         if (entity is null) {
             return getPhoto.Result!;
@@ -120,18 +122,18 @@ public class IntelligenceService(
     }
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Medium'-quality <see cref="Photo"/> (blob)
     /// </summary>
-    public Task<ActionResult<OllamaAnalysis>> InferMediumImage(PhotoEntity entity, CancellationToken? token = null) =>
+    public Task<ActionResult<OllamaAnalysis>> InferMediumImage(Photo entity, CancellationToken? token = null) =>
         this.View(Dimension.MEDIUM, entity, token);
 
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="Photo"/> (blob)
     /// </summary>
     public async Task<ActionResult<OllamaAnalysis>> InferThumbnailImage(int photoId, CancellationToken? token = null) {
-        var getPhoto = await photos.GetPhotoEntity(photoId);
-        PhotoEntity? entity = getPhoto.Value;
+        var getPhoto = await photoService.GetPhoto(photoId);
+        Photo? entity = getPhoto.Value;
 
         if (entity is null) {
             return getPhoto.Result!;
@@ -141,19 +143,19 @@ public class IntelligenceService(
     }
 
     /// <summary>
-    /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="PhotoEntity"/> (blob)
+    /// Reach out to Ollama to infer the contents of a 'Thumbnail'-quality <see cref="Photo"/> (blob)
     /// </summary>
-    public Task<ActionResult<OllamaAnalysis>> InferThumbnailImage(PhotoEntity entity, CancellationToken? token = null) =>
+    public Task<ActionResult<OllamaAnalysis>> InferThumbnailImage(Photo entity, CancellationToken? token = null) =>
         this.View(Dimension.THUMBNAIL, entity, token);
 
 
     /// <summary>
-    /// View the <see cref="PhotoEntity"/> (<paramref name="dimension"/>, blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
+    /// View the <see cref="Photo"/> (<paramref name="dimension"/>, blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
     /// </summary>
     /// <remarks>
     /// <paramref name="dimension"/> Controls what image size is returned.
     /// </remarks>
-    public async Task<ActionResult<OllamaAnalysis>> View(Dimension dimension, PhotoEntity entity, CancellationToken? token = null) {
+    public async Task<ActionResult<OllamaAnalysis>> View(Dimension dimension, Photo entity, CancellationToken? token = null) {
         if (token.HasValue) {
             token.Value.ThrowIfCancellationRequested();
         }
@@ -186,7 +188,7 @@ public class IntelligenceService(
             };
         }
 
-        var getBlob = await blobs.GetBlobAsync(dimension, entity);
+        var getBlob = await blobs.GetBlobAsync(entity, dimension);
         if (getBlob is not FileStreamResult) {
             string message = $"{nameof(IBlobService.GetBlob)}(..) failed to load blob! '{getBlob.GetType().FullName}'";
             logging
@@ -313,7 +315,7 @@ public class IntelligenceService(
     /// <summary>
     /// Deliver a <paramref name="prompt"/> to a <paramref name="model"/> (string)
     /// </summary>
-    public async Task<ActionResult<OllamaResponse>> Chat(string prompt, string model, CancellationToken? token = null) {
+    public Task<ActionResult<OllamaResponse>> Chat(string prompt, string model, CancellationToken? token = null) {
         throw new NotImplementedException(nameof(Chat) + " is not implemented yet!");
     }
 
@@ -325,13 +327,13 @@ public class IntelligenceService(
     /// tbd
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public async Task<ActionResult<PhotoEntity>> ApplyPhotoAnalysis(
+    public async Task<ActionResult<Photo>> ApplyPhotoAnalysis(
         int photoId,
         ActionResult<OllamaAnalysis> imageAnalysis,
         CancellationToken cancellationToken
     ) {
-        var getPhoto = await photos.GetPhotoEntity(photoId);
-        PhotoEntity? entity = getPhoto.Value;
+        var getPhoto = await photoService.GetPhoto(photoId);
+        Photo? entity = getPhoto.Value;
 
         if (entity is null) {
             return getPhoto;
@@ -347,8 +349,8 @@ public class IntelligenceService(
     /// tbd
     /// </remarks>
     /// <returns><see cref="PhotoCollection"/></returns>
-    public async Task<ActionResult<PhotoEntity>> ApplyPhotoAnalysis(
-        PhotoEntity photo,
+    public async Task<ActionResult<Photo>> ApplyPhotoAnalysis(
+        Photo photo,
         ActionResult<OllamaAnalysis> imageAnalysis,
         CancellationToken cancellationToken
     ) {
@@ -423,44 +425,74 @@ public class IntelligenceService(
         } */
 
         if (!string.IsNullOrWhiteSpace(analysis.Response.Summary)) {
+            int maxLength = 255 - (photo.Summary?.Length ?? 0);
+
             if (!string.IsNullOrWhiteSpace(photo.Summary)) {
                 analysis.Response.Summary += " - " + photo.Summary;
             }
 
-            photo.Summary = analysis.Response.Summary;
+            if (maxLength > 3) {
+                photo.Summary = analysis.Response.Summary
+                    .Replace("&", "and")
+                    .Replace("|", "or")
+                    .Replace(@"\", string.Empty)
+                    .Trim()
+                    .Normalize()
+                    .Subsmart(0, maxLength);
+            }
         }
         else {
             logging
                 .Action(nameof(ApplyPhotoAnalysis))
-                .InternalWarning("Failed to get 'summary' from photo analysis.");
+                .InternalWarning("Failed to get 'summary' from photo analysis.")
+                .LogAndEnqueue();
         }
 
         if (!string.IsNullOrWhiteSpace(analysis.Response.Description)) {
+            int maxLength = 32767 - (photo.Description?.Length ?? 0);
+
             if (!string.IsNullOrWhiteSpace(photo.Description)) {
                 analysis.Response.Description += " - " + photo.Description;
             }
 
-            photo.Description = analysis.Response.Description;
+            if (maxLength > 3) {
+                photo.Description = analysis.Response.Description
+                    .Replace("&", "and")
+                    .Replace("|", "or")
+                    .Replace(@"\", string.Empty)
+                    .Trim()
+                    .Normalize()
+                    .Subsmart(0, maxLength);
+            }
         }
         else {
             logging
                 .Action(nameof(ApplyPhotoAnalysis))
-                .InternalWarning("Failed to get 'description' from photo analysis.");
+                .InternalWarning("Failed to get 'description' from photo analysis.")
+                .LogAndEnqueue();
         }
 
-        if (analysis.Response.Tags is not null) {
-            for (int i = 0; i < analysis.Response.Tags.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(analysis.Response.Tags[i])) {
-                    continue;
-                }
-                if (photo.Tags.Any(tag => tag.Name == analysis.Response.Tags[i])) {
-                    continue;
-                }
+        IEnumerable<Tag> tags = [];
+        if (analysis.Response.Tags is not null)
+        {
+            var sanitizedTags = analysis.Response.Tags
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Select(
+                    tag => tag
+                        .Trim()
+                        .Normalize()
+                        .Replace(" ", "_")
+                        .Replace("&", "and")
+                        .Replace("|", "or")
+                        .Replace(@"\", string.Empty)
+                        .Subsmart(0, 127)
+                )
+                .Where(tag => photo.Tags.Any(relation => relation.Tag.Name == tag));
 
-                photo.Tags.Add(new() {
-                    Name = analysis.Response.Tags[i]
-                });
+            var sanitizeAndCreateTags = await tagService.CreateTags(sanitizedTags);
+            if (sanitizeAndCreateTags.Value is not null)
+            {
+                tags = sanitizeAndCreateTags.Value;
             }
         }
         else {
@@ -472,7 +504,7 @@ public class IntelligenceService(
         cancellationToken.ThrowIfCancellationRequested();
 
         try {
-            await photos.UpdatePhotoEntity(new MutatePhoto() {
+            await photoService.UpdatePhoto(new MutatePhoto() {
                 Id = photo.Id,
                 Slug = photo.Slug,
                 Title = photo.Title,
@@ -489,15 +521,13 @@ public class IntelligenceService(
                 Links = photo.Links,
                 UploadedByNavigation = photo.UploadedByNavigation,
                 AlbumsNavigation = photo.AlbumsNavigation, */
-                Tags = photo.Tags.ToArray()
-                /* Tags = null */
+                Tags = tags
             });
 
-            /* logging
+            logging
                 .Action(nameof(ApplyPhotoAnalysis))
-                .InternalInformation($"{nameof(PhotoEntity)} '{photo.Slug}' (#{photo.Id}) was just analyzed."); */
-
-            // await db.SaveChangesAsync(cancellationToken);
+                .InternalInformation($"{nameof(Photo)} '{photo.Slug}' (#{photo.Id}) was just analyzed.")
+                .LogAndEnqueue();
         }
         catch (Exception ex) {
             string message = $"Failed to save post-analysis updates to photo '{photo.Slug}' (#{photo.Id}). {ex.GetType().BaseType} '{ex.Message}'";

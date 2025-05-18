@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text;
+using System.Globalization;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
@@ -6,16 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using Reception.Middleware.Authentication;
-using Reception.Models;
 using Reception.Database.Models;
-using Reception.Utilities;
+using Reception.Database;
 using Reception.Interfaces.DataAccess;
-using System.Globalization;
-using System.Text;
-using System.Net;
+using Reception.Interfaces;
+using Reception.Utilities;
 using Reception.Constants;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using Reception.Models;
 
 namespace Reception.Services;
 
@@ -29,15 +29,15 @@ public class PhotoStreamingService(
 {
     #region Create / Store photos.
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="Photo"/>, <seealso cref="Reception.Database.Models.DisplayPhoto"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
     /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as options/details of the
     /// generated database entitities.
     /// </remarks>
-    /// <returns><see cref="PhotoCollection"/></returns>
-    public Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(Action<PhotosOptions> opts)
+    /// <returns><see cref="DisplayPhoto"/></returns>
+    public Task<ActionResult<IEnumerable<DisplayPhoto>>> UploadPhotos(Action<PhotosOptions> opts)
     {
         FilterPhotosOptions options = new();
         opts(options);
@@ -46,15 +46,15 @@ public class PhotoStreamingService(
     }
 
     /// <summary>
-    /// Upload any amount of new photos/files (<see cref="PhotoEntity"/>, <seealso cref="Reception.Database.Models.PhotoCollection"/>)
+    /// Upload any amount of new photos/files (<see cref="Photo"/>, <seealso cref="Reception.Database.Models.DisplayPhoto"/>)
     /// by streaming them directly to disk.
     /// </summary>
     /// <remarks>
     /// An instance of <see cref="PhotosOptions"/> (<paramref name="options"/>) has been repurposed to serve as options/details of the
     /// generated database entitities.
     /// </remarks>
-    /// <returns><see cref="PhotoCollection"/></returns>
-    public async Task<ActionResult<IEnumerable<PhotoCollection>>> UploadPhotos(PhotosOptions options)
+    /// <returns><see cref="DisplayPhoto"/></returns>
+    public async Task<ActionResult<IEnumerable<DisplayPhoto>>> UploadPhotos(PhotosOptions options)
     {
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
@@ -111,7 +111,7 @@ public class PhotoStreamingService(
         var reader = new MultipartReader(boundary, httpContext.Request.Body);
         MultipartSection? section;
 
-        List<PhotoCollection> photos = [];
+        List<DisplayPhoto> photos = [];
         Dictionary<int, Task<ActionResult<OllamaAnalysis>>> analysis = [];
         uint iteration = 0u;
         do
@@ -134,7 +134,7 @@ public class PhotoStreamingService(
 
             if (MultipartHelper.HasFileContentDisposition(contentDisposition))
             {
-                PhotoEntity? newPhoto;
+                Photo? newPhoto;
                 try
                 {
                     newPhoto = await UploadSinglePhoto(
@@ -148,7 +148,7 @@ public class PhotoStreamingService(
                     {
                         logging
                             .Action(nameof(UploadPhotos))
-                            .InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo. {nameof(newPhoto)} was null.")
+                            .InternalError($"Failed to create a {nameof(Photo)} using uploaded photo. {nameof(newPhoto)} was null.")
                             .LogAndEnqueue();
                         continue;
                     }
@@ -168,14 +168,14 @@ public class PhotoStreamingService(
                 if (newPhoto.Id == default)
                 {
                     // New photo needs to be uploaded to the database..
-                    var createEntity = await photoService.CreatePhotoEntity(newPhoto);
+                    var createEntity = await photoService.CreatePhoto(newPhoto);
                     newPhoto = createEntity.Value;
 
                     if (newPhoto is null || newPhoto.Id == default)
                     {
                         logging
                             .Action(nameof(UploadPhotos))
-                            .InternalError($"Failed to create a {nameof(PhotoEntity)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).")
+                            .InternalError($"Failed to create a {nameof(Photo)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).")
                             .LogAndEnqueue();
                         continue;
                     }
@@ -185,7 +185,7 @@ public class PhotoStreamingService(
                 {
                     logging
                         .Action(nameof(UploadPhotos))
-                        .InternalError($"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(PhotoEntity)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).")
+                        .InternalError($"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(Photo)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).")
                         .LogAndEnqueue();
                     continue;
                 }
@@ -290,14 +290,14 @@ public class PhotoStreamingService(
     }
 
     /// <summary>
-    /// Upload a new <see cref="PhotoEntity"/> (<seealso cref="Reception.Database.Models.Photo"/>) by streaming it directly to disk.
+    /// Upload a new <see cref="Photo"/> (<seealso cref="Reception.Database.Models.Photo"/>) by streaming it directly to disk.
     /// </summary>
     /// <remarks>
     /// An instance of <see cref="PhotosOptions"/> (<paramref name="opts"/>) has been repurposed to serve as the details of the
     /// <see cref="Reception.Database.Models.Photo"/> database entity.
     /// </remarks>
-    /// <returns><see cref="PhotoEntity"/></returns>
-    protected async Task<PhotoEntity> UploadSinglePhoto(
+    /// <returns><see cref="Photo"/></returns>
+    protected async Task<Photo> UploadSinglePhoto(
         PhotosOptions options,
         ContentDispositionHeaderValue contentDisposition,
         MultipartSection section,
@@ -384,9 +384,9 @@ public class PhotoStreamingService(
             throw new NotImplementedException($"{nameof(UploadSinglePhoto)} {nameof(format)} is null."); // TODO! Handle!!
         }
 
-        sourcePath = photoService.GetCombinedPath(Dimension.SOURCE, uploadedAt);
-        mediumPath = photoService.GetCombinedPath(Dimension.MEDIUM, uploadedAt);
-        thumbnailPath = photoService.GetCombinedPath(Dimension.THUMBNAIL, uploadedAt);
+        sourcePath = Postbox.GetCombinedPath(Dimension.SOURCE, uploadedAt);
+        mediumPath = Postbox.GetCombinedPath(Dimension.MEDIUM, uploadedAt);
+        thumbnailPath = Postbox.GetCombinedPath(Dimension.THUMBNAIL, uploadedAt);
         // TODO! Parse EXIF before combining paths to use the date the picture was taken/created as its path, instead of the upload date.
 
         try
@@ -625,7 +625,7 @@ public class PhotoStreamingService(
 
         if (options.Slug.Length > 127)
         {
-            string message = $"Failed to upload photo, {nameof(PhotoEntity.Slug)} exceeds maximum allowed length of 127.";
+            string message = $"Failed to upload photo, {nameof(Photo.Slug)} exceeds maximum allowed length of 127.";
             logging
                 .Action(nameof(UploadSinglePhoto))
                 .InternalWarning(message)
@@ -651,7 +651,7 @@ public class PhotoStreamingService(
 
         if (options.Title.Length > 255)
         {
-            string message = $"Failed to upload photo, {nameof(PhotoEntity.Title)} exceeds maximum allowed length of 255.";
+            string message = $"Failed to upload photo, {nameof(Photo.Title)} exceeds maximum allowed length of 255.";
             logging
                 .Action(nameof(UploadSinglePhoto))
                 .InternalWarning(message)
@@ -747,7 +747,7 @@ public class PhotoStreamingService(
             }
         }
 
-        PhotoEntity photo = new()
+        Photo photo = new()
         {
             Slug = options.Slug,
             Title = options.Title,
@@ -858,7 +858,7 @@ public class PhotoStreamingService(
 
         logging
             .Action(nameof(UploadSinglePhoto))
-            .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(PhotoCollection)} '{photo.Slug}'.")
+            .ExternalInformation($"Finished streaming file '{filename}' to '{sourcePath}' and generated {nameof(DisplayPhoto)} '{photo.Slug}'.")
             .LogAndEnqueue();
 
         // Reset provided 'options' to defaults.

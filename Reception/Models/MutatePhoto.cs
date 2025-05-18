@@ -7,7 +7,7 @@ namespace Reception.Models;
 public class MutatePhoto : PhotoDTO
 {
     public new int? Id { get; set; }
-    public new IEnumerable<MutateTag>? Tags { get; set; }
+    public new IEnumerable<ITag>? Tags { get; set; }
     public new IEnumerable<int>? Albums { get; set; }
 
     /*

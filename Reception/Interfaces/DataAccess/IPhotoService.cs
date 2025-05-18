@@ -62,6 +62,11 @@ public interface IPhotoService
     /// Create a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
     public abstract Task<ActionResult<Photo>> CreatePhoto(MutatePhoto mut);
+
+    /// <summary>
+    /// Create a <see cref="Reception.Database.Models.Photo"/> in the database.
+    /// </summary>
+    public abstract Task<ActionResult<Photo>> CreatePhoto(Photo entity);
     #endregion
 
 

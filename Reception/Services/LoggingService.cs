@@ -1,10 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
-using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Reception.Models;
-using Reception.Middleware.Authentication;
 using Reception.Middleware;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Database;
+using Reception.Models;
 
 namespace Reception.Services {
     public class LoggingService(
@@ -328,7 +326,7 @@ namespace Reception.Services {
         /// </summary>
         protected ILoggingService StoreEvent(string message, Action<LogEntryOptions>? predicate = null) {
             this._log = new() {
-                Log = message
+                Message = message
             };
 
             if (predicate is not null) {
@@ -377,7 +375,7 @@ namespace Reception.Services {
                     logger.LogCritical(this._log.Exception, this._log.Format.Full());
                     break;
                 default:
-                    this._log.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    this._log.Message += $" ({nameof(LogEntry)} format defaulted)";
                     logger.LogInformation(this._log.Exception, this._log.Format.Short(true));
                     break;
     #pragma warning restore CA2254
@@ -729,7 +727,7 @@ namespace Reception.Services {
         /// </summary>
         protected ILoggingService<TService> StoreEvent(string message, Action<LogEntryOptions>? predicate = null) {
             this._log = new() {
-                Log = message
+                Message = message
             };
 
             if (predicate is not null) {
@@ -778,7 +776,7 @@ namespace Reception.Services {
                     logger.LogCritical(this._log.Exception, this._log.Format.Full());
                     break;
                 default:
-                    this._log.Log += $" ({nameof(LogEntry)} format defaulted)";
+                    this._log.Message += $" ({nameof(LogEntry)} format defaulted)";
                     logger.LogInformation(this._log.Exception, this._log.Format.Short(true));
                     break;
     #pragma warning restore CA2254
