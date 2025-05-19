@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
@@ -37,13 +36,12 @@ public interface IAccountService
     /// <summary>
     /// Update the Avatar of an <see cref="Account"/> in the database.
     /// </summary>
-    public abstract Task<ActionResult<Account>> UpdateAccountAvatar(Account user, int photo_id);
+    public abstract Task<ActionResult<Account>> UpdateAccountAvatar(Account user, int photoId);
 
-    // TODO... maybe?
     /// <summary>
     /// Add a new <see cref="Account"/> to the database.
     /// </summary>
-    // public abstract Task<ActionResult<Account>> CreateAccount(MutateAccount mut);
+    public abstract Task<ActionResult<Account>> CreateAccount(MutateAccount mut);
 
     /// <summary>
     /// Delete / Remove an <see cref="Account"/> from the database.

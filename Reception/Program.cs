@@ -2,13 +2,6 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
 using Reception.Middleware.Authentication;
-using Reception.Middleware;
-using Reception.Interfaces.DataAccess;
-using Reception.Services.DataAccess;
-using Reception.Caching;
-using SixLabors.ImageSharp;
-using Reception.Utilities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Reception;
 
@@ -69,16 +62,16 @@ public sealed class Program
         builder.Services
             .AddAuthentication(conf =>
             {
-                conf.DefaultAuthenticateScheme = Parameters.SCHEME;
-                // conf.DefaultScheme = Parameters.SCHEME;
+                conf.DefaultAuthenticateScheme = Reception.Middleware.Authentication.Constants.SCHEME;
+                // conf.DefaultScheme = Reception.Middleware.Authentication.Constants.SCHEME;
             })
             .AddScheme<AuthenticationSchemeOptions, MemoAuth>(
-                Parameters.SCHEME,
+                Reception.Middleware.Authentication.Constants.SCHEME,
                 opts => { opts.Validate(); }
             );
 
         builder.Services.AddAuthorizationBuilder()
-            .AddDefaultPolicy(Parameters.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
+            .AddDefaultPolicy(Reception.Middleware.Authentication.Constants.AUTHENTICATED_POLICY, policy => policy.RequireAuthenticatedUser());
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(conf =>
@@ -100,7 +93,7 @@ public sealed class Program
                 Reference = new OpenApiReference()
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = Parameters.SCHEME
+                    Id = Reception.Middleware.Authentication.Constants.SCHEME
                 }
             };
 
@@ -109,7 +102,7 @@ public sealed class Program
                 [scheme] = []
             };
 
-            conf.AddSecurityDefinition(Parameters.SCHEME, scheme);
+            conf.AddSecurityDefinition(Reception.Middleware.Authentication.Constants.SCHEME, scheme);
             conf.AddSecurityRequirement(requirement);
 
             conf.AddServer(new OpenApiServer()

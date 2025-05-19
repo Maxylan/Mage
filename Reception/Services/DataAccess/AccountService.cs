@@ -371,14 +371,13 @@ public class AccountService(
         return user;
     }
 
-    // TODO... maybe?
     /// <summary>
     /// Add a new <see cref="Account"/> to the database.
     /// </summary>
-    /* public async Task<ActionResult<Account>> CreateAccount(MutateAccount mut)
+    public async Task<ActionResult<Account>> CreateAccount(MutateAccount mut)
     {
         throw new NotImplementedException();
-    } */
+    }
 
     /// <summary>
     /// Delete / Remove an <see cref="Account"/> from the database.

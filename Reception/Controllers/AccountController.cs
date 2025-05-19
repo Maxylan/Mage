@@ -1,10 +1,9 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
-using Reception.Models;
+using Reception.Interfaces;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
+using Reception.Models;
 
 namespace Reception.Controllers;
 
@@ -12,28 +11,28 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("accounts")]
 [Produces("application/json")]
-public class AccountsController(IAccountService handler) : ControllerBase
+public class AccountsController(IAccountHandler handler) : ControllerBase
 {
     /// <summary>
-    /// Get a single <see cref="Account"/> (user) by its <paramref name="id"/> (PK, uint).
+    /// Get a single <see cref="AccountDTO"/> (user) by its <paramref name="id"/> (PK, uint).
     /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Account>> Get(int id) =>
+    public async Task<ActionResult<AccountDTO>> Get(int id) =>
         await handler.GetAccount(id);
 
     /// <summary>
-    /// Get all <see cref="Account"/> (user) -instances, optionally filtered and/or paginated by a few query parameters.
+    /// Get all <see cref="AccountDTO"/> (user) -instances, optionally filtered and/or paginated by a few query parameters.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<Account>>> GetAll(
+    public async Task<ActionResult<IEnumerable<AccountDTO>>> GetAll(
         [FromQuery] int? limit,
         [FromQuery] int? offset,
         [FromQuery] DateTime? lastVisit,
@@ -41,7 +40,7 @@ public class AccountsController(IAccountService handler) : ControllerBase
     ) => await handler.GetAccounts(limit, offset, lastVisit, fullName);
 
     /// <summary>
-    /// Update a single <see cref="Account"/> (user) in the database.
+    /// Update a single <see cref="AccountDTO"/> (user) in the database.
     /// </summary>
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -49,7 +48,7 @@ public class AccountsController(IAccountService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Account>> Update(int id, MutateAccount mut)
+    public async Task<ActionResult<AccountDTO>> Update(int id, MutateAccount mut)
     {
         if (mut.Id == default)
         {
@@ -67,7 +66,7 @@ public class AccountsController(IAccountService handler) : ControllerBase
     // TODO! (2025-01-19)
 
     /// <summary>
-    /// Update the avatar of a single <see cref="Account"/> (user).
+    /// Update the avatar of a single <see cref="AccountDTO"/> (user).
     /// </summary>
     [NonAction] // [HttpPatch("{id:int}/avatar/{photo_id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -75,7 +74,7 @@ public class AccountsController(IAccountService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Account>> UpdateAvatar(int id, int photo_id)
+    public async Task<ActionResult<AccountDTO>> UpdateAvatar(int id, int photo_id)
     {
         if (id == default)
         {
@@ -93,6 +92,6 @@ public class AccountsController(IAccountService handler) : ControllerBase
             return NotFound();
         }
 
-        return await handler.UpdateAccountAvatar(user, photo_id);
+        return await handler.UpdateAvatar(user, photo_id);
     }
 }

@@ -1,12 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Reception.Utilities;
+using Reception.Interfaces;
 using Reception.Constants;
 
 namespace Reception.Controllers;
@@ -15,10 +13,10 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("albums")]
 [Produces("application/json")]
-public class AlbumsController(IAlbumService handler, ITagService tagService) : ControllerBase
+public class AlbumsController(IAlbumHandler handler, ITagHandler tagService) : ControllerBase
 {
     /// <summary>
-    /// Get a single <see cref="Album"/> by its <paramref name="album_id"/> (PK, uint).
+    /// Get a single <see cref="AlbumDTO"/> by its <paramref name="album_id"/> (PK, uint).
     /// </summary>
     [HttpGet("{album_id:int}")]
     [Tags(ControllerTags.ALBUMS)]
@@ -26,11 +24,11 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Album>> GetAlbum(int album_id) =>
+    public async Task<ActionResult<AlbumDTO>> GetAlbum(int album_id) =>
         await handler.GetAlbum(album_id);
 
     /// <summary>
-    /// Get / Query for many <see cref="Album"/> instances that match provided search criterias passed as URL/Query Parameters.
+    /// Get / Query for many <see cref="AlbumDTO"/> instances that match provided search criterias passed as URL/Query Parameters.
     /// </summary>
     /// <param name="createdBefore">
     /// Albums created <strong>before</strong> the given date, cannot be used with <paramref name="createdAfter"/>
@@ -44,7 +42,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<Album>>> GetAlbums(
+    public async Task<ActionResult<IEnumerable<AlbumDTO>>> GetAlbums(
         [Required] int limit = 99,
         [Required] int offset = 0,
         [FromQuery] string? title = null,
@@ -68,23 +66,23 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
 
 
     /// <summary>
-    /// Get the <see cref="Album"/> with PK <paramref ref="album_id"/> (int), along with a collection of all associated Photos.
+    /// Get the <see cref="DisplayAlbum"/> with PK <paramref ref="album_id"/> (int), along with a collection of all associated Photos.
     /// </summary>
     /// <returns>
-    /// <seealso cref="AlbumPhotoCollection"/>
+    /// <seealso cref="DisplayAlbum"/>
     /// </returns>
-    [HttpGet("{album_id:int}/photos")]
+    [HttpGet("{album_id:int}/display")]
     [Tags(ControllerTags.ALBUMS, ControllerTags.PHOTOS_ENTITIES)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AlbumPhotoCollection>> GetAlbumPhotoCollection(int album_id) =>
-        await handler.GetAlbumPhotoCollection(album_id);
+    public async Task<ActionResult<DisplayAlbum>> GetAlbumForDisplay(int album_id) =>
+        await handler.GetAlbumForDisplay(album_id);
 
     /// <summary>
-    /// Create a new <see cref="Album"/>.
+    /// Create a new <see cref="AlbumDTO"/>.
     /// </summary>
     [HttpPost]
     [Tags(ControllerTags.ALBUMS)]
@@ -94,11 +92,11 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<Album>> CreateAlbum(MutateAlbum mut) =>
+    public async Task<ActionResult<AlbumDTO>> CreateAlbum(MutateAlbum mut) =>
         await handler.CreateAlbum(mut);
 
     /// <summary>
-    /// Update the properties of the <see cref="Album"/> with '<paramref ref="album_id"/>' (string), *not* its members (i.e Photos or Albums).
+    /// Update the properties of the <see cref="Album"/> with '<paramref ref="album_id"/>' (string).
     /// </summary>
     [HttpPut]
     [Tags(ControllerTags.ALBUMS)]
@@ -108,7 +106,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<Album>> UpdateAlbum(MutateAlbum mut) =>
+    public async Task<ActionResult<AlbumDTO>> UpdateAlbum(MutateAlbum mut) =>
         await handler.UpdateAlbum(mut);
 
     /// <summary>
@@ -122,13 +120,13 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AlbumPhotoCollection>> MutatePhotos(int album_id, [FromBody] int[] photo_ids) =>
+    public async Task<ActionResult<DisplayAlbum>> MutatePhotos(int album_id, [FromBody] int[] photo_ids) =>
         await handler.MutateAlbumPhotos(album_id, photo_ids);
 
     /// <summary>
-    /// Remove a single <see cref="PhotoEntity"/> (<paramref name="photo_id"/>, int) ..from a single <see cref="Album"/> identified by PK '<paramref ref="album_id"/>' (int)
+    /// Remove all <see cref="Photo"/> entities (<paramref name="photo_id"/>, int) ..from a single <see cref="Album"/> identified by PK '<paramref ref="album_id"/>' (int)
     /// </summary>
-    [HttpPatch("{album_id:int}/remove/photo/{photo_id:int}")]
+    [HttpPatch("{album_id:int}/photos/remove")]
     [Tags(ControllerTags.ALBUMS, ControllerTags.PHOTOS_ENTITIES)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
@@ -136,8 +134,8 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> RemovePhoto(int album_id, int photo_id) =>
-        await handler.RemovePhoto(album_id, photo_id);
+    public async Task<ActionResult<DisplayAlbum>> RemovePhotos(int album_id, [FromBody] int[] photo_ids) =>
+        await handler.RemovePhotos(album_id, photo_ids);
 
     /// <summary>
     /// Edit what tags are associated with this <see cref="Album"/>.
@@ -156,7 +154,7 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     /// <summary>
     /// Remove a single <see cref="Tag"/> (<paramref name="tag"/>, string) ..from a single <see cref="Album"/> identified by PK '<paramref ref="album_id"/>' (int)
     /// </summary>
-    [HttpPatch("{album_id:int}/remove/tag/{tag}")]
+    [HttpPatch("{album_id:int}/tags/remove")]
     [Tags(ControllerTags.ALBUMS, ControllerTags.TAGS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
@@ -164,8 +162,8 @@ public class AlbumsController(IAlbumService handler, ITagService tagService) : C
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> RemoveTag(int album_id, string tag) =>
-        await handler.RemoveTag(album_id, tag);
+    public async Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int album_id, [FromBody] string[] tags) =>
+        await handler.RemoveTag(album_id, tags);
 
     /// <summary>
     /// Delete the <see cref="Album"/> with '<paramref ref="album_id"/>' (int).

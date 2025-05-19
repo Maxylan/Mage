@@ -23,6 +23,7 @@ public class PhotoStreamingService(
     IHttpContextAccessor contextAccessor,
     ILoggingService<PhotoStreamingService> logging,
     IPhotoService photoService,
+    ITagService tagService,
     IIntelligenceService ai,
     MageDb db
 ) : IPhotoStreamingService
@@ -70,12 +71,53 @@ public class PhotoStreamingService(
             );
         }
 
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(UploadPhotos))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.CREATE) != Privilege.CREATE)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.CREATE}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(UploadPhotos))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
         if (!MultipartHelper.IsMultipartContentType(httpContext.Request.ContentType))
         {
             string message = $"{nameof(UploadPhotos)} Failed: Request couldn't be processed, not a Multipart Formdata request.";
             logging
                 .Action(nameof(UploadPhotos))
-                .ExternalError(message)
+                .ExternalError(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             return new BadRequestObjectResult(
@@ -83,27 +125,7 @@ public class PhotoStreamingService(
             );
         }
 
-        Account? user = null;
-
-        if (MemoAuth.IsAuthenticated(contextAccessor))
-        {
-            try
-            {
-                user = MemoAuth.GetAccount(contextAccessor);
-            }
-            catch (Exception ex)
-            {
-                logging
-                    .Action(nameof(UploadPhotos))
-                    .ExternalError($"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!", opts => { opts.Exception = ex; })
-                    .LogAndEnqueue();
-            }
-        }
-
-        if (user is not null)
-        {
-            options.UploadedBy = user.Id;
-        }
+        options.UploadedBy = user.Id;
 
         var mediaTypeHeader = MediaTypeHeaderValue.Parse(httpContext.Request.ContentType!);
         string boundary = MultipartHelper.GetBoundary(mediaTypeHeader, 70);
@@ -148,7 +170,9 @@ public class PhotoStreamingService(
                     {
                         logging
                             .Action(nameof(UploadPhotos))
-                            .InternalError($"Failed to create a {nameof(Photo)} using uploaded photo. {nameof(newPhoto)} was null.")
+                            .InternalError($"Failed to create a {nameof(Photo)} using uploaded photo. {nameof(newPhoto)} was null.", opts => {
+                                opts.SetUser(user);
+                            })
                             .LogAndEnqueue();
                         continue;
                     }
@@ -160,6 +184,7 @@ public class PhotoStreamingService(
                            .InternalError($"Failed to upload a photo. ({ex.GetType().Name}) " + ex.Message, opts =>
                            {
                                opts.Exception = ex;
+                               opts.SetUser(user);
                            })
                          .LogAndEnqueue();
                     continue;
@@ -175,7 +200,12 @@ public class PhotoStreamingService(
                     {
                         logging
                             .Action(nameof(UploadPhotos))
-                            .InternalError($"Failed to create a {nameof(Photo)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).")
+                            .InternalError(
+                                $"Failed to create a {nameof(Photo)} using uploaded photo '{(newPhoto?.Slug ?? "null")}'. Entity was null, or its Photo ID remained as 'default' post-saving to the database ({(newPhoto?.Id.ToString() ?? "null")}).",
+                                opts => {
+                                    opts.SetUser(user);
+                                }
+                            )
                             .LogAndEnqueue();
                         continue;
                     }
@@ -185,7 +215,12 @@ public class PhotoStreamingService(
                 {
                     logging
                         .Action(nameof(UploadPhotos))
-                        .InternalError($"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(Photo)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).")
+                        .InternalError(
+                            $"No '{Dimension.SOURCE.ToString()}' {nameof(Filepath)} found in the newly uploaded/created {nameof(Photo)} instance '{newPhoto.Slug}' (#{newPhoto.Id}).",
+                            opts => {
+                                opts.SetUser(user);
+                            }
+                        )
                         .LogAndEnqueue();
                     continue;
                 }
@@ -267,7 +302,10 @@ public class PhotoStreamingService(
         if (analysis.Any()) {
             logging
                 .Action(nameof(UploadPhotos))
-                .InternalInformation($"Performing '{analysis.Count()}' photo-analysis");
+                .InternalInformation($"Performing '{analysis.Count()}' photo-analysis", opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
 
             List<Task>[] updatePhotos = [];
             foreach (var singlePhotoAnalysis in analysis) {
@@ -312,20 +350,56 @@ public class PhotoStreamingService(
         DateTime createdAt = DateTime.UtcNow; // Fallback in case no EXIF data..
         DateTime uploadedAt = DateTime.UtcNow;
 
+        if (user is null)
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                throw new Exception("Prevented attempted unauthorized access.");
+            }
+        }
+
+        if ((user.Privilege & Privilege.CREATE) != Privilege.CREATE)
+        {
+            Exception error = new Exception(
+                $"Prevented action with 'RequiredPrivilege' ({Privilege.CREATE}), which exceeds the user's 'Privilege' of ({user.Privilege})."
+            );
+
+            logging
+                .Action(nameof(UploadSinglePhoto))
+                .ExternalSuspicious(error.Message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            throw error;
+        }
+
         // Don't trust the file name sent by the client. To display the file name, HTML-encode the value.
         // https://learn.microsoft.com/en-us/aspnet/core/mvc/models/file-uploads?view=aspnetcore-8.0#upload-large-files-with-streaming
         string? untrustedFilename = contentDisposition.FileName.Value;
 
         if (string.IsNullOrWhiteSpace(untrustedFilename))
         {
-            throw new NotImplementedException("Handle case of no filename"); // TODO: HANDLE
+            Exception error = new Exception(
+                $"{nameof(Photo)} Filename cannot be null/empty ('{options.Slug}')."
+            );
+
+            logging
+                .Action(nameof(UploadSinglePhoto))
+                .ExternalSuspicious(error.Message, opts => {
+                    opts.Exception = error;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            throw error;
         }
 
+        untrustedFilename = untrustedFilename.Trim();
         if (!untrustedFilename.IsNormalized())
         {
-            untrustedFilename = untrustedFilename
-                .Normalize()
-                .Trim();
+            untrustedFilename = untrustedFilename.Normalize();
         }
 
         trustedFilename = WebUtility.HtmlEncode(untrustedFilename);
@@ -339,12 +413,27 @@ public class PhotoStreamingService(
         trustedFilename = sanitizedName + "." + filenameParts[^1];
 
         if (trustedFilename.Contains("&&")
+            || trustedFilename.Contains("|")
             || trustedFilename.Contains("..")
+            || trustedFilename.Contains(@"\")
+            || trustedFilename.Contains("~")
             || trustedFilename.Contains(Path.DirectorySeparatorChar)
             || trustedFilename.Length > 127
         )
         {
-            throw new NotImplementedException("Suspicious upload? " + trustedFilename); // TODO! Handle!!
+            Exception error = new Exception(
+                $"{nameof(Photo)} Filename is suspicious! '{trustedFilename}' ('{options.Slug}')."
+            );
+
+            logging
+                .Action(nameof(UploadSinglePhoto))
+                .ExternalSuspicious(error.Message, opts => {
+                    opts.Exception = error;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            throw error;
         }
 
         fileExtension = Path.GetExtension(trustedFilename).ToLowerInvariant();
@@ -425,7 +514,7 @@ public class PhotoStreamingService(
 
             filename = extensionIndex != -1
                 ? trustedFilename.Insert(extensionIndex, appendix)
-                 : (trustedFilename + appendix);
+                : (trustedFilename + appendix);
 
             fullPath = Path.Combine(sourcePath, filename);
         }
@@ -494,9 +583,19 @@ public class PhotoStreamingService(
                     out createdAt
                 ))
                 {
+                    string message = $"(Debug -> TryParse) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.";
                     if (Program.IsDevelopment)
                     {
-                        Console.WriteLine($"(Debug -> TryParse) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.");
+                        logging
+                            .Action(nameof(UploadSinglePhoto))
+                            .ExternalDebug(message, opts => {
+                                opts.SetUser(user);
+                            })
+                            .LogAndEnqueue();
+                    }
+                    else
+                    {
+                        logging.Logger.LogTrace(message);
                     }
                 }
                 else if (DateTime.TryParseExact(
@@ -507,9 +606,19 @@ public class PhotoStreamingService(
                     out createdAt
                 ))
                 {
+                    string message = $"(Debug -> TryParseExact) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.";
                     if (Program.IsDevelopment)
                     {
-                        Console.WriteLine($"(Debug -> TryParseExact) Uploading image '{trustedFilename}' from (EXIF) '{pictureTakenAt.Value}' parsed as '{createdAt}'.");
+                        logging
+                            .Action(nameof(UploadSinglePhoto))
+                            .ExternalDebug(message, opts => {
+                                opts.SetUser(user);
+                            })
+                            .LogAndEnqueue();
+                    }
+                    else
+                    {
+                        logging.Logger.LogTrace(message);
                     }
                 }
             }
@@ -560,7 +669,13 @@ public class PhotoStreamingService(
                 {
                     await medium.SaveAsync(mediumFile, imageEncoder);
                     mediumFilesize = mediumFile.Length;
-                    Console.WriteLine($"mediumFilesize {mediumFilesize}");
+
+                    logging
+                        .Action(nameof(UploadSinglePhoto))
+                        .ExternalTrace($"Wrote medium '{filename}', filesize {mediumFilesize}", opts => {
+                            opts.SetUser(user);
+                        })
+                        .LogAndEnqueue();
                 }
             }
 
@@ -588,7 +703,13 @@ public class PhotoStreamingService(
                 {
                     await thumbnail.SaveAsync(thumbnailFile, imageEncoder);
                     thumbnailFilesize = thumbnailFile.Length;
-                    Console.WriteLine($"thumbnailFilesize {thumbnailFilesize}");
+
+                    logging
+                        .Action(nameof(UploadSinglePhoto))
+                        .ExternalTrace($"Wrote thumbnail '{filename}', filesize {mediumFilesize}", opts => {
+                            opts.SetUser(user);
+                        })
+                        .LogAndEnqueue();
                 }
             }
         }
@@ -628,7 +749,9 @@ public class PhotoStreamingService(
             string message = $"Failed to upload photo, {nameof(Photo.Slug)} exceeds maximum allowed length of 127.";
             logging
                 .Action(nameof(UploadSinglePhoto))
-                .InternalWarning(message)
+                .InternalWarning(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
@@ -641,9 +764,11 @@ public class PhotoStreamingService(
         else if (!options.Title.IsNormalized())
         {
             options.Title = options.Title
-                .Normalize()
-                .Trim();
+                .Normalize();
         }
+
+        options.Title = options.Title.Trim();
+
         if (conflicts > 0)
         {
             options.Title += $" (#{conflicts})";
@@ -654,7 +779,9 @@ public class PhotoStreamingService(
             string message = $"Failed to upload photo, {nameof(Photo.Title)} exceeds maximum allowed length of 255.";
             logging
                 .Action(nameof(UploadSinglePhoto))
-                .InternalWarning(message)
+                .InternalWarning(message, opts => {
+                    opts.SetUser(user);
+                })
                 .LogAndEnqueue();
 
             throw new Exception(message); // TODO! Handle more gracefully? Maybe clean up saved image from disk as well.
@@ -728,22 +855,21 @@ public class PhotoStreamingService(
 
         // TODO! Replace DB Call here with some tags service..
 
-        List<Tag> tags = [];
+        List<PhotoTagRelation> tagRelations = [];
         if (options.Tags is not null && options.Tags.Length > 0)
         {
-            foreach (string tagName in options.Tags.Distinct())
+            var validTags = await tagService.CreateTags(
+                options.Tags.Distinct()
+            );
+
+            if (validTags.Value is not null)
             {
-                Tag? tag = await db.Tags.FirstOrDefaultAsync(_t => _t.Name == tagName);
-
-                if (tag is null)
-                {
-                    tag = new()
-                    {
-                        Name = tagName
-                    };
-                }
-
-                tags.Add(tag);
+                tagRelations = validTags.Value
+                    .Select(tag => new PhotoTagRelation() {
+                        Tag = tag,
+                        Added = DateTime.Now
+                    })
+                    .ToList();
             }
         }
 
@@ -757,7 +883,7 @@ public class PhotoStreamingService(
             UploadedAt = uploadedAt,
             CreatedAt = createdAt,
             UpdatedAt = DateTime.UtcNow,
-            Tags = tags,
+            Tags = tagRelations,
             Filepaths = [
                 new() {
                     Filename = filename,
@@ -770,10 +896,7 @@ public class PhotoStreamingService(
             ]
         };
 
-        if (user is not null)
-        {
-            photo.UploadedBy = user.Id;
-        }
+        photo.UploadedBy = user.Id;
 
         // Auto-generated Filepaths..
         if (mediumFilesize > 0)
@@ -806,53 +929,75 @@ public class PhotoStreamingService(
         if (createdAt != uploadedAt)
         {
             // TODO! Replace DB Call here with some tags service..
-            var year_tag = await db.Tags.FirstOrDefaultAsync(
+            Tag? yearTag = await db.Tags.FirstOrDefaultAsync(
                 tag => tag.Name == createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture)
             );
 
-            photo.Tags.Add(year_tag ?? new()
+            yearTag ??= new()
             {
                 Name = createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture),
                 Description = "Images taken/created during " + createdAt.Year.ToString(System.Globalization.CultureInfo.CurrentCulture)
+            };
+
+            photo.Tags.Add(new PhotoTagRelation() {
+                Tag = yearTag,
+                Added = DateTime.Now
             });
         }
+
         if (filesize >= MultipartHelper.LARGE_FILE_THRESHOLD)
         {
             // TODO! Replace DB Call here with some tags service..
-            var hd_tag = await db.Tags.FirstOrDefaultAsync(
+            Tag? hdTag = await db.Tags.FirstOrDefaultAsync(
                 tag => tag.Name == MultipartHelper.LARGE_FILE_CATEGORY_SLUG
             );
 
-            photo.Tags.Add(hd_tag ?? new()
+            hdTag ??= new()
             {
                 Name = MultipartHelper.LARGE_FILE_CATEGORY_SLUG,
                 Description = "Large or High-Definition Images."
+            };
+
+            photo.Tags.Add(new PhotoTagRelation() {
+                Tag = hdTag,
+                Added = DateTime.Now
             });
         }
         else if (filesize < MultipartHelper.SMALL_FILE_THRESHOLD)
         {
             // TODO! Replace DB Call here with some tags service..
-            var sd_tag = await db.Tags.FirstOrDefaultAsync(
+            Tag? sdTag = await db.Tags.FirstOrDefaultAsync(
                 tag => tag.Name == MultipartHelper.SMALL_FILE_CATEGORY_SLUG
             );
 
-            photo.Tags.Add(sd_tag ?? new()
+            sdTag ??= new()
             {
                 Name = MultipartHelper.SMALL_FILE_CATEGORY_SLUG,
                 Description = "Small or Low-Definition Images and/or thumbnails."
+            };
+
+            photo.Tags.Add(new PhotoTagRelation() {
+                Tag = sdTag,
+                Added = DateTime.Now
             });
         }
+
         if (conflicts > 0)
         {
             // TODO! Replace DB Call here with some tags service..
-            var copy_tag = await db.Tags.FirstOrDefaultAsync(
+            Tag? copyTag = await db.Tags.FirstOrDefaultAsync(
                 tag => tag.Name == "Copy"
             );
 
-            photo.Tags.Add(copy_tag ?? new()
+            copyTag ??= new()
             {
                 Name = "Copy",
                 Description = "Image might be a copy of another, its filename conflicts with at least one other file uploaded around the same time."
+            };
+
+            photo.Tags.Add(new PhotoTagRelation() {
+                Tag = copyTag,
+                Added = DateTime.Now
             });
         }
 

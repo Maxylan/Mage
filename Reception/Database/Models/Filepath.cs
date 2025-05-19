@@ -34,7 +34,7 @@ public partial class Filepath : IDatabaseEntity<Filepath>
     public Dimension? Dimension { get; set; }
 
     [Column("filesize")]
-    public int? Filesize { get; set; }
+    public long? Filesize { get; set; }
 
     [Column("width")]
     public int? Width { get; set; }
