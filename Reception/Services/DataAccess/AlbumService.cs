@@ -1673,6 +1673,7 @@ public class AlbumService(
                 .InternalError(message + " " + updateException.Message, opts =>
                 {
                     opts.Exception = updateException;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 
@@ -1691,6 +1692,7 @@ public class AlbumService(
                 .InternalError(message + " " + ex.Message, opts =>
                 {
                     opts.Exception = ex;
+                    opts.SetUser(user);
                 })
                 .LogAndEnqueue();
 

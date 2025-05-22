@@ -14,15 +14,15 @@ namespace Reception.Controllers;
 public class AccountsController(IAccountHandler handler) : ControllerBase
 {
     /// <summary>
-    /// Get a single <see cref="AccountDTO"/> (user) by its <paramref name="id"/> (PK, uint).
+    /// Get a single <see cref="AccountDTO"/> (user) by its <paramref name="account_id"/> (PK, uint).
     /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AccountDTO>> Get(int id) =>
-        await handler.GetAccount(id);
+    public async Task<ActionResult<AccountDTO>> Get(int account_id) =>
+        await handler.GetAccount(account_id);
 
     /// <summary>
     /// Get all <see cref="AccountDTO"/> (user) -instances, optionally filtered and/or paginated by a few query parameters.
@@ -42,28 +42,26 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// <summary>
     /// Update a single <see cref="AccountDTO"/> (user) in the database.
     /// </summary>
-    [HttpPut("{id:int}")]
+    [HttpPut("{account_id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AccountDTO>> Update(int id, MutateAccount mut)
+    public async Task<ActionResult<AccountDTO>> Update(int account_id, MutateAccount mut)
     {
         if (mut.Id == default)
         {
-            if (id == default)
+            if (account_id == default)
             {
-                return BadRequest($"Both parameters '{nameof(id)}' and '{nameof(mut.Id)}' are invalid!");
+                return BadRequest($"Both parameters '{nameof(account_id)}' and '{nameof(mut.Id)}' are invalid!");
             }
 
-            mut.Id = id;
+            mut.Id = account_id;
         }
 
         return await handler.UpdateAccount(mut);
     }
-
-    // TODO! (2025-01-19)
 
     /// <summary>
     /// Update the avatar of a single <see cref="AccountDTO"/> (user).
@@ -74,18 +72,18 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AccountDTO>> UpdateAvatar(int id, int photo_id)
+    public async Task<ActionResult<AccountDTO>> UpdateAvatar(int account_id, int photo_id)
     {
-        if (id == default)
+        if (account_id == default)
         {
-            return BadRequest($"Parameter '{nameof(id)}' is invalid!");
+            return BadRequest($"Parameter '{nameof(account_id)}' is invalid!");
         }
         if (photo_id == default)
         {
             return BadRequest($"Parameter '{nameof(photo_id)}' is invalid!");
         }
 
-        var getAccount = await handler.GetAccount(id);
+        var getAccount = await handler.GetAccount(account_id);
         var user = getAccount.Value;
         if (user is null)
         {
