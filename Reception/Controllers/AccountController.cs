@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Reception.Constants;
 using Reception.Interfaces;
 using Reception.Database.Models;
 using Reception.Models;
@@ -17,7 +18,9 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// Get a single <see cref="AccountDTO"/> (user) by its <paramref name="account_id"/> (PK, uint).
     /// </summary>
     [HttpGet("{id:int}")]
+    [Tags(ControllerTags.USERS, ControllerTags.ACCOUNTS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
@@ -28,6 +31,7 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// Get all <see cref="AccountDTO"/> (user) -instances, optionally filtered and/or paginated by a few query parameters.
     /// </summary>
     [HttpGet]
+    [Tags(ControllerTags.USERS, ControllerTags.ACCOUNTS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -43,6 +47,7 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// Update a single <see cref="AccountDTO"/> (user) in the database.
     /// </summary>
     [HttpPut("{account_id:int}")]
+    [Tags(ControllerTags.USERS, ControllerTags.ACCOUNTS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -66,7 +71,8 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// <summary>
     /// Update the avatar of a single <see cref="AccountDTO"/> (user).
     /// </summary>
-    [NonAction] // [HttpPatch("{id:int}/avatar/{photo_id:int}")]
+    [HttpPatch("{account_id:int}/avatar/{photo_id:int}")]
+    [Tags(ControllerTags.USERS, ControllerTags.ACCOUNTS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]

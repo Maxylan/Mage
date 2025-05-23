@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using Reception.Database.Models;
 using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
+using Reception.Database.Models;
+using Reception.Models;
 
 namespace Reception.Services.DataAccess;
 
@@ -39,14 +41,26 @@ public class BannedClientsService() : IBannedClientsService
     /// <summary>
     /// Update a <see cref="BanEntry"/> in the database.
     /// </summary>
-    public async Task<ActionResult<BanEntry>> UpdateBanEntry(bool successful) {
+    public async Task<ActionResult<BanEntry>> UpdateBanEntry(MutateBanEntry mut)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Create a <see cref="BanEntry"/> in the database.
+    /// Equivalent to banning a single client (<see cref="Client"/>).
+    /// </summary>
+    public async Task<ActionResult<BanEntry>> CreateBanEntry(MutateBanEntry mut)
+    {
         throw new NotImplementedException();
     }
 
     /// <summary>
     /// Delete / Remove a <see cref="BanEntry"/> from the database.
+    /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
-    public async Task<int> DeleteBanEntry(int BanEntryId) {
+    public async Task<ActionResult<int>> DeleteBanEntry(int entryId)
+    {
         throw new NotImplementedException();
     }
 }

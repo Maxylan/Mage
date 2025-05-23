@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Reception.Database.Models;
+using Reception.Models;
 
 namespace Reception.Interfaces.DataAccess;
 
@@ -32,10 +33,17 @@ public interface IBannedClientsService
     /// <summary>
     /// Update a <see cref="BanEntry"/> in the database.
     /// </summary>
-    public abstract Task<ActionResult<BanEntry>> UpdateBanEntry(bool successful);
+    public abstract Task<ActionResult<BanEntry>> UpdateBanEntry(MutateBanEntry mut);
+
+    /// <summary>
+    /// Create a <see cref="BanEntry"/> in the database.
+    /// Equivalent to banning a single client (<see cref="Client"/>).
+    /// </summary>
+    public abstract Task<ActionResult<BanEntry>> CreateBanEntry(MutateBanEntry mut);
 
     /// <summary>
     /// Delete / Remove a <see cref="BanEntry"/> from the database.
+    /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
-    public abstract Task<int> DeleteBanEntry(int BanEntryId);
+    public abstract Task<ActionResult<int>> DeleteBanEntry(int entryId);
 }

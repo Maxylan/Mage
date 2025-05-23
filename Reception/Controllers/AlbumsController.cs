@@ -21,6 +21,7 @@ public class AlbumsController(IAlbumHandler handler) : ControllerBase
     [HttpGet("{album_id:int}")]
     [Tags(ControllerTags.ALBUMS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
