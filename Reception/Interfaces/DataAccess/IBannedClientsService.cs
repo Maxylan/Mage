@@ -14,21 +14,25 @@ public interface IBannedClientsService
     public abstract DbSet<BanEntry> BanEntries();
 
     /// <summary>
-    /// Get the <see cref="BanEntry"/> with Primary Key '<paramref ref="id"/>'
+    /// Get the <see cref="BanEntry"/> with Primary Key '<paramref ref="entryId"/>'
     /// </summary>
-    public abstract Task<ActionResult<BanEntry>> GetBanEntry(int id);
+    public abstract Task<ActionResult<BanEntry>> GetBanEntry(int entryId);
 
     /// <summary>
     /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(
-        string? address,
-        string? userAgent,
-        int? userId,
-        string? username,
-        int? limit,
-        int? offset
-    );
+    public virtual Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(Action<FilterBanEntries> opts)
+    {
+        FilterBanEntries filtering = new();
+        opts(filtering);
+
+        return GetBannedClients(filtering);
+    }
+
+    /// <summary>
+    /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(FilterBanEntries filter);
 
     /// <summary>
     /// Update a <see cref="BanEntry"/> in the database.
@@ -46,4 +50,10 @@ public interface IBannedClientsService
     /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
     public abstract Task<ActionResult<int>> DeleteBanEntry(int entryId);
+
+    /// <summary>
+    /// Delete / Remove the <see cref="BanEntry"/> <paramref name="banEntry"/> from
+    /// the database. Equivalent to unbanning a single client (<see cref="Client"/>).
+    /// </summary>
+    public abstract Task<ActionResult<int>> DeleteBanEntry(BanEntry banEntry);
 }

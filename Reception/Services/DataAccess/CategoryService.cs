@@ -90,20 +90,28 @@ public class CategoryService(
     }
 
     /// <summary>
-    /// Get the <see cref="Category"/> with Primary Key '<paramref ref="id"/>' (int)
+    /// Get the <see cref="Category"/> with Primary Key '<paramref ref="categoryId"/>' (int)
     /// </summary>
-    public async Task<ActionResult<Category>> GetCategory(int id)
+    public async Task<ActionResult<Category>> GetCategory(int categoryId)
     {
-        if (id <= 0)
+        if (categoryId <= 0)
         {
-            throw new ArgumentException($"Parameter {nameof(id)} has to be a non-zero positive integer!", nameof(id));
+            string message = $"Parameter {nameof(categoryId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(GetCategory))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
-        Category? category = await db.Categories.FindAsync(id);
+        Category? category = await db.Categories.FindAsync(categoryId);
 
         if (category is null)
         {
-            string message = $"Failed to find a {nameof(Category)} matching the given {nameof(id)} #{id}.";
+            string message = $"Failed to find a {nameof(Category)} matching the given ID #{categoryId}.";
             logging
                 .Action(nameof(GetCategory))
                 .LogDebug(message)

@@ -2,7 +2,7 @@ using Reception.Database;
 using Reception.Database.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Reception.Interfaces.DataAccess;
+namespace Reception.Interfaces;
 
 public interface IBlobService
 {

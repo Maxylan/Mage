@@ -14,14 +14,18 @@ public interface IBanHandler
     /// <summary>
     /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(
-        string? address,
-        string? userAgent,
-        int? userId,
-        string? username,
-        int? limit = 99,
-        int? offset = 0
-    );
+    public virtual Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(Action<FilterBanEntries> opts)
+    {
+        FilterBanEntries filtering = new();
+        opts(filtering);
+
+        return GetBannedClients(filtering);
+    }
+
+    /// <summary>
+    /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(FilterBanEntries filter);
 
     /// <summary>
     /// Update a <see cref="BanEntry"/> in the database.
@@ -38,5 +42,5 @@ public interface IBanHandler
     /// Delete / Remove a <see cref="BanEntry"/> from the database.
     /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
-    public abstract Task<ActionResult> UnbanClient(int entryId);
+    public abstract Task<ActionResult> UnbanClient(int clientId, int accountId);
 }

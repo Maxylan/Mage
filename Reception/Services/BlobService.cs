@@ -8,7 +8,7 @@ using Reception.Utilities;
 using Reception.Middleware.Authentication;
 using System.Net;
 
-namespace Reception.Services.DataAccess;
+namespace Reception.Services;
 
 public class BlobService(
     ILoggingService<BlobService> logging,

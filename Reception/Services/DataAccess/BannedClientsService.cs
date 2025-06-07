@@ -13,28 +13,35 @@ public class BannedClientsService() : IBannedClientsService
     /// Get the <see cref="IQueryable"/> (<seealso cref="DbSet&lt;BanEntry&gt;"/>) set of
     /// <see cref="BanEntry"/>-entries, you may use it to freely fetch some users.
     /// </summary>
-    public DbSet<BanEntry> BanEntries() {
+    public DbSet<BanEntry> BanEntries()
+    {
         throw new NotImplementedException();
     }
 
     /// <summary>
-    /// Get the <see cref="BanEntry"/> with Primary Key '<paramref ref="id"/>'
+    /// Get the <see cref="BanEntry"/> with Primary Key '<paramref ref="entryId"/>'
     /// </summary>
-    public async Task<ActionResult<BanEntry>> GetBanEntry(int id) {
+    public async Task<ActionResult<BanEntry>> GetBanEntry(int entryId)
+    {
         throw new NotImplementedException();
     }
 
     /// <summary>
     /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public async Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(
-        string? address,
-        string? userAgent,
-        int? userId,
-        string? username,
-        int? limit,
-        int? offset
-    ) {
+    public virtual Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(Action<FilterBanEntries> opts)
+    {
+        FilterBanEntries filtering = new();
+        opts(filtering);
+
+        return GetBannedClients(filtering);
+    }
+
+    /// <summary>
+    /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<BanEntry>>> GetBannedClients(FilterBanEntries? filter)
+    {
         throw new NotImplementedException();
     }
 
@@ -60,6 +67,15 @@ public class BannedClientsService() : IBannedClientsService
     /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
     public async Task<ActionResult<int>> DeleteBanEntry(int entryId)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Delete / Remove the <see cref="BanEntry"/> <paramref name="banEntry"/> from
+    /// the database. Equivalent to unbanning a single client (<see cref="Client"/>).
+    /// </summary>
+    public async Task<ActionResult<int>> DeleteBanEntry(BanEntry banEntry)
     {
         throw new NotImplementedException();
     }

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
+using Reception.Interfaces;
 using Reception.Utilities;
 using Reception.Constants;
 
@@ -15,7 +15,7 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("categories")]
 [Produces("application/json")]
-public class CategoriesController(ICategoryService handler) : ControllerBase
+public class CategoriesController(ICategoryHandler handler) : ControllerBase
 {
     /// <summary>
     /// Get all categories.
@@ -25,7 +25,7 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<Category>>> GetCategories() => Ok(
+    public async Task<ActionResult<IEnumerable<CategoryDTO>>> GetCategories() => Ok(
         await handler.GetCategories()
     );
 
@@ -39,7 +39,7 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Category>> GetCategory(int id) =>
+    public async Task<ActionResult<CategoryDTO>> GetCategory(int id) =>
         await handler.GetCategory(id);
 
     /// <summary>
@@ -52,14 +52,14 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Category>> GetCategoryByTitle(string title) =>
+    public async Task<ActionResult<CategoryDTO>> GetCategoryByTitle(string title) =>
         await handler.GetCategoryByTitle(title);
 
     /// <summary>
     /// Get the <see cref="Category"/> with PK <paramref ref="category_id"/> (int), along with a collection of all associated Albums.
     /// </summary>
     /// <returns>
-    /// <seealso cref="CategoryAlbumCollection"/>
+    /// <seealso cref="DisplayCategory"/>
     /// </returns>
     [HttpGet("{category_id:int}/albums")]
     [Tags(ControllerTags.CATEGORIES, ControllerTags.ALBUMS)]
@@ -68,8 +68,8 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CategoryAlbumCollection>> GetCategoryAlbumCollection(int category_id) =>
-        await handler.GetCategoryAlbumCollection(category_id);
+    public async Task<ActionResult<DisplayCategory>> GetCategoryAlbums(int category_id) =>
+        await handler.GetCategoryAlbums(category_id);
 
     /// <summary>
     /// Create a new <see cref="Category"/>.
@@ -82,7 +82,7 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<Category>> CreateCategory(MutateCategory mut) =>
+    public async Task<ActionResult<CategoryDTO>> CreateCategory(MutateCategory mut) =>
         await handler.CreateCategory(mut);
 
     /// <summary>
@@ -96,7 +96,7 @@ public class CategoriesController(ICategoryService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<Category>> UpdateCategory(MutateCategory mut) =>
+    public async Task<ActionResult<CategoryDTO>> UpdateCategory(MutateCategory mut) =>
         await handler.UpdateCategory(mut);
 
     /// <summary>

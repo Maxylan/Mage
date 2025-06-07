@@ -49,17 +49,22 @@ public class BanHandler(
     /// <summary>
     /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
     /// </summary>
-    public async Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(
-        string? address,
-        string? userAgent,
-        int? userId,
-        string? username,
-        int? limit = 99,
-        int? offset = 0
-    ) {
-        if (limit is not null && limit <= 0)
+    public virtual Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(Action<FilterBanEntries> opts)
+    {
+        FilterBanEntries filtering = new();
+        opts(filtering);
+
+        return GetBannedClients(filtering);
+    }
+
+    /// <summary>
+    /// Get all <see cref="BanEntry"/>-entries matching a few optional filtering / pagination parameters.
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<BanEntryDTO>>> GetBannedClients(FilterBanEntries filter)
+    {
+        if (filter.limit is not null && filter.limit <= 0)
         {
-            string message = $"Parameter {nameof(limit)} has to be a non-zero positive integer!";
+            string message = $"Parameter {nameof(filter.limit)} has to be a non-zero positive integer!";
             logging
                 .Action(nameof(BanHandler.GetBannedClients))
                 .ExternalDebug(message)
@@ -69,9 +74,9 @@ public class BanHandler(
                 Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
             );
         }
-        if (offset is not null && offset < 0)
+        if (filter.offset is not null && filter.offset < 0)
         {
-            string message = $"Parameter {nameof(offset)} has to be a positive integer!";
+            string message = $"Parameter {nameof(filter.offset)} has to be a positive integer!";
             logging
                 .Action(nameof(BanHandler.GetBannedClients))
                 .ExternalDebug(message)
@@ -82,14 +87,7 @@ public class BanHandler(
             );
         }
 
-        var getEntries = await banService.GetBannedClients(
-            address,
-            userAgent,
-            userId,
-            username,
-            limit,
-            offset
-        );
+        var getEntries = await banService.GetBannedClients(filter);
 
         if (getEntries.Value is null)
         {
@@ -153,19 +151,6 @@ public class BanHandler(
     /// </summary>
     public async Task<ActionResult<BanEntryDTO>> BanClient(MutateBanEntry mut)
     {
-        if (mut.Id <= 0)
-        {
-            string message = $"Parameter {nameof(mut.Id)} has to be a non-zero positive integer!";
-            logging
-                .Action(nameof(BanHandler.BanClient))
-                .ExternalDebug(message)
-                .LogAndEnqueue();
-
-            return new BadRequestObjectResult(
-                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
-            );
-        }
-
         var banEntry = await banService.CreateBanEntry(mut);
 
         if (banEntry.Value is null)
@@ -190,11 +175,23 @@ public class BanHandler(
     /// Delete / Remove a <see cref="BanEntry"/> from the database.
     /// Equivalent to unbanning a single client (<see cref="Client"/>).
     /// </summary>
-    public async Task<ActionResult> UnbanClient(int entryId)
+    public async Task<ActionResult> UnbanClient(int clientId, int accountId)
     {
-        if (entryId <= 0)
+        if (clientId <= 0)
         {
-            string message = $"Parameter {nameof(entryId)} has to be a non-zero positive integer!";
+            string message = $"Parameter {nameof(clientId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(BanHandler.UnbanClient))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+        if (accountId <= 0)
+        {
+            string message = $"Parameter {nameof(accountId)} has to be a non-zero positive integer!";
             logging
                 .Action(nameof(BanHandler.UnbanClient))
                 .ExternalDebug(message)
@@ -205,21 +202,62 @@ public class BanHandler(
             );
         }
 
-        var banEntry = await banService.DeleteBanEntry(entryId);
+        var getBanEntriesByClient = await banService.GetBannedClients(opts => {
+            opts.clientId = clientId;
+            opts.accountId = accountId;
+        });
 
-        if (banEntry.Value <= 0 ||
-            banEntry.Result is not OkResult ||
-            banEntry.Result is not OkObjectResult
-        ) {
-            string message = $"Failed to delete existing {nameof(BanEntry)} with ID #{entryId}.";
+        var banEntries = getBanEntriesByClient.Value;
+        if (banEntries is null || banEntries.Count() <= 0)
+        {
+            string message = $"No {nameof(BanEntry)} found matching {nameof(clientId)} #{clientId} and {nameof(accountId)} #{accountId}!";
             logging
                 .Action(nameof(BanHandler.UnbanClient))
                 .ExternalDebug(message)
                 .LogAndEnqueue();
 
-            return banEntry.Result!;
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
         }
 
-        return new NoContentResult();
+        var deletedEntries = await Task.WhenAll(
+            banEntries.Select(
+                entry => banService.DeleteBanEntry(entry)
+            )
+        );
+
+        if (deletedEntries.All(
+            unban => unban.Result is OkResult || unban.Result is OkObjectResult
+        )) {
+            string message = $"Successfully deleted {deletedEntries.Count()} {nameof(BanEntry)}(s) with ID #{clientId}.";
+            logging
+                .Action(nameof(BanHandler.UnbanClient))
+                .ExternalWarning(message)
+                .LogAndEnqueue();
+
+            return new NoContentResult();
+        }
+        else if (deletedEntries.Any(
+            unban => unban.Result is OkResult || unban.Result is OkObjectResult
+        )) {
+            string message = $"Partial success deleting existing {nameof(BanEntry)}(s) with ID #{clientId}.";
+            logging
+                .Action(nameof(BanHandler.UnbanClient))
+                .ExternalWarning(message)
+                .LogAndEnqueue();
+
+            return new ObjectResult(message) {
+                StatusCode = StatusCodes.Status206PartialContent
+            };
+        }
+
+        string failMessage = $"Failed to delete {nameof(BanEntry)}(s) matching {nameof(clientId)} #{clientId} and {nameof(accountId)} #{accountId}.";
+        logging
+            .Action(nameof(BanHandler.UnbanClient))
+            .ExternalDebug(failMessage)
+            .LogAndEnqueue();
+
+        return deletedEntries.First().Result!;
     }
 }

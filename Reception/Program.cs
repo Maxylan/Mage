@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
+using Reception.Caching;
+using Reception.Interfaces;
+using Reception.Interfaces.DataAccess;
+using Reception.Middleware;
 using Reception.Middleware.Authentication;
+using Reception.Services;
+using Reception.Services.DataAccess;
 
 namespace Reception;
 
@@ -124,25 +130,32 @@ public sealed class Program
             opts.EnableDetailedErrors();
         });*/
 
-        /*
         builder.Services.AddSingleton<LoginTracker>();
         builder.Services.AddSingleton<EventDataAggregator>();
 
+        builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped(typeof(ILoggingService<>), typeof(LoggingService<>));
+
         builder.Services.AddScoped<IEventLogService, EventLogService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
-        builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
         builder.Services.AddScoped<IPhotoService, PhotoService>();
         builder.Services.AddScoped<IBlobService, BlobService>();
         builder.Services.AddScoped<IPublicLinkService, PublicLinkService>();
-        builder.Services.AddScoped<IViewService, ViewService>();
         builder.Services.AddScoped<ITagService, TagService>();
         builder.Services.AddScoped<IAlbumService, AlbumService>();
         builder.Services.AddScoped<ICategoryService, CategoryService>();
+        builder.Services.AddScoped<IClientService, ClientService>();
+
+        builder.Services.AddScoped<IAccountHandler, AccountHandler>();
+        builder.Services.AddScoped<IAlbumHandler, AlbumHandler>();
+        builder.Services.AddScoped<IBanHandler, BanHandler>();
+        builder.Services.AddScoped<ICategoryHandler, CategoryHandler>();
+        builder.Services.AddScoped<IClientHandler, ClientHandler>();
+
         builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
         builder.Services.AddScoped<IPhotoStreamingService, PhotoStreamingService>();
-        */
+        builder.Services.AddScoped<IViewLinkService, ViewLinkService>();
 
         var app = builder.Build();
 
