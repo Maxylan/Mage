@@ -10,6 +10,7 @@ using Reception.Interfaces.DataAccess;
 using Reception.Interfaces;
 using Reception.Utilities;
 using Reception.Caching;
+using Reception.Models;
 
 namespace Reception.Services;
 
@@ -19,6 +20,7 @@ public class AuthorizationService(
     LoginTracker loginTracker,
     ISessionService sessionService,
     IClientService clientService,
+    IBannedClientsService banService,
     IAccountService accountService
 ) : IAuthorizationService
 {
@@ -631,6 +633,101 @@ public class AuthorizationService(
     /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
     /// <see cref="DateTime"/> as <paramref name="expiry"/>
     /// </summary>
-    public async Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null) =>
-        await clientService.CreateBanEntry(client, expiry);
+    public async Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null, string? reason = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Potential Unauthorized attempt at ${nameof(BanClientByFingerprint)}. Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(BanClient))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.ADMIN) != Privilege.ADMIN)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.ADMIN}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(BanClient))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (client.Id <= 0)
+        {
+            string message = $"Parameter {nameof(client.Id)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(AuthorizationService.BanClient))
+                .LogDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
+        if (expiry is null)
+        {
+            expiry = DateTime.UtcNow.AddMonths(3);
+        }
+
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            reason = reason
+                .Normalize()
+                .Trim();
+
+            reason = reason.Subsmarter(0, 32768);
+        }
+
+        MutateBanEntry mut = new() {
+            ClientId = client.Id,
+            ExpiresAt = expiry,
+            Reason = reason
+        };
+
+        var banEntry = await banService.CreateBanEntry(mut);
+
+        if (banEntry is null)
+        {
+            string message = $"Failed to find a {nameof(Client)} matching the given fingerprint.";
+            logging
+                .Action(nameof(BanClient))
+                .LogDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(
+                Program.IsProduction ? HttpStatusCode.NotFound.ToString() : message
+            );
+        }
+
+        return banEntry;
+    }
 }

@@ -5,6 +5,7 @@ using ReceptionAuthorizationService = Reception.Interfaces.IAuthorizationService
 using Reception.Interfaces.DataAccess;
 using Reception.Models;
 using Reception.Database.Models;
+using Reception.Database;
 
 namespace Reception.Controllers;
 
@@ -47,7 +48,7 @@ public class AuthController(
             return sessionValidation.Result!;
         }
 
-        if (session.User is Account user)
+        if (session.Account is Account user)
         {
             return user;
         }

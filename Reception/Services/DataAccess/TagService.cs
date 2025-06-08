@@ -256,7 +256,7 @@ public class TagService(
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Albums.
     /// </summary>
-    public async Task<ActionResult<(Tag, IEnumerable<Album>)>> GetTagAlbums(string name)
+    public async Task<ActionResult<TagAlbumCollection>> GetTagAlbums(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -363,15 +363,19 @@ public class TagService(
         var albums = await db.Albums
             .Include(album => album.Tags)
             .Where(album => album.Tags.Any(t => t.TagId == tag.Id))
+            .Select(album => (AlbumDTO)album)
             .ToListAsync();
 
-        return (tag, albums);
+        return new TagAlbumCollection(
+            (TagDTO)tag,
+            albums
+        );
     }
 
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Photos.
     /// </summary>
-    public async Task<ActionResult<(Tag, IEnumerable<Photo>)>> GetTagPhotos(string name)
+    public async Task<ActionResult<TagPhotoCollection>> GetTagPhotos(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -478,9 +482,13 @@ public class TagService(
         var photos = await db.Photos
             .Include(photo => photo.Tags)
             .Where(photo => photo.Tags.Any(t => t.TagId == tag.Id))
+            .Select(photo => (PhotoDTO)photo)
             .ToListAsync();
 
-        return (tag, photos);
+        return new TagPhotoCollection(
+            (TagDTO)tag,
+            photos
+        );
     }
 
     /// <summary>

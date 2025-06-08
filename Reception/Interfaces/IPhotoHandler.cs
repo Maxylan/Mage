@@ -16,6 +16,16 @@ public interface IPhotoHandler
     /// Get the <see cref="Photo"/> with Slug '<paramref ref="slug"/>' (string)
     /// </summary>
     public abstract Task<ActionResult<PhotoDTO>> GetPhoto(string slug);
+
+    /// <summary>
+    /// Get the <see cref="DisplayPhoto"/> with Primary Key '<paramref ref="photoId"/>'
+    /// </summary>
+    public abstract Task<ActionResult<DisplayPhoto>> GetDisplayPhoto(int photoId);
+
+    /// <summary>
+    /// Get the <see cref="DisplayPhoto"/> with Slug '<paramref ref="slug"/>' (string)
+    /// </summary>
+    public abstract Task<ActionResult<DisplayPhoto>> GetDisplayPhoto(string slug);
     #endregion
 
 
@@ -39,21 +49,57 @@ public interface IPhotoHandler
 
 
     /// <summary>
+    /// Get all <see cref="DisplayPhoto"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// </summary>
+    public virtual Task<ActionResult<IEnumerable<DisplayPhoto>>> GetDisplayPhotos(Action<FilterPhotosOptions> opts)
+    {
+        FilterPhotosOptions filtering = new();
+        opts(filtering);
+
+        return GetDisplayPhotos(filtering);
+    }
+
+    /// <summary>
+    /// Assemble a <see cref="IEnumerable{DisplayPhoto}"/> collection of Photos matching a wide range of optional
+    /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<DisplayPhoto>>> GetDisplayPhotos(FilterPhotosOptions filter);
+
+
+    /// <summary>
     /// Get all <see cref="Reception.Database.Models.Photo"/> instances by evaluating a wide range of optional search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public virtual Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(Action<PhotoSearchQuery> opts)
+    public virtual Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(string searchTerm, Action<PhotoSearchQuery> opts)
     {
         PhotoSearchQuery search = new();
         opts(search);
 
-        return PhotoSearch(search);
+        return PhotoSearch(searchTerm, search);
     }
 
     /// <summary>
     /// Assemble a <see cref="IEnumerable{Reception.Database.Models.Photo}"/> collection of Photos by evaluating a wide range of optional
     /// search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public abstract Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(PhotoSearchQuery searchQuery);
+    public abstract Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(string searchTerm, PhotoSearchQuery searchQuery);
+
+
+    /// <summary>
+    /// Get all <see cref="DisplayPhoto"/> instances by evaluating a wide range of optional search / pagination options (<seealso cref="PhotoSearchQuery"/>).
+    /// </summary>
+    public virtual Task<ActionResult<IEnumerable<DisplayPhoto>>> DisplayPhotosSearch(string searchTerm, Action<PhotoSearchQuery> opts)
+    {
+        PhotoSearchQuery search = new();
+        opts(search);
+
+        return DisplayPhotosSearch(searchTerm, search);
+    }
+
+    /// <summary>
+    /// Assemble a <see cref="IEnumerable{DisplayPhoto}"/> collection of Photos by evaluating a wide range of optional
+    /// search / pagination options (<seealso cref="PhotoSearchQuery"/>).
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<DisplayPhoto>>> DisplayPhotosSearch(string searchTerm, PhotoSearchQuery searchQuery);
     #endregion
 
 

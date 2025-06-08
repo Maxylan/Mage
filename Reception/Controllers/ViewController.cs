@@ -1,23 +1,14 @@
-using System.ComponentModel.DataAnnotations;
-using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Authorization;
-using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Reception.Utilities;
-using Reception.Constants;
-using System.Net;
-using Reception.Middleware.Authentication;
-using Microsoft.EntityFrameworkCore;
+using Reception.Interfaces;
 
 namespace Reception.Controllers;
 
 [ApiController]
 [Route("links/view")]
 [Produces("application/octet-stream")]
-public class ViewController(IViewService handler) : ControllerBase
+public class ViewController(IViewLinkService handler) : ControllerBase
 {
     /// <summary>
     /// View the <see cref="PhotoEntity"/> (blob) associated with the <see cref="Link"/> with Unique Code (GUID) '<paramref ref="code"/>'
@@ -32,7 +23,7 @@ public class ViewController(IViewService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
-    public async Task<ActionResult<Link>> ViewSource(Guid? code) =>
+    public async Task<ActionResult<PublicLinkDTO>> ViewSource(Guid? code) =>
         await handler.ViewSource(code);
 
     /// <summary>
@@ -48,7 +39,7 @@ public class ViewController(IViewService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
-    public async Task<ActionResult<Link>> ViewMedium(Guid? code) =>
+    public async Task<ActionResult<PublicLinkDTO>> ViewMedium(Guid? code) =>
         await handler.ViewMedium(code);
 
     /// <summary>
@@ -64,6 +55,6 @@ public class ViewController(IViewService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status410Gone)]
-    public async Task<ActionResult<Link>> ViewThumbnail(Guid? code) =>
+    public async Task<ActionResult<PublicLinkDTO>> ViewThumbnail(Guid? code) =>
         await handler.ViewThumbnail(code);
 }

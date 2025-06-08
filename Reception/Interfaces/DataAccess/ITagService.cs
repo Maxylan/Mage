@@ -24,12 +24,12 @@ public interface ITagService
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Albums.
     /// </summary>
-    public abstract Task<ActionResult<(Tag, IEnumerable<Album>)>> GetTagAlbums(string name);
+    public abstract Task<ActionResult<TagAlbumCollection>> GetTagAlbums(string name);
 
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Photos.
     /// </summary>
-    public abstract Task<ActionResult<(Tag, IEnumerable<Photo>)>> GetTagPhotos(string name);
+    public abstract Task<ActionResult<TagPhotoCollection>> GetTagPhotos(string name);
 
     /// <summary>
     /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (string[]) array.

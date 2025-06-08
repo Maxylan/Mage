@@ -44,5 +44,5 @@ public interface IAuthorizationService
     /// Attempt to ban a client. By default the ban is indefinite, but you may optionally provide a
     /// <see cref="DateTime"/> as <paramref name="expiry"/>
     /// </summary>
-    public abstract Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null);
+    public abstract Task<ActionResult<BanEntry>> BanClient(Client client, DateTime? expiry = null, string? reason = null);
 }

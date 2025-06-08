@@ -295,7 +295,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.PhotoSearch(search, opts =>
+        await handler.PhotoSearch(search ?? string.Empty, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;
@@ -346,7 +346,7 @@ public class PhotosController(
         [FromQuery] DateTime? createdBefore = null,
         [FromQuery] DateTime? createdAfter = null
     ) =>
-        await handler.DisplayPhotosSearch(search, opts =>
+        await handler.DisplayPhotosSearch(search ?? string.Empty, opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;
@@ -413,7 +413,7 @@ public class PhotosController(
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<(Photo, IEnumerable<TagDTO>)>> MutateTags(
+    public async Task<ActionResult<PhotoTagCollection>> MutateTags(
         int photo_id,
         [FromBody] IEnumerable<ITag> tags
     ) =>

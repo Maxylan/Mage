@@ -968,7 +968,7 @@ public class PhotoService(
     /// Adds the given <see cref="IEnumerable{Reception.Database.Models.Tag}"/> collection (<paramref name="tags"/>) to the
     /// <see cref="Reception.Database.Models.Photo"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public async Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<Tag> tags)
+    public async Task<ActionResult<IEnumerable<Tag>>> AddTags(int photoId, IEnumerable<ITag> tags)
     {
         ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
 
@@ -1052,21 +1052,34 @@ public class PhotoService(
             };
         }
 
-        var existingIds = existingPhoto.Tags
-            .Select(tag => tag.TagId);
+        var existingTags = existingPhoto.Tags
+            .Select(relation => relation.Tag.Name);
 
         tags = tags
             .Where(tag => (user.Privilege & (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL))) == (tag.RequiredPrivilege & (Privilege.VIEW | Privilege.VIEW_ALL)))
             .Distinct()
-            .IntersectBy(existingIds, tag => tag.Id)
+            .IntersectBy(existingTags, tag => tag.Name)
             .ToList();
 
-        if (tags.Count() <= 0) {
+        var newTags = await tagService.CreateTags(tags);
+
+        if (newTags.Value is null)
+        {
+            string message = $"Parameter '{nameof(photoId)}' has to be a non-zero positive integer! (Photo ID)";
+            logging
+                .Action(nameof(AddTags))
+                .InternalDebug(message)
+                .LogAndEnqueue();
+
+            return newTags.Result!;
+        }
+
+        if (newTags.Value.Count() <= 0) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
         var newTagRelations =
-            tags.Select(tag => new PhotoTagRelation() {
+            newTags.Value.Select(tag => new PhotoTagRelation() {
                 TagId = tag.Id,
                 Tag = tag,
                 PhotoId = existingPhoto.Id,
@@ -1141,7 +1154,7 @@ public class PhotoService(
     /// Removes the given <see cref="IEnumerable{Reception.Database.Models.Tag}"/> collection (<paramref name="tags"/>) from
     /// the <see cref="Reception.Database.Models.Photo"/> identified by its PK <paramref name="photoId"/>.
     /// </summary>
-    public async Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int photoId, IEnumerable<Tag> tags)
+    public async Task<ActionResult<IEnumerable<Tag>>> RemoveTags(int photoId, IEnumerable<ITag> tags)
     {
         ArgumentNullException.ThrowIfNull(photoId, nameof(photoId));
 
@@ -1225,16 +1238,16 @@ public class PhotoService(
             };
         }
 
-        var tagIds = tags
-            .Select(tag => tag.Id)
+        var tagNames = tags
+            .Select(tag => tag.Name)
             .Distinct();
 
-        if (tagIds.Count() <= 0) {
+        if (tagNames.Count() <= 0) {
             return new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
         var newRelations = existingPhoto.Tags
-            .IntersectBy(tagIds, tag => tag.TagId)
+            .IntersectBy(tagNames, tag => tag.Tag.Name)
             .ToList();
 
         existingPhoto.Tags = newRelations;

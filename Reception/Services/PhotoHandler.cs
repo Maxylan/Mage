@@ -81,6 +81,52 @@ public class PhotoHandler(
 
         return (PhotoDTO)getPhoto.Value;
     }
+
+    /// <summary>
+    /// Get the <see cref="DisplayPhoto"/> with Primary Key '<paramref ref="photoId"/>'
+    /// </summary>
+    public async Task<ActionResult<DisplayPhoto>> GetDisplayPhoto(int photoId)
+    {
+        var getPhoto = await GetPhoto(photoId);
+
+        if (getPhoto.Value is null)
+        {
+            /*
+            // No need to double-log..
+            string message = $"Failed to get a {nameof(Photo)} with ID #{photoId}.";
+            logging
+                .Action(nameof(PhotoHandler.GetPhoto))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+            */
+            return getPhoto.Result!;
+        }
+
+        return new DisplayPhoto(getPhoto.Value);
+    }
+
+    /// <summary>
+    /// Get the <see cref="DisplayPhoto"/> with Slug '<paramref ref="slug"/>' (string)
+    /// </summary>
+    public async Task<ActionResult<DisplayPhoto>> GetDisplayPhoto(string slug)
+    {
+        var getPhoto = await photoService.GetPhoto(slug);
+
+        if (getPhoto.Value is null)
+        {
+            /*
+            // No need to double-log..
+            string message = $"Failed to get a {nameof(Photo)} with slug '{slug}'.";
+            logging
+                .Action(nameof(PhotoHandler.GetPhoto))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+            */
+            return getPhoto.Result!;
+        }
+
+        return new DisplayPhoto(getPhoto.Value);
+    }
     #endregion
 
 
@@ -147,21 +193,59 @@ public class PhotoHandler(
 
 
     /// <summary>
+    /// Get all <see cref="DisplayPhoto"/> instances matching a wide range of optional filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// </summary>
+    public virtual Task<ActionResult<IEnumerable<DisplayPhoto>>> GetDisplayPhotos(Action<FilterPhotosOptions> opts)
+    {
+        FilterPhotosOptions filtering = new();
+        opts(filtering);
+
+        return GetDisplayPhotos(filtering);
+    }
+
+    /// <summary>
+    /// Assemble a <see cref="IEnumerable{DisplayPhoto}"/> collection of Photos matching a wide range of optional
+    /// filtering / pagination options (<seealso cref="FilterPhotosOptions"/>).
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<DisplayPhoto>>> GetDisplayPhotos(FilterPhotosOptions filter)
+    {
+        var getPhotos = await GetPhotos(filter);
+
+        if (getPhotos.Value is null)
+        {
+            /*
+            // No need to double-log..
+            string message = $"Failed to get any {nameof(Photo)}(s) matching the given filter!";
+            logging
+                .Action(nameof(PhotoHandler.GetDisplayPhotos))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+            */
+            return getPhotos.Result!;
+        }
+
+        return getPhotos.Value
+            .Select(photo => new DisplayPhoto(photo))
+            .ToArray();
+    }
+
+
+    /// <summary>
     /// Get all <see cref="Reception.Database.Models.Photo"/> instances by evaluating a wide range of optional search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public virtual Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(Action<PhotoSearchQuery> opts)
+    public virtual Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(string searchTerm, Action<PhotoSearchQuery> opts)
     {
         PhotoSearchQuery search = new();
         opts(search);
 
-        return PhotoSearch(search);
+        return PhotoSearch(searchTerm, search);
     }
 
     /// <summary>
     /// Assemble a <see cref="IEnumerable{Reception.Database.Models.Photo}"/> collection of Photos by evaluating a wide range of optional
     /// search / pagination options (<seealso cref="PhotoSearchQuery"/>).
     /// </summary>
-    public async Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(PhotoSearchQuery searchQuery)
+    public async Task<ActionResult<IEnumerable<PhotoDTO>>> PhotoSearch(string searchTerm, PhotoSearchQuery searchQuery)
     {
         if (searchQuery.Limit is not null && searchQuery.Limit <= 0)
         {
@@ -203,6 +287,44 @@ public class PhotoHandler(
 
         return searchPhoto.Value
             .Select(photo => (PhotoDTO)photo)
+            .ToArray();
+    }
+
+
+    /// <summary>
+    /// Get all <see cref="DisplayPhoto"/> instances by evaluating a wide range of optional search / pagination options (<seealso cref="PhotoSearchQuery"/>).
+    /// </summary>
+    public virtual Task<ActionResult<IEnumerable<DisplayPhoto>>> DisplayPhotosSearch(string searchTerm, Action<PhotoSearchQuery> opts)
+    {
+        PhotoSearchQuery search = new();
+        opts(search);
+
+        return DisplayPhotosSearch(searchTerm, search);
+    }
+
+    /// <summary>
+    /// Assemble a <see cref="IEnumerable{DisplayPhoto}"/> collection of Photos by evaluating a wide range of optional
+    /// search / pagination options (<seealso cref="PhotoSearchQuery"/>).
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<DisplayPhoto>>> DisplayPhotosSearch(string searchTerm, PhotoSearchQuery searchQuery)
+    {
+        var searchPhoto = await PhotoSearch(searchTerm, searchQuery);
+
+        if (searchPhoto.Value is null)
+        {
+            /*
+            // No need to double-log..
+            string message = $"Failed to get any {nameof(Photo)}(s) matching the given search!";
+            logging
+                .Action(nameof(PhotoHandler.DisplayPhotosSearch))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+            */
+            return searchPhoto.Result!;
+        }
+
+        return searchPhoto.Value
+            .Select(photo => new DisplayPhoto(photo))
             .ToArray();
     }
     #endregion

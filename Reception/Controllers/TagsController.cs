@@ -1,13 +1,9 @@
-using System.ComponentModel.DataAnnotations;
-using SixLabors.ImageSharp.Formats;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Reception.Models;
 using Reception.Database.Models;
-using Reception.Interfaces.DataAccess;
-using Reception.Utilities;
-using Reception.Constants;
+using Reception.Interfaces;
 
 namespace Reception.Controllers;
 
@@ -15,7 +11,7 @@ namespace Reception.Controllers;
 [ApiController]
 [Route("tags")]
 [Produces("application/json")]
-public class TagsController(ITagService handler) : ControllerBase
+public class TagsController(ITagHandler handler) : ControllerBase
 {
     /// <summary>
     /// Get all tags as a <see cref="string[]"/> of unique tag names.
@@ -24,7 +20,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<Tag>>> GetTags() => Ok(
+    public async Task<ActionResult<IEnumerable<TagDTO>>> GetTags() => Ok(
         await handler.GetTags()
     );
 
@@ -37,7 +33,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Tag>> GetTag(string name) =>
+    public async Task<ActionResult<TagDTO>> GetTag(string name) =>
         await handler.GetTag(name);
 
     /// <summary>
@@ -53,7 +49,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TagAlbumCollection>> GetTagAlbumCollection(string name) =>
-        await handler.GetTagAlbumCollection(name);
+        await handler.GetTagAlbums(name);
 
     /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Photos.
@@ -68,7 +64,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TagPhotoCollection>> GetTagPhotoCollection(string name) =>
-        await handler.GetTagPhotoCollection(name);
+        await handler.GetTagPhotos(name);
 
     /// <summary>
     /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (string[]) array.
@@ -79,7 +75,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<Tag>>> CreateTags([FromBody] string[] tagNames) =>
+    public async Task<ActionResult<IEnumerable<TagDTO>>> CreateTags([FromBody] string[] tagNames) =>
         await handler.CreateTags(tagNames);
 
     /// <summary>
@@ -90,7 +86,7 @@ public class TagsController(ITagService handler) : ControllerBase
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<Tag>> UpdateTag(string name, MutateTag mut) =>
+    public async Task<ActionResult<TagDTO>> UpdateTag(string name, MutateTag mut) =>
         await handler.UpdateTag(name, mut);
 
     /// <summary>
