@@ -38,7 +38,7 @@ services:
   mage.window: # Postgresql Database UI for the browser
     container_name: "${WINDOW_NAME}"
     restart: unless-stopped
-    image: adminer:5
+    image: adminer:latest
     environment:
       APP_NAME: "${APP_NAME}"
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
@@ -46,7 +46,6 @@ services:
       ADMINER_DEFAULT_SERVER: "${STORAGE_NAME}:${STORAGE_PORT}"
       ADMINER_DEFAULT_DB_DRIVER: "pgsql"
       ADMINER_PORT: "${WINDOW_PORT}"
-      ADMINER_DESIGN: "dracula"
       PGTZ: "Europe/Stockholm"
       TZ: "Europe/Stockholm"
     networks:
@@ -55,13 +54,43 @@ services:
       - "${WINDOW_PORT}"
       - "8080"
 
+  mage.secretary: # ollama
+    container_name: "${SECRETARY_NAME}"
+    restart: unless-stopped
+    image: ollama/ollama:latest
+    # command: [ "serve", "deepseek-r1" ]
+    # command: [ "serve", "&&", "create", "mario", "-f", "/root/Modelfile" ]
+    command: [ "serve" ]
+    volumes:
+      - "${SECRETARY_MOUNT_POINT}/Modelfile:/root/Modelfile"
+      - "mage.ollama_data:/root/.ollama"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+              driver: nvidia
+    environment:
+      APP_NAME: "${APP_NAME}"
+      APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
+      SECRETARY_NAME: "${SECRETARY_NAME}"
+      OLLAMA_TIMEOUT: 30
+    env_file:
+      - "${STORAGE_CONFIGURATION_FILE}"
+    networks:
+      - magenet
+      # - mage-inet
+    expose:
+      - "11434"
+
   mage.reception: # ASP.NET 9.0 Backend
     container_name: "${RECEPTION_NAME}"
-    build: 
-      context: .
-      dockerfile: "Reception.Dockerfile"
-    entrypoint: [ "./Reception" ]
     restart: unless-stopped
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    working_dir: "${RECEPTION_VOLUME_TARGET}"
+    command: [ "dotnet", "run", "-c", "Debug" ]
+    volumes:
+      - "${RECEPTION_MOUNT_POINT}:${RECEPTION_VOLUME_TARGET}"
     environment:
       APP_NAME: "${APP_NAME}"
       APP_VERSION: "${GUARD_VERSION}.${GARDEN_VERSION}.${RECEPTION_VERSION}.${STORAGE_VERSION}"
@@ -85,13 +114,13 @@ services:
       - magenet
     expose:
       - "${RECEPTION_PORT}"
+    ports:
+      - "${RECEPTION_PORT}"
 
   mage.garden: # Angular 2 Frontend (Apache2 / httpd)
     container_name: "${GARDEN_NAME}"
     restart: unless-stopped # image: httpd:2.4-alpine
-    build: # image: httpd:2.4-alpine
-      context: .
-      dockerfile: "Garden.Dockerfile"
+    build: ${GARDEN_MOUNT_POINT}
     working_dir: "${GARDEN_VOLUME_TARGET}"
     command: [ "apachectl", "-D", "FOREGROUND" ]
     volumes:
@@ -114,12 +143,10 @@ services:
     expose:
       - "${GARDEN_PORT}"
 
-  mage.guard: # Angular 2 Frontend (Apache2 / httpd)
+  mage.gate: # Angular 2 Frontend (Apache2 / httpd)
     container_name: "${GUARD_NAME}"
     restart: unless-stopped
-    build: # image: httpd:2.4-alpine
-      context: .
-      dockerfile: "Guard.Dockerfile"
+    build: ${GUARD_MOUNT_POINT} # image: httpd:2.4-alpine
     working_dir: "${GUARD_VOLUME_TARGET}"
     command: [ "apachectl", "-D", "FOREGROUND" ]
     volumes:

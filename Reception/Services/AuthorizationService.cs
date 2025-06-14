@@ -17,7 +17,6 @@ namespace Reception.Services;
 public class AuthorizationService(
     IHttpContextAccessor contextAccessor,
     ILoggingService<AuthorizationService> logging,
-    LoginTracker loginTracker,
     ISessionService sessionService,
     IClientService clientService,
     IBannedClientsService banService,
@@ -485,7 +484,7 @@ public class AuthorizationService(
                 .Trim();
         }
 
-        if (loginTracker.Attempts(account.Username, userAddress) >= 3)
+        if (LoginTracker.Attempts(account.Username, userAddress) >= 3)
         {
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Timeout for addr '{userAddress}' due to repeatedly failed attempts.";
             logging
@@ -501,12 +500,18 @@ public class AuthorizationService(
             };
         }
 
-        byte[] digest = SHA256.HashData(Encoding.Default.GetBytes(password));
-        string hashedPassword = Encoding.Default.GetString(digest);
+        byte[] digest = SHA256.HashData(
+            Encoding.Default.GetBytes(password)
+        );
+
+        string hashedPassword = string.Join(
+            string.Empty,
+            digest.Select(@byte => @byte.ToString("x2"))
+        );
 
         if (account.Password != hashedPassword)
         {
-            loginTracker.RecordAttempt(account.Username, userAddress, userAgent);
+            LoginTracker.Record(account.Username, userAddress, userAgent);
 
             string message = $"Failed to login user '{account.Username}' (#{account.Id}). Password Missmatch.";
             logging

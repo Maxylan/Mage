@@ -381,7 +381,7 @@ public class SessionService(
             .FirstOrDefault();
 
         if (client is not null) {
-            client.LastVisit = DateTime.Now;
+            client.LastVisit = DateTime.UtcNow;
             client.Logins++;
 
             db.Update(client);
@@ -392,8 +392,8 @@ public class SessionService(
                 Trusted = false,
                 UserAgent = userAgentHeader,
                 Address = address,
-                CreatedAt = DateTime.Now,
-                LastVisit = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
+                LastVisit = DateTime.UtcNow,
                 Logins = 1
             };
         }

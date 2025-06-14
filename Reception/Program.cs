@@ -8,6 +8,7 @@ using Reception.Middleware;
 using Reception.Middleware.Authentication;
 using Reception.Services;
 using Reception.Services.DataAccess;
+using Reception.Database;
 
 namespace Reception;
 
@@ -41,13 +42,6 @@ public sealed class Program
     private Program() { }
 
     public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-        var app = builder.Build();
-        app.Run();
-    }
-
-    public static void Second(string[] args)
     {
         // Swagger/OpenAPI reference & tutorial, if ever needed:
         // https://aka.ms/aspnetcore/swashbuckle
@@ -120,7 +114,7 @@ public sealed class Program
                 conf.IncludeXmlComments(Path.Combine(System.AppContext.BaseDirectory, "SwaggerAnnotations.xml"), true);
             } */
         });
-        /*builder.Services.AddDbContext<MageDb>(opts =>
+        builder.Services.AddDbContext<MageDb>(opts =>
         {
             if (IsDevelopment)
             {
@@ -128,17 +122,16 @@ public sealed class Program
             }
 
             opts.EnableDetailedErrors();
-        });*/
+        });
 
-        builder.Services.AddSingleton<LoginTracker>();
         builder.Services.AddSingleton<EventDataAggregator>();
 
-        builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped(typeof(ILoggingService<>), typeof(LoggingService<>));
-
+        builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
         builder.Services.AddScoped<IEventLogService, EventLogService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<IAccountService, AccountService>();
+        builder.Services.AddScoped<IBannedClientsService, BannedClientsService>();
         builder.Services.AddScoped<IPhotoService, PhotoService>();
         builder.Services.AddScoped<IBlobService, BlobService>();
         builder.Services.AddScoped<IPublicLinkService, PublicLinkService>();
@@ -152,6 +145,9 @@ public sealed class Program
         builder.Services.AddScoped<IBanHandler, BanHandler>();
         builder.Services.AddScoped<ICategoryHandler, CategoryHandler>();
         builder.Services.AddScoped<IClientHandler, ClientHandler>();
+        builder.Services.AddScoped<IPhotoHandler, PhotoHandler>();
+        builder.Services.AddScoped<IPublicLinkHandler, PublicLinkHandler>();
+        builder.Services.AddScoped<ITagHandler, TagHandler>();
 
         builder.Services.AddScoped<IIntelligenceService, IntelligenceService>();
         builder.Services.AddScoped<IPhotoStreamingService, PhotoStreamingService>();
@@ -179,7 +175,7 @@ public sealed class Program
                     opts.EnableTryItOutByDefault();
                     opts.DisplayRequestDuration();
 
-                    //opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
+                    // opts.SwaggerEndpoint(ApiPathBase + "/swagger/v1/swagger.json", ApiName);
                     // opts.RoutePrefix = ApiPathBase[1..];
                     Console.WriteLine("Swagger Path: " + opts.RoutePrefix);
                 });
@@ -188,11 +184,11 @@ public sealed class Program
 
         app.UseForwardedHeaders();
 
-        // app.UseMiddleware<EventAggregationMiddleware>();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
 
-        // app.UseAuthentication();
-        // app.UseAuthorization();
-        // app.MapControllers();
+        app.UseMiddleware<EventAggregationMiddleware>();
 
         app.Run();
     }

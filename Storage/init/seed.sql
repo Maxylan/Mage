@@ -20,11 +20,11 @@ TRUNCATE TABLE favorite_photos CASCADE;
 TRUNCATE TABLE favorite_albums CASCADE;
 
 INSERT INTO accounts (email, username, password, full_name, privilege) VALUES
-    ('webmaster@torpssons.se', 'root', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Administrator', 15),
-    ('maxylan@torpssons.se', 'maxylan', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Maxylan', 15),
-    ('skais@torpssons.se', 'skais', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Skais', 15),
-    ('user@torpssons.se', 'user', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Anonymous User', 3),
-    ('guest@torpssons.se', 'guest', '5e884898da2847151d0e56f8dc6292773603dd6aabbdd62a11ef721d1542d8', 'Anonymous Guest', 1);
+    ('webmaster@torpssons.se', 'root', 'b392112656161e99cc7a9dff542ef3b2d27a7f66d1fe1f7fee846780e82b49fc', 'Administrator', 15),
+    ('maxylan@torpssons.se', 'maxylan', 'b392112656161e99cc7a9dff542ef3b2d27a7f66d1fe1f7fee846780e82b49fc', 'Maxylan', 15),
+    ('skais@torpssons.se', 'skais', 'b392112656161e99cc7a9dff542ef3b2d27a7f66d1fe1f7fee846780e82b49fc', 'Skais', 15),
+    ('user@torpssons.se', 'user', 'b392112656161e99cc7a9dff542ef3b2d27a7f66d1fe1f7fee846780e82b49fc', 'Anonymous User', 3),
+    ('guest@torpssons.se', 'guest', 'b392112656161e99cc7a9dff542ef3b2d27a7f66d1fe1f7fee846780e82b49fc', 'Anonymous Guest', 1);
 
 INSERT INTO tags (name, description) VALUES
     ('Generated', 'Automagically Generated Content'),

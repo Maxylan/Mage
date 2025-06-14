@@ -1,67 +1,72 @@
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
+// using Microsoft.Extensions.Caching.Memory;
+using Timer = System.Timers.Timer;
+using System.Timers;
 using Reception.Models;
 
 namespace Reception.Caching;
 
-public class LoginTracker
+// TODO! Overengineered (..or, under-engineered?)
+public static class LoginTracker
 {
-    private MemoryCache _cache;
+    // TODO! Change to an `IMemoryCache` (works natively with ASP.NET)
+    private static Dictionary<string, LoginAttempt> _cache = new();
 
-    public LoginTracker(
-        ILoggerFactory loggerFactory
-    ) {
-        this._cache = new(
-            new MemoryCacheOptions() {
-                ExpirationScanFrequency = TimeSpan.FromSeconds(6)
-            },
-            loggerFactory
-        );
-    }
+    private static Timer? _timer = null;
 
-    public LoginTracker(
-        ILoggerFactory loggerFactory,
-        IOptions<MemoryCacheOptions> optionsAccessor
-    ) {
-        this._cache = new(
-            optionsAccessor,
-            loggerFactory
-        );
-    }
+    public static LoginAttempt? Get(Login login) =>
+        Get(login.Username, login.Address ?? LoginAttempt.ADDR_FALLBACK);
 
-
-    public LoginAttempt? GetAttempt(Login login) =>
-        this.GetAttempt(login.Username, login.Address ?? LoginAttempt.ADDR_FALLBACK);
-
-    public LoginAttempt? GetAttempt(string username, string remoteAddress) {
+    public static LoginAttempt? Get(string username, string remoteAddress)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(username, nameof(username));
         ArgumentException.ThrowIfNullOrWhiteSpace(remoteAddress, nameof(remoteAddress));
+
         if (remoteAddress.Length > 255)
         {
             throw new ArgumentException($"Invalid {nameof(remoteAddress)}");
         }
+        if (username.Length > 255)
+        {
+            throw new ArgumentException($"Invalid {nameof(username)}");
+        }
 
-        return this.GetAttempt(
+        return Get(
             LoginAttempt.GetKey(username, remoteAddress)
         );
     }
 
-    protected LoginAttempt? GetAttempt(string loginAttemptIdentifier) {
+    public static LoginAttempt? Get(string loginAttemptIdentifier)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(loginAttemptIdentifier);
-        return this._cache.Get<LoginAttempt>(loginAttemptIdentifier);
+
+        if (loginAttemptIdentifier.Length > 511)
+        {
+            throw new ArgumentException($"Invalid {nameof(loginAttemptIdentifier)}");
+        }
+
+        if (_cache.TryGetValue(loginAttemptIdentifier, out LoginAttempt attempt)) {
+            return attempt;
+        }
+
+        return null;
     }
 
 
-    public uint Attempts(string username, string? remoteAddress) =>
-        this.GetAttempt(username, remoteAddress ?? LoginAttempt.ADDR_FALLBACK)?.Attempt ?? 0;
+    public static uint Attempts(string username, string? remoteAddress) =>
+        Get(username, remoteAddress ?? LoginAttempt.ADDR_FALLBACK)?.Attempt ?? 0;
 
 
-    public LoginAttempt RecordAttempt(Login login) =>
-        this.RecordAttempt(login.Username, login.Address ?? LoginAttempt.ADDR_FALLBACK, login.UserAgent);
+    public static LoginAttempt Record(Login login) =>
+        Record(login.Username, login.Address ?? LoginAttempt.ADDR_FALLBACK, login.UserAgent);
 
-    public LoginAttempt RecordAttempt(string username, string? remoteAddress, string? userAgent)
+    public static LoginAttempt Record(string username, string? remoteAddress, string? userAgent)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(username, nameof(username));
+
+        if (username.Length > 255)
+        {
+            throw new ArgumentException($"Invalid {nameof(username)}");
+        }
 
         if (string.IsNullOrWhiteSpace(remoteAddress))
         {
@@ -72,8 +77,9 @@ public class LoginTracker
             throw new ArgumentException($"Invalid {nameof(remoteAddress)}");
         }
 
-        string? loginIdentifier = LoginAttempt.GetKey(username, remoteAddress);
-        LoginAttempt? existingLoginAttempt = this.GetAttempt(loginIdentifier);
+        string loginIdentifier = LoginAttempt.GetKey(username, remoteAddress);
+        LoginAttempt? existingLoginAttempt = Get(loginIdentifier);
+
         LoginAttempt newAttempt = existingLoginAttempt is null
             ? new LoginAttempt(1, username, remoteAddress, userAgent)
             : new LoginAttempt(
@@ -83,10 +89,21 @@ public class LoginTracker
                     existingLoginAttempt.Value.UserAgent ?? userAgent
                 );
 
-        var cacheEntry = this._cache.CreateEntry(loginIdentifier);
-        cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-        cacheEntry.Value = newAttempt;
+        _cache[loginIdentifier] = newAttempt;
+
+        if (_timer is null) {
+            _timer = new Timer(TimeSpan.FromMinutes(15));
+            _timer.Elapsed += ClearCache!;
+            _timer.AutoReset = true;
+            _timer.Enabled = true;
+        }
 
         return newAttempt;
+    }
+
+    private static void ClearCache(Object source, ElapsedEventArgs e)
+    {
+        Console.WriteLine("Cache cleared at {0:HH:mm:ss.fff}", e.SignalTime);
+        _cache.Clear();
     }
 }
