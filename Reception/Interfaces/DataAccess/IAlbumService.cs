@@ -38,6 +38,11 @@ public interface IAlbumService
     public abstract Task<ActionResult<Album>> UpdateAlbum(MutateAlbum mut);
 
     /// <summary>
+    /// Add <see cref="Tag"/>(s) (<paramref name="tags"/>) ..to a <see cref="Album"/> identified by PK '<paramref ref="albumId"/>' (int)
+    /// </summary>
+    public abstract Task<ActionResult> ToggleFavorite(int albumId);
+
+    /// <summary>
     /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (<see cref="IEnumerable{int}"/>).
     /// </summary>
     public abstract Task<ActionResult<Album>> AddPhotos(int albumId, IEnumerable<int> photoIds);

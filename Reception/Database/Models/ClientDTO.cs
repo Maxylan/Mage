@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -35,6 +33,17 @@ public class ClientDTO : Client, IDataTransferObject<Client>
     public new DateTime LastVisit { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<BanEntry> BanEntries { get; set; } = new List<BanEntry>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Session> Sessions { get; set; } = new List<Session>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Account> Accounts { get; set; } = new List<Account>();
+    */
+
     /// <summary>
     /// Convert this <see cref="ClientDTO"/> instance to its <see cref="Client"/> equivalent.
     /// </summary>
@@ -46,7 +55,11 @@ public class ClientDTO : Client, IDataTransferObject<Client>
         Logins = this.Logins,
         FailedLogins = this.FailedLogins,
         CreatedAt = this.CreatedAt,
-        LastVisit = this.LastVisit
+        LastVisit = this.LastVisit,
+        // Navigations
+        BanEntries = this.BanEntries,
+        Sessions = this.Sessions,
+        Accounts = this.Accounts
     };
 
     /// <summary>

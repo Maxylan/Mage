@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -35,18 +34,27 @@ public class PublicLinkDTO : PublicLink, IDataTransferObject<PublicLink>
     public new int Accessed { get; set; }
     */
 
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? CreatedByNavigation { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Photo Photo { get; set; } = null!;
+
     /// <summary>
     /// Convert this <see cref="PublicLinkDTO"/> instance to its <see cref="PublicLink"/> equivalent.
     /// </summary>
     public PublicLink ToEntity() => new() {
         Id = this.Id ?? default,
         PhotoId = this.PhotoId,
-        Code  = this.Code,
-        CreatedBy  = this.CreatedBy,
+        Code = this.Code,
+        CreatedBy = this.CreatedBy,
         CreatedAt = this.CreatedAt,
-        ExpiresAt  = this.ExpiresAt,
-        AccessLimit  = this.AccessLimit,
-        Accessed  = this.Accessed
+        ExpiresAt = this.ExpiresAt,
+        AccessLimit = this.AccessLimit,
+        Accessed = this.Accessed,
+        // Navigations
+        CreatedByNavigation = this.CreatedByNavigation,
+        Photo = this.Photo
     };
 
     /// <summary>

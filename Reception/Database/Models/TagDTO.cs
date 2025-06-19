@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -23,14 +22,25 @@ public class TagDTO : Tag, IDataTransferObject<Tag>, ITag
     public new byte RequiredPrivilege { get; set; }
     */
 
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<AlbumTagRelation> UsedByAlbums { get; set; } = new List<AlbumTagRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<PhotoTagRelation> UsedByPhotos { get; set; } = new List<PhotoTagRelation>();
+
+    // public int Items => this.UsedByAlbums.Count + this.UsedByPhotos.Count;
+
     /// <summary>
     /// Convert this <see cref="TagDTO"/> instance to its <see cref="Tag"/> equivalent.
     /// </summary>
     public Tag ToEntity() => new() {
         Id = this.Id ?? default,
         Name = this.Name,
-        Description  = this.Description,
-        RequiredPrivilege  = this.RequiredPrivilege
+        Description = this.Description,
+        RequiredPrivilege = this.RequiredPrivilege,
+        // Navigations
+        UsedByAlbums = this.UsedByAlbums,
+        UsedByPhotos = this.UsedByPhotos
     };
 
     /// <summary>

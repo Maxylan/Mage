@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -20,13 +19,22 @@ public class PhotoTagRelationDTO : PhotoTagRelation, IDataTransferObject<PhotoTa
     public new DateTime Added { get; set; }
     */
 
+    [JsonIgnore, SwaggerIgnore]
+    public new Photo Photo { get; set; } = null!;
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Tag Tag { get; set; } = null!;
+
     /// <summary>
     /// Convert this <see cref="PhotoTagRelationDTO"/> instance to its <see cref="PhotoTagRelation"/> equivalent.
     /// </summary>
     public PhotoTagRelation ToEntity() => new() {
         PhotoId = this.PhotoId,
         TagId  = this.TagId,
-        Added  = this.Added
+        Added  = this.Added,
+        // Navigations
+        Photo  = this.Photo,
+        Tag  = this.Tag
     };
 
     /// <summary>

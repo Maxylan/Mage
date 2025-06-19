@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-
 namespace Reception.Database.Models;
 
 /// <summary>
@@ -20,13 +16,24 @@ public class FavoritePhotoRelationDTO : FavoritePhotoRelation, IDataTransferObje
     public new DateTime Added { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new Account Account { get; set; } = null!;
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Photo Photo { get; set; } = null!;
+    */
+
     /// <summary>
     /// Convert this <see cref="FavoritePhotoRelationDTO"/> instance to its <see cref="FavoritePhotoRelation"/> equivalent.
     /// </summary>
     public FavoritePhotoRelation ToEntity() => new() {
         AccountId = this.AccountId,
         PhotoId = this.PhotoId,
-        Added = this.Added
+        Added = this.Added,
+        // Navigations
+        Account = this.Account,
+        Photo = this.Photo
     };
 
     /// <summary>

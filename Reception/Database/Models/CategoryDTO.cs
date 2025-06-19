@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -38,6 +36,17 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
     public new byte RequiredPrivilege { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Album> Albums { get; set; } = new List<Album>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? CreatedByNavigation { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? UpdatedByNavigation { get; set; }
+    */
+
     /// <summary>
     /// Convert this <see cref="CategoryDTO"/> instance to its <see cref="Category"/> equivalent.
     /// </summary>
@@ -50,7 +59,11 @@ public class CategoryDTO : Category, IDataTransferObject<Category>
         CreatedAt = this.CreatedAt,
         UpdatedAt = this.UpdatedAt,
         UpdatedBy = this.UpdatedBy,
-        RequiredPrivilege = this.RequiredPrivilege
+        RequiredPrivilege = this.RequiredPrivilege,
+        // Navigations
+        Albums = this.Albums,
+        CreatedByNavigation = this.CreatedByNavigation,
+        UpdatedByNavigation = this.UpdatedByNavigation
     };
 
     /// <summary>

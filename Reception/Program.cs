@@ -55,9 +55,10 @@ public sealed class Program
         builder.Services.AddHttpContextAccessor();
         builder.Services
             .AddControllers()
-            .AddJsonOptions(opts =>
-                opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
-            );
+            .AddJsonOptions(opts => {
+                opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                opts.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            });
 
         builder.Services
             .AddAuthentication(conf =>

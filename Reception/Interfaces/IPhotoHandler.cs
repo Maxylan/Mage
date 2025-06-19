@@ -113,6 +113,12 @@ public interface IPhotoHandler
 
     #region Update a photo entity.
     /// <summary>
+    /// Favorites a <see cref="Reception.Database.Models.Photo"/>.
+    /// </summary>
+    public abstract Task<ActionResult> ToggleFavorite(int photoId);
+
+
+    /// <summary>
     /// Updates a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
     public abstract Task<ActionResult<PhotoDTO>> UpdatePhoto(MutatePhoto mut);

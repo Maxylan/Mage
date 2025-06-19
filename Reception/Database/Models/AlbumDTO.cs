@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -44,6 +42,29 @@ public class AlbumDTO : Album, IDataTransferObject<Album>
     public new byte RequiredPrivilege { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<AlbumTagRelation> Tags { get; set; } = new List<AlbumTagRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Category? Category { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? CreatedByNavigation { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<FavoriteAlbumRelation> FavoritedBy { get; set; } = new List<FavoriteAlbumRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<PhotoAlbumRelation> Photos { get; set; } = new List<PhotoAlbumRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Photo? Thumbnail { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? UpdatedByNavigation { get; set; }
+    */
+
     /// <summary>
     /// Convert this <see cref="AlbumDTO"/> instance to its <see cref="Album"/> equivalent.
     /// </summary>
@@ -58,7 +79,15 @@ public class AlbumDTO : Album, IDataTransferObject<Album>
         CreatedAt = this.CreatedAt,
         UpdatedBy = this.UpdatedBy,
         UpdatedAt = this.UpdatedAt,
-        RequiredPrivilege = this.RequiredPrivilege
+        // Navigations
+        RequiredPrivilege = this.RequiredPrivilege,
+        Tags = this.Tags,
+        Category = this.Category,
+        CreatedByNavigation = this.CreatedByNavigation,
+        FavoritedBy = this.FavoritedBy,
+        Photos = this.Photos,
+        Thumbnail = this.Thumbnail,
+        UpdatedByNavigation = this.UpdatedByNavigation
     };
 
     /// <summary>

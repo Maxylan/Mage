@@ -646,6 +646,186 @@ public class PhotoService(
 
     #region Update a photo entity.
     /// <summary>
+    /// Favorites a <see cref="Reception.Database.Models.Photo"/>.
+    /// </summary>
+    public async Task<ActionResult> ToggleFavorite(int photoId)
+    {
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(ToggleFavorite)} Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message)
+                .LogAndEnqueue();
+
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter {nameof(photoId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
+        Photo? existingPhoto = await db.Photos.FindAsync(photoId);
+
+        if (existingPhoto is null)
+        {
+            string message = $"{nameof(Photo)} with ID #{photoId} could not be found!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalDebug(message, opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingPhoto.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        foreach (var navigation in db.Entry(existingPhoto).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
+        }
+
+        string actionTaken = string.Empty;
+        var relation = existingPhoto.FavoritedBy?.FirstOrDefault(
+            relation => relation.AccountId == user.Id
+        );
+        
+        if (relation is null) {
+            actionTaken = "Favorited";
+            relation = new() {
+                AccountId = user.Id,
+                Account = user,
+                PhotoId = existingPhoto.Id,
+                Photo = existingPhoto,
+                Added = DateTime.UtcNow
+            };
+
+            db.Add(relation);
+        }
+        else {
+            actionTaken = "Un-favorited";
+            existingPhoto.FavoritedBy!.Remove(relation);
+            db.Remove(relation);
+        }
+
+        try
+        {
+            db.Update(existingPhoto);
+
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalTrace($"User '{user.Username}' {actionTaken} {nameof(Photo)} '{existingPhoto.Slug}' (#{existingPhoto.Id}).", opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing {nameof(Photo)} '{existingPhoto.Slug}'. ";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingPhoto.Slug}'. ";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new OkResult();
+    }
+
+
+    /// <summary>
     /// Updates a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>
     public async Task<ActionResult<Photo>> UpdatePhoto(MutatePhoto mut)
@@ -716,7 +896,7 @@ public class PhotoService(
 
         if (existingPhoto is null)
         {
-            string message = $"{nameof(Album)} with ID #{mut.Id} could not be found!";
+            string message = $"{nameof(Photo)} with ID #{mut.Id} could not be found!";
             logging
                 .Action(nameof(UpdatePhoto))
                 .InternalDebug(message, opts =>
@@ -923,7 +1103,7 @@ public class PhotoService(
         }
         catch (DbUpdateException updateException)
         {
-            string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing Album '{existingPhoto.Slug}'. ";
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing {nameof(Photo)} '{existingPhoto.Slug}'. ";
             logging
                 .Action(nameof(UpdatePhoto))
                 .InternalError(message + " " + updateException.Message, opts =>

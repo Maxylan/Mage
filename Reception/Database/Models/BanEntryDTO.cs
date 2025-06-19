@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -23,6 +21,11 @@ public class BanEntryDTO : BanEntry, IDataTransferObject<BanEntry>
     public new string? Reason { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new Client Client { get; set; } = null!;
+    */
+
     /// <summary>
     /// Convert this <see cref="BanEntryDTO"/> instance to its <see cref="BanEntry"/> equivalent.
     /// </summary>
@@ -30,7 +33,9 @@ public class BanEntryDTO : BanEntry, IDataTransferObject<BanEntry>
         Id = this.Id ?? default,
         ClientId = this.ClientId,
         ExpiresAt = this.ExpiresAt,
-        Reason = this.Reason
+        Reason = this.Reason,
+        // Navigations
+        Client = this.Client
     };
 
     /// <summary>

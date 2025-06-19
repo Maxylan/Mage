@@ -106,6 +106,20 @@ public class AlbumsController(IAlbumHandler handler) : ControllerBase
     }
 
     /// <summary>
+    /// Add <see cref="Tag"/>(s) (<paramref name="tags"/>) ..to a <see cref="Album"/> identified by PK '<paramref ref="album_id"/>' (int)
+    /// </summary>
+    [HttpPatch("{album_id:int}/favorite")]
+    [Tags(ControllerTags.ALBUMS, ControllerTags.USERS)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> ToggleFavorite(int album_id) =>
+        await handler.ToggleFavorite(album_id);
+
+    /// <summary>
     /// Add photos (<paramref name="photo_ids"/>, int[]) to a given <see cref="Album"/> (<paramref name="album_id"/>).
     /// </summary>
     [HttpPatch("{album_id:int}/add/photos")]

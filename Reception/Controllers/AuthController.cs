@@ -50,10 +50,18 @@ public class AuthController(
 
         if (session.Account is Account user)
         {
-            return user;
+            return (AccountDTO)user;
         }
 
-        return await sessions.GetUserBySession(session);
+        var getAccount = await sessions.GetUserBySession(session);
+        var account = getAccount.Value;
+
+        if (account is null)
+        {
+            return getAccount.Result!;
+        }
+
+        return (AccountDTO)account;
     }
 
     /// <summary>
@@ -68,7 +76,15 @@ public class AuthController(
     public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id)
     {
         await sessions.CleanupSessions(); // Do a little cleaning first..
-        return await sessions.GetSessionById(id);
+        var getSession = await sessions.GetSessionById(id);
+        var session = getSession.Value;
+
+        if (session is null)
+        {
+            return getSession.Result!;
+        }
+
+        return (SessionDTO)session;
     }
 
 
@@ -85,7 +101,15 @@ public class AuthController(
     public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session)
     {
         await sessions.CleanupSessions(); // Do a little cleaning first..
-        return await sessions.GetSession(session);
+        var getSession = await sessions.GetSession(session);
+        var sessionObj = getSession.Value;
+
+        if (sessionObj is null)
+        {
+            return getSession.Result!;
+        }
+
+        return (SessionDTO)sessionObj;
     }
 
     /// <summary>

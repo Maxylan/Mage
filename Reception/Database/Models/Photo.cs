@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -107,6 +105,15 @@ public partial class Photo
     [SwaggerIgnore]
     public bool ThumbnailExists =>
         this.Filepaths?.Any(path => path.Dimension == Dimension.THUMBNAIL) == true;
+
+    public bool Favorite(int accountId) {
+        if (accountId <= 0) {
+            return false;
+        }
+
+        var favoritedByUser = this.FavoritedBy?.Any(relation => relation.AccountId == accountId);
+        return favoritedByUser == true;
+    }
 
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Photo"/>

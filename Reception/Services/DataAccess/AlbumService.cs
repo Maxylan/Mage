@@ -907,6 +907,187 @@ public class AlbumService(
         return existingAlbum;
     }
 
+
+    /// <summary>
+    /// Add <see cref="Tag"/>(s) (<paramref name="tags"/>) ..to a <see cref="Album"/> identified by PK '<paramref ref="albumId"/>' (int)
+    /// </summary>
+    public async Task<ActionResult> ToggleFavorite(int albumId)
+    {
+        var httpContext = contextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            string message = $"{nameof(ToggleFavorite)} Failed: No {nameof(HttpContext)} found.";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message)
+                .LogAndEnqueue();
+
+            return new UnauthorizedObjectResult(
+                Program.IsProduction ? HttpStatusCode.Unauthorized.ToString() : message
+            );
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (albumId <= 0)
+        {
+            string message = $"Parameter {nameof(albumId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
+        Album? existingAlbum = await db.Albums.FindAsync(albumId);
+
+        if (existingAlbum is null)
+        {
+            string message = $"{nameof(Album)} with ID #{albumId} could not be found!";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalDebug(message, opts =>
+                {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new NotFoundObjectResult(message);
+        }
+
+        byte privilegeRequired = (byte)
+            (Privilege.UPDATE | existingAlbum.RequiredPrivilege);
+
+        if ((user.Privilege & privilegeRequired) != privilegeRequired)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({privilegeRequired}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        foreach (var navigation in db.Entry(existingAlbum).Navigations)
+        {
+            if (!navigation.IsLoaded)
+            {
+                await navigation.LoadAsync();
+            }
+        }
+
+        string actionTaken = string.Empty;
+        var relation = existingAlbum.FavoritedBy?.FirstOrDefault(
+            relation => relation.AccountId == user.Id
+        );
+        
+        if (relation is null) {
+            actionTaken = "Favorited";
+            relation = new() {
+                AccountId = user.Id,
+                Account = user,
+                AlbumId = existingAlbum.Id,
+                Album = existingAlbum,
+                Added = DateTime.UtcNow
+            };
+
+            db.Add(relation);
+        }
+        else {
+            actionTaken = "Un-favorited";
+            existingAlbum.FavoritedBy!.Remove(relation);
+            db.Remove(relation);
+        }
+
+        try
+        {
+            db.Update(existingAlbum);
+
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalTrace(
+                    $"User '{user.Username}' {actionTaken} {nameof(Album)} '{existingAlbum.Title}' (#{existingAlbum.Id}).",
+                    opts => { opts.SetUser(user); }
+                )
+                .LogAndEnqueue();
+
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException updateException)
+        {
+            string message = $"Cought a {nameof(DbUpdateException)} attempting to update existing {nameof(Album)} '{existingAlbum.Title}'. ";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message + " " + updateException.Message, opts =>
+                {
+                    opts.Exception = updateException;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : updateException.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an unkown exception of type '{ex.GetType().FullName}' while attempting to update existing Album '{existingAlbum.Title}'. ";
+            logging
+                .Action(nameof(ToggleFavorite))
+                .InternalError(message + " " + ex.Message, opts =>
+                {
+                    opts.Exception = ex;
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(message + (
+                Program.IsProduction ? HttpStatusCode.InternalServerError.ToString() : ex.Message
+            ))
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        return new OkResult();
+    }
+
+
     /// <summary>
     /// Update what photos are associated with this <see cref="Album"/> via <paramref name="photoIds"/> (<see cref="IEnumerable{int}"/>).
     /// </summary>

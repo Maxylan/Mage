@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -32,6 +30,22 @@ public class FilepathDTO : Filepath, IDataTransferObject<Filepath>
     public new int? Height { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new Photo Photo { get; set; } = null!;
+    */
+
+    /*
+    public bool IsSource =>
+        this.Dimension == Reception.Database.Dimension.SOURCE;
+
+    public bool IsMedium =>
+        this.Dimension == Reception.Database.Dimension.MEDIUM;
+
+    public bool IsThumbnail =>
+        this.Dimension == Reception.Database.Dimension.THUMBNAIL;
+    */
+
     /// <summary>
     /// Convert this <see cref="FilepathDTO"/> instance to its <see cref="Filepath"/> equivalent.
     /// </summary>
@@ -43,7 +57,9 @@ public class FilepathDTO : Filepath, IDataTransferObject<Filepath>
         Dimension = this.Dimension,
         Filesize = this.Filesize,
         Width = this.Width,
-        Height = this.Height
+        Height = this.Height,
+        // Navigations
+        Photo = this.Photo
     };
 
     /// <summary>

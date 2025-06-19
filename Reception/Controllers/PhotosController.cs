@@ -401,6 +401,20 @@ public class PhotosController(
         await handler.UpdatePhoto(mut);
     #endregion
 
+    /// <summary>
+    /// Add <see cref="Tag"/>(s) (<paramref name="tags"/>) ..to a <see cref="Photo"/> identified by PK '<paramref ref="photo_id"/>' (int)
+    /// </summary>
+    [HttpPatch("{photo_id:int}/favorite")]
+    [Tags(ControllerTags.PHOTOS_ENTITIES, ControllerTags.USERS)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status304NotModified)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> ToggleFavorite(int photo_id) =>
+        await handler.ToggleFavorite(photo_id);
+
     #region Add / Remove tag(s)
     /// <summary>
     /// Edit tags associated with this <see cref="PhotoEntity"/>.

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -39,6 +37,25 @@ public class LogEntryDTO : LogEntry, IDataTransferObject<LogEntry>
 
     [JsonPropertyName("message")]
     public new string? Message { get; set; }
+    */
+
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public LogFormat Format => new(this);
+
+    /// <summary>
+    /// Set the <see cref="Reception.Database.Models.Method"/> of this entity using a string (<paramref name="method"/>)
+    /// </summary>
+    public void SetMethod(string? method) => this.Method = method?.ToUpper() switch
+    {
+        "HEAD" => Reception.Database.Method.HEAD,
+        "GET" => Reception.Database.Method.GET,
+        "POST" => Reception.Database.Method.POST,
+        "PUT" => Reception.Database.Method.PUT,
+        "PATCH" => Reception.Database.Method.PATCH,
+        "DELETE" => Reception.Database.Method.DELETE,
+        _ => Reception.Database.Method.UNKNOWN
+    };
     */
 
     /// <summary>

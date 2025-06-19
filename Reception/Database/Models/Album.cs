@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -81,7 +79,7 @@ public partial class Album
 
     [ForeignKey("UpdatedBy")]
     [InverseProperty("AlbumsUpdated")]
-    public virtual Account? UpdatedByNavigation { get; set; }    /// <summary>
+    public virtual Account? UpdatedByNavigation { get; set; }
 
     /// <summary>
     /// Construct / Initialize an <see cref="EntityTypeBuilder{TEntity}"/> of type <see cref="Album"/>

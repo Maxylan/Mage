@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -52,6 +51,46 @@ public class PhotoDTO : Photo, IDataTransferObject<Photo>
     public new byte RequiredPrivilege { get; set; }
     */
 
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Account> UsedAsAvatar { get; set; } = new List<Account>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Album> UsedAsThumbnail { get; set; } = new List<Album>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<FavoritePhotoRelation> FavoritedBy { get; set; } = new List<FavoritePhotoRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<Filepath> Filepaths { get; set; } = new List<Filepath>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<PublicLink> PublicLinks { get; set; } = new List<PublicLink>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<PhotoAlbumRelation> Albums { get; set; } = new List<PhotoAlbumRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new ICollection<PhotoTagRelation> Tags { get; set; } = new List<PhotoTagRelation>();
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? UpdatedByNavigation { get; set; }
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Account? UploadedByNavigation { get; set; }
+
+    /*
+    // Lil' helpers
+    [SwaggerIgnore]
+    public bool SourceExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.SOURCE) == true;
+    [SwaggerIgnore]
+    public bool MediumExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.MEDIUM) == true;
+    [SwaggerIgnore]
+    public bool ThumbnailExists =>
+        this.Filepaths?.Any(path => path.Dimension == Dimension.THUMBNAIL) == true;
+    */
+
     /// <summary>
     /// Convert this <see cref="PhotoDTO"/> instance to its <see cref="Photo"/> equivalent.
     /// </summary>
@@ -68,7 +107,17 @@ public class PhotoDTO : Photo, IDataTransferObject<Photo>
         CreatedAt  = this.CreatedAt,
         IsAnalyzed  = this.IsAnalyzed,
         AnalyzedAt  = this.AnalyzedAt,
-        RequiredPrivilege  = this.RequiredPrivilege
+        RequiredPrivilege  = this.RequiredPrivilege,
+        // Navigations
+        UsedAsAvatar = this.UsedAsAvatar,
+        UsedAsThumbnail = this.UsedAsThumbnail,
+        FavoritedBy = this.FavoritedBy,
+        Filepaths = this.Filepaths,
+        PublicLinks = this.PublicLinks,
+        Albums = this.Albums,
+        Tags = this.Tags,
+        UpdatedByNavigation = this.UpdatedByNavigation,
+        UploadedByNavigation = this.UploadedByNavigation
     };
 
     /// <summary>

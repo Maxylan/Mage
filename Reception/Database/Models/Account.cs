@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -30,6 +30,7 @@ public partial class Account : IDatabaseEntity<Account>
     [StringLength(127)]
     public string Username { get; set; } = null!;
 
+    [JsonIgnore, SwaggerIgnore]
     [Column("password")]
     [StringLength(127)]
     public string Password { get; set; } = null!;

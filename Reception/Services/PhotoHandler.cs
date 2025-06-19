@@ -5,11 +5,13 @@ using Reception.Interfaces.DataAccess;
 using Reception.Interfaces;
 using Reception.Database.Models;
 using Reception.Models;
+using Reception.Middleware.Authentication;
 
 namespace Reception.Services;
 
 public class PhotoHandler(
     ILoggingService<PhotoService> logging,
+    IHttpContextAccessor contextAccessor,
     IPhotoService photoService
 ) : IPhotoHandler
 {
@@ -355,6 +357,67 @@ public class PhotoHandler(
 
 
     #region Update a photo entity.
+    /// <summary>
+    /// Favorites a <see cref="Reception.Database.Models.Photo"/>.
+    /// </summary>
+    public async Task<ActionResult> ToggleFavorite(int photoId)
+    {
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(PhotoHandler.ToggleFavorite))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if (photoId <= 0)
+        {
+            string message = $"Parameter {nameof(photoId)} has to be a non-zero positive integer!";
+            logging
+                .Action(nameof(PhotoHandler.ToggleFavorite))
+                .ExternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
+        var toggleFavoriteResult = await photoService.ToggleFavorite(photoId);
+
+        if (toggleFavoriteResult is not OkResult)
+        {
+            string message = $"Failed to toggle favorite-status on {nameof(Photo)} #{photoId} for user '{user.Id}'.";
+            logging
+                .Action(nameof(PhotoHandler.ToggleFavorite))
+                .ExternalDebug(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+        }
+
+        return toggleFavoriteResult;
+    }
+
+
     /// <summary>
     /// Updates a <see cref="Reception.Database.Models.Photo"/> in the database.
     /// </summary>

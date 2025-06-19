@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -29,16 +28,25 @@ public class SessionDTO : Session, IDataTransferObject<Session>
     public new DateTime ExpiresAt { get; set; }
     */
 
+    [JsonIgnore, SwaggerIgnore]
+    public new Account Account { get; set; } = null!;
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Client Client { get; set; } = null!;
+
     /// <summary>
     /// Convert this <see cref="SessionDTO"/> instance to its <see cref="Session"/> equivalent.
     /// </summary>
     public Session ToEntity() => new() {
         Id = this.Id ?? default,
         AccountId = this.AccountId,
-        ClientId  = this.ClientId,
-        Code  = this.Code,
+        ClientId = this.ClientId,
+        Code = this.Code,
         CreatedAt = this.CreatedAt,
-        ExpiresAt  = this.ExpiresAt
+        ExpiresAt = this.ExpiresAt,
+        // Navigations
+        Account = this.Account,
+        Client = this.Client
     };
 
     /// <summary>

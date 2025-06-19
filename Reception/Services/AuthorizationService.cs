@@ -190,8 +190,8 @@ public class AuthorizationService(
         }
 
         if (session.Client is not null &&
-            string.IsNullOrWhiteSpace(session.Client.Address) &&
-            string.IsNullOrWhiteSpace(session.Client.UserAgent)
+            !string.IsNullOrWhiteSpace(session.Client.Address) &&
+            !string.IsNullOrWhiteSpace(session.Client.UserAgent)
         ) {
             string? userAgent = httpContext.Request.Headers.UserAgent.ToString();
             if (!string.IsNullOrWhiteSpace(userAgent))

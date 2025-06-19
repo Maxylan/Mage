@@ -1,21 +1,24 @@
+import { FormControl, FormControlOptions, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Component, inject, signal } from '@angular/core';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { AsyncPipe, NgClass } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { FormControl, FormControlOptions, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { HashedUserDetails, LoginBody, Session } from './login.types';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { MatInput } from '@angular/material/input';
+import {
+    HashedUserDetails,
+    LoginBody,
+    Session,
+    Account,
+    Client
+} from './types';
 
 @Component({
   selector: 'app-login',
-  templateUrl: 'login.html',
-  styleUrl: 'login.css',
-  standalone: true,
   imports: [
     MatButtonModule,
     MatIconModule,
@@ -26,9 +29,13 @@ import { MatCheckbox } from '@angular/material/checkbox';
     ReactiveFormsModule,
     AsyncPipe,
     NgClass
-  ]
+  ],
+  templateUrl: 'login.component.html',
+  styleUrl: 'login.component.css'
 })
 export class AppLoginComponent {
+    public static readonly : string = '/reception';
+
     private breakpointObserver = inject(BreakpointObserver);
     private matIconsRegistry = inject(MatIconRegistry);
     private apiUrl: string = '/reception';
@@ -41,7 +48,7 @@ export class AppLoginComponent {
     public passwordControl = new FormControl<string>('', { disable: false } as FormControlOptions);
     public rememberMeControl = new FormControl<string>('', { disable: false } as FormControlOptions);
 
-    public toggleFormFields = (state?: boolean): void => {
+    public toggleFormFields(state?: boolean): void {
         if (state === undefined) {
             state = (
                 this.usernameControl.disabled &&
@@ -74,6 +81,8 @@ export class AppLoginComponent {
     constructor() {
         this.matIconsRegistry.registerFontClassAlias('hack', 'hack-nerd-font .hack-icons');
         this.toggleFormFields(true);
+
+        localStorage.getItem('');
     }
 
     isHandset$: Observable<boolean> = this.breakpointObserver
@@ -228,7 +237,7 @@ export class AppLoginComponent {
                 .finally(() => {
                     this.toggleFormFields(true);
                 })
-        }, 333); // Surface-level spam prevention
+        }, 256); // Surface-level spam prevention
         // In practice a `setTimeout` is easily circumvented, but my backend
         // has spam-protection, so this is just a small added precaution.
     }
@@ -263,10 +272,10 @@ export class AppLoginComponent {
                     const session: Session = parsed;
                     if (!session.id ||
                         session.id < 1 ||
-                        !session.userId ||
-                        session.userId < 1
+                        !session.accountId ||
+                        session.accountId < 1
                     ) {
-                        console.error('[sendLoginRequest] Session Response missing / invalid IDs', session.id, session.userId);
+                        console.error('[sendLoginRequest] Session Response missing / invalid IDs', session.id, session.accountId);
                         return Promise.reject('Session Response missing / invalid IDs');
                     }
 

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Reception.Database.Models;
@@ -20,6 +18,14 @@ public class AlbumTagRelationDTO : AlbumTagRelation, IDataTransferObject<AlbumTa
     public new DateTime Added { get; set; }
     */
 
+    /*
+    [JsonIgnore, SwaggerIgnore]
+    public new Album Album { get; set; } = null!;
+
+    [JsonIgnore, SwaggerIgnore]
+    public new Tag Tag { get; set; } = null!;
+    */
+
     /// <summary>
     /// Convert this <see cref="AlbumTagRelationDTO"/> instance to its <see cref="AlbumTagRelation"/> equivalent.
     /// </summary>
@@ -27,6 +33,9 @@ public class AlbumTagRelationDTO : AlbumTagRelation, IDataTransferObject<AlbumTa
         AlbumId = this.AlbumId,
         TagId = this.TagId,
         Added = this.Added,
+        // Navigations
+        Album = this.Album,
+        Tag = this.Tag
     };
 
     /// <summary>

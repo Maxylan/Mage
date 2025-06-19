@@ -48,7 +48,7 @@ public static class Postbox
             Dimension.SOURCE => GetSourceDirectoryName(),
             _ => GetSourceDirectoryName()
         },
-        GetDatePath(dateTime ?? DateTime.UtcNow),
+        GetDatePath(dateTime ?? DateTime.UtcNow.ToServerTime()),
         filename
     );
     #endregion
