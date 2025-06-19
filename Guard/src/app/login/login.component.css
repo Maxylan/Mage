@@ -9,8 +9,8 @@ div {
 div.login-container {
     margin: auto;
     width: 16rem;
-    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
-    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+    border-radius: var(--mat-card-elevated-container-shape, var(--mat-sys-corner-medium));
+    box-shadow: var(--mat-card-elevated-container-elevation, var(--mat-sys-level2));
 }
 div.login-container-handset {
     width: 100%;
@@ -43,8 +43,8 @@ pre {
     margin-bottom: unset;
     border-style: dotted;
     border-color: darkred;
-    border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
-    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level1));
+    border-radius: var(--mat-card-elevated-container-shape, var(--mat-sys-corner-medium));
+    box-shadow: var(--mat-card-elevated-container-elevation, var(--mat-sys-level1));
     background-color: #333333;
     overflow-x: hidden;
     overflow-y: scroll;
