@@ -52,8 +52,8 @@ photo-tags-input {
   position: absolute;
   border: 1px solid rgba(0,0,0,0);
   background-color: var(--mat-sidenav-container-background-color, var(--mat-sys-surface));
-  border-radius: var(--mdc-elevated-card-container-shape, var(--mat-sys-corner-medium));
-  box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+  border-radius: var(--mat-card-elevated-container-shape, var(--mat-sys-corner-medium));
+  box-shadow: var(--mat-card-elevated-container-elevation, var(--mat-sys-level2));
   transition: var(--fbc-transition);
   transition-duration: .24s;
 }

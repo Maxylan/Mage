@@ -54,7 +54,7 @@ mat-form-field.tags-chips-grid {
 }
 
 button.search-submit, button.toggle-navbar {
-    box-shadow: var(--mdc-elevated-card-container-elevation, var(--mat-sys-level2));
+    box-shadow: var(--mat-card-elevated-container-elevation, var(--mat-sys-level2));
 }
 button.toggle-navbar mat-icon{
     left: -2px;
