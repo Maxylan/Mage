@@ -1,22 +1,15 @@
 import { Injectable, signal } from '@angular/core';
-import { RefreshCredentials, Session } from '../types/generic.types';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
-    private apiUrl: string = '/reception';
-    private stored_user_key = 'mage-stored-usr';
-    private stored_cred_key = 'mage-stored-creds';
-    private isAuthLoading = signal<boolean>(true);
-    private storedCredentials: RefreshCredentials|null = null;
-    private storedSession: Session|null = null;
-    private code: string|null = null;
+    public static readonly HEADER = 'x-mage-token';
+    public static readonly STORED_SESSION = 'mage-stored-usr';
+    public static readonly STORED_CREDENTIALS = 'mage-stored-creds';
 
-    /**
-     * Get the hardcoded (..or configured?) API Url
-     */
-    public getApiUrl = (): string => this.apiUrl;
+    public readonly isLoading = signal<boolean>(false);
+
     /**
      * Get the token.
      */

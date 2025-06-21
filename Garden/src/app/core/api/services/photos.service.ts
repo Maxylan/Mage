@@ -1,45 +1,12 @@
 import { inject, Injectable, signal } from '@angular/core';
-import {
-    Dimension,
-    IPhotoQueryParameters,
-    PhotoCollection,
-    Photo
-} from '../types/photos.types';
-import { BlobResponse } from '../types/generic.types';
 import { AuthService } from './auth.service';
-import ApiBase from './base_api.class';
+import ApiBase from '../classes/base.class';
+import { Photo } from '../../types/photo';
 
 @Injectable({
     providedIn: 'root'
 })
 export class PhotosService extends ApiBase {
-    private readonly auth = inject(AuthService);
-
-    constructor() {
-        super();
-        this.Init({
-            auth: this.auth,
-            basePath: '/photos',
-            caching: {
-                enabled: true,
-                checkInterval: 120,
-                lifetime: 32
-            }
-        });
-    }
-
-    /* ngInit() {
-        this.Init({
-            auth: this.auth,
-            basePath: '/photos',
-            caching: {
-                enabled: true,
-                checkInterval: 120,
-                lifetime: 32
-            }
-        });
-    } */
-
     /**
      * Get a single `Photo` (source) by its `photoId` (PK, uint)
      */

@@ -4,7 +4,7 @@ import { SelectionObserver, SelectionState } from '../../layout/toolbar/selectio
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { PhotosService } from '../../core/api/photos.service';
+import { PhotosService } from '../../core/api/services/photos.service';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map, shareReplay } from 'rxjs';

@@ -1,5 +1,5 @@
 import { Component, inject, signal, effect, input, output, untracked } from '@angular/core';
-import { PhotosService } from '../../../core/api/photos.service';
+import { PhotosService } from '../../../core/api/services/photos.service';
 import { Photo } from '../../../core/types/photos.types';
 import { CardThumbnailComponent } from '../../../shared/cards/thumbnail/card-thumbnail.component';
 import { CardComponent } from '../../../shared/cards/card.component';
