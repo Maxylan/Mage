@@ -2,31 +2,27 @@ using Reception.Database.Models;
 
 namespace Reception.Models
 {
-    public struct TagAlbumCollection(
-        TagDTO tag,
-        IEnumerable<AlbumDTO> albums
-    ) {
+    public struct TagAlbumCollection()
+    {
         /// <summary>
         /// <see cref="Tag"/>
         /// </summary>
-        public TagDTO Tag = tag;
+        public TagDTO Tag { get; set; } = null!;
         /// <summary>
         /// <see cref="IEnumerable{Album}"/> Collection
         /// </summary>
-        public IEnumerable<AlbumDTO> Albums = albums;
+        public IEnumerable<AlbumDTO> Albums { get; set; } = null!;
     }
 
-    public struct AlbumTagCollection(
-        AlbumDTO album,
-        IEnumerable<TagDTO> tags
-    ) {
+    public struct AlbumTagCollection()
+    {
         /// <summary>
         /// <see cref="Album"/>
         /// </summary>
-        public AlbumDTO Album = album;
+        public AlbumDTO Album { get; set; } = null!;
         /// <summary>
         /// <see cref="IEnumerable{Tag}"/> Collection
         /// </summary>
-        public IEnumerable<TagDTO> Tags = tags;
+        public IEnumerable<TagDTO> Tags { get; set; } = null!;
     }
 }

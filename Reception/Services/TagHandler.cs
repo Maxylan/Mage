@@ -376,10 +376,11 @@ public class TagHandler(
             return mutateTags.Result!;
         }
 
-        return new AlbumTagCollection(
-            (AlbumDTO)mutateTags.Value.Item1,
-            mutateTags.Value.Item2.Select(tag => (TagDTO)tag)
-        );
+        return new AlbumTagCollection()
+        {
+            Album = (AlbumDTO)mutateTags.Value.Item1,
+            Tags = mutateTags.Value.Item2.Select(tag => (TagDTO)tag)
+        };
     }
 
     /// <summary>
@@ -483,10 +484,11 @@ public class TagHandler(
             return mutateTags.Result!;
         }
 
-        return new PhotoTagCollection(
-            (PhotoDTO)mutateTags.Value.Item1,
-            mutateTags.Value.Item2.Select(tag => (TagDTO)tag)
-        );
+        return new PhotoTagCollection()
+        {
+            Photo = (PhotoDTO)mutateTags.Value.Item1,
+            Tags = mutateTags.Value.Item2.Select(tag => (TagDTO)tag)
+        };
     }
 
     /// <summary>

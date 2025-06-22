@@ -1,9 +1,9 @@
-import { Component, inject, signal, effect, input, output, untracked } from '@angular/core';
+import { Component, inject, signal, effect, input, untracked } from '@angular/core';
 import { PhotosService } from '../../../core/api/services/photos.service';
-import { Photo } from '../../../core/types/photos.types';
 import { CardThumbnailComponent } from '../../../shared/cards/thumbnail/card-thumbnail.component';
 import { CardComponent } from '../../../shared/cards/card.component';
 import { SelectionObserver, SelectionState } from '../../../layout/toolbar/selection-observer.component';
+import { Photo } from '../../../core/types/generated/photo';
 
 @Component({
     selector: 'photo-card',
@@ -36,7 +36,7 @@ export class PhotoCardComponent {
             this.image.set(null);
         }
         this.photoService
-            .getPhotoBlob(this.photo().photoId, 'thumbnail')
+            .getPhotoBlob(this.photo().id, 'thumbnail')
             .then(blob => {
                 const contentType = blob.contentType?.trim()?.normalize() ?? 'application/octet-stream';
                 this.imageContentType.set(contentType);

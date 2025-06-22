@@ -1,6 +1,5 @@
 import { Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
-import { IPhotoQueryParameters } from '../../../core/types/photos.types';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,6 +11,7 @@ import { NgClass } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { last, map } from 'rxjs';
+import { SearchPhotosParameters } from '../../../core/types/search-photos-parameters';
 
 @Component({
     selector: 'photos-toolbar',
@@ -42,16 +42,16 @@ export class PhotoToolbarComponent {
     public readonly searchControl = new FormControl<string>('');
     public readonly tags = signal<string[]>([]);
 
-    private readonly lastParameters = signal<IPhotoQueryParameters|undefined>(undefined);
+    private readonly lastParameters = signal<SearchPhotosParameters|undefined>(undefined);
 
     /**
      * Parse the `ParamMap` URL/Query Parameters observable into a supported
      * `IPhotoQueryParameters` collection.
      */
-    public readonly queryParameters = toSignal<IPhotoQueryParameters>(
+    public readonly queryParameters = toSignal<SearchPhotosParameters>(
         this.route.queryParamMap.pipe(
             map(params => {
-                let query: IPhotoQueryParameters = {
+                let query: SearchPhotosParameters = {
                     search: this.searchControl.value?.trim()?.normalize() || '',
                     offset: this.searchOffset(),
                     limit: this.searchLimit(),
@@ -126,8 +126,8 @@ export class PhotoToolbarComponent {
      * Compute Query Parameters into a supported `IPhotoQueryParameters` collection.
      * Also computes Parameters into URL Query parameters.
      */
-    private readonly computeSearchParameters = (): IPhotoQueryParameters => {
-        let parameters: IPhotoQueryParameters = {
+    private readonly computeSearchParameters = (): SearchPhotosParameters => {
+        let parameters: SearchPhotosParameters = {
             ...this.queryParameters(),
             offset: this.searchOffset(),
             limit: this.searchLimit(),
@@ -145,7 +145,7 @@ export class PhotoToolbarComponent {
 
             let [ key, value ] = kvp;
             key = this.urlEncoder.encodeKey(key);
-            value = this.urlEncoder.encodeValue(value);
+            value = this.urlEncoder.encodeValue(value as string);
             if (!key || !value) {
                 return null;
             }
@@ -176,7 +176,7 @@ export class PhotoToolbarComponent {
     /**
      * Output invoked when a search-query is triggered.
      */
-    public readonly searchEvent = output<IPhotoQueryParameters>({ alias: 'onSearch' });
+    public readonly searchEvent = output<SearchPhotosParameters>({ alias: 'onSearch' });
 
     /**
      * Toggle `this.expandSearchForm`.

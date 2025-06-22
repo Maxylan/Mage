@@ -98,8 +98,13 @@ function formatRefType(ref) {
         formattedRef[0] =
             toCamelCase(ref.replace('#/components/schemas/', ''));
 
-        formattedRef[1] =
-            `import { ${formattedRef[0]} } from './${toFileName(formattedRef[0])}';`;
+        if (formattedRef[0].endsWith('DTO')) {
+            formattedRef[1] = `import { I${formattedRef[0]} } from './${toFileName(formattedRef[0])}';`;
+            formattedRef[0] = 'I' + formattedRef[0];
+        }
+        else {
+            formattedRef[1] = `import { ${formattedRef[0]} } from './${toFileName(formattedRef[0])}';`;
+        }
     }
 
     return formattedRef;
@@ -113,7 +118,7 @@ function formatRefType(ref) {
 function singleEnum(name, enumProperty, indent = 0) {
     return [
         ' '.repeat(indent) + `export enum ${name} {`,
-        ...enumProperty.map(value => ' '.repeat(indent + 4) + `value = '${value}'`),
+        ...enumProperty.map(value => ' '.repeat(indent + 4) + `${value} = '${value}',`),
         ' '.repeat(indent) + '}'
     ];
 }
@@ -305,7 +310,7 @@ function generateTypeDefinition(schemaEntry, hasDTO) {
             content.push('');
         }
 
-        content.concat(
+        content = content.concat(
             singleEnum(typeName, schemaProperties['enum'])
         );
     }

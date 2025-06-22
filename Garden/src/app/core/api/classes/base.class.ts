@@ -20,21 +20,30 @@ export default abstract class ApiBase {
      */
     protected requestOptions(
         method: 'HEAD'|'GET'|'PATCH'|'PUT'|'POST'|'DELETE',
-        contentType: string = 'application/json'
+        opts?: RequestInit
     ): RequestInit {
         const token = this.token || '';
         if (!token) {
             console.warn('requestOptions failed to acquire user session token!');
         }
 
-        return {
+        const defaultRequestOptions = {
             method: method,
             headers: {  
                 'Accepts': 'application/json',
-                'Content-Type': contentType,
+                'Content-Type': 'application/json',
                 [AuthService.HEADER]: token
             }
+        };
+
+        if (opts) {
+            return {
+                ...defaultRequestOptions,
+                ...opts
+            }
         }
+
+        return defaultRequestOptions; 
     };
 
     /**
@@ -55,13 +64,7 @@ export default abstract class ApiBase {
             }
         } */
 
-        let requestInit = this.requestOptions(method);
-        if (opts) {
-            requestInit = {
-                ...requestInit,
-                ...(opts ?? {})
-            };
-        }
+        let requestInit = this.requestOptions(method, opts);
 
         if (this.isLoading() === false) {
             this.isLoading.set(true);

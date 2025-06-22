@@ -402,7 +402,7 @@ public class PhotosController(
     #endregion
 
     /// <summary>
-    /// Add <see cref="Tag"/>(s) (<paramref name="tags"/>) ..to a <see cref="Photo"/> identified by PK '<paramref ref="photo_id"/>' (int)
+    /// Toggles the 'Favorite' status of a <see cref="Reception.Database.Models.Photo"/> for a single user.
     /// </summary>
     [HttpPatch("{photo_id:int}/favorite")]
     [Tags(ControllerTags.PHOTOS_ENTITIES, ControllerTags.USERS)]

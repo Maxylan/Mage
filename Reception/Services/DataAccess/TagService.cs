@@ -366,10 +366,11 @@ public class TagService(
             .Select(album => (AlbumDTO)album)
             .ToListAsync();
 
-        return new TagAlbumCollection(
-            (TagDTO)tag,
-            albums
-        );
+        return new TagAlbumCollection()
+        {
+            Tag = (TagDTO)tag,
+            Albums = albums
+        };
     }
 
     /// <summary>
@@ -485,10 +486,11 @@ public class TagService(
             .Select(photo => (PhotoDTO)photo)
             .ToListAsync();
 
-        return new TagPhotoCollection(
-            (TagDTO)tag,
-            photos
-        );
+        return new TagPhotoCollection()
+        {
+            Tag = (TagDTO)tag,
+            Photos = photos
+        };
     }
 
     /// <summary>

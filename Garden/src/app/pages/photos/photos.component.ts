@@ -1,5 +1,4 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { defaultPhotoPageContainer, FavoritePhotos, IPhotoQueryParameters, Photo } from '../../core/types/photos.types';
 import { SelectionObserver, SelectionState } from '../../layout/toolbar/selection-observer.component';
 import { PaginationComponent } from '../../shared/pagination/pagination.component';
 import { PhotoToolbarComponent } from './toolbar/photos-toolbar.component';
@@ -10,6 +9,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map, shareReplay } from 'rxjs';
 import { PhotoCardComponent } from './photo-card/photo-card.component';
 import { NgClass } from '@angular/common';
+import { FavoritePhotoRelation } from '../../core/types/generated/favorite-photo-relation';
+import { Photo } from '../../core/types/generated/photo';
+import { SearchPhotosParameters } from '../../core/types/search-photos-parameters';
 
 @Component({
     selector: 'page-list-photos',
@@ -34,14 +36,14 @@ export class PhotosPageComponent {
 
     public readonly navbarOpen = signal<boolean>(false);
 
-    public readonly photoStore = signal(defaultPhotoPageContainer);
+    public readonly photoStore = signal<{ currentPage: number, pageSize: number }>({ currentPage: 0, pageSize: 24 });
     public readonly selectionState = this.selectionObserver.State;
     public readonly select = this.selectionObserver.selectItems;
     public readonly deselect = this.selectionObserver.deselectItems;
     public readonly isLoadingPhotos = this.photoService.isLoading;
 
     public readonly favoriteStore = signal<string|null>(window.localStorage.getItem(`favourite-photos`));
-    public readonly favorites = computed<FavoritePhotos>(() => {
+    public readonly favorites = computed<FavoritePhotoRelation[]>(() => {
         const encodedStore = this.favoriteStore();
         if (!encodedStore) {
             return [];
@@ -57,9 +59,9 @@ export class PhotosPageComponent {
         }
     });
     public readonly isFavorite = computed(() => {
-        return (photoId: Photo['photoId']) => 
+        return (photoId: Photo['id']) => 
             (): boolean => {
-                return this.favorites().has(photoId);
+                return this.favorites().some(relation => relation.photoId === photoId);
             }
     });
 
@@ -79,7 +81,7 @@ export class PhotosPageComponent {
      * Callback subscribed to query-parameters mutating.
      * Performs the GET-Request to search for photos.
      */
-    public readonly search = (query: IPhotoQueryParameters) => {
+    public readonly search = (query: SearchPhotosParameters) => {
         if (!query || !Object.keys(query).length) {
             console.warn('Skipping an empty search query!', query);
             return;
@@ -92,17 +94,17 @@ export class PhotosPageComponent {
 
         const limit = currentPage > 0 ? pageSize * 3 : pageSize * 2;
         const offset = currentPage > 1 ? limit * currentPage - pageSize : 0;
-        const photoQuery: IPhotoQueryParameters = {
+        const photoQuery: SearchPhotosParameters = {
             ...query,
             offset: offset,
             limit: limit
         }
 
         return this.photoService
-            .getPhotos(photoQuery)
+            .searchPhotos(photoQuery)
             .then(data => {
                 // console.debug('[search] Result', { ...data });
-                this.photoStore.update(store => {
+                /*this.photoStore.update(store => {
                     let iteration = 0;
                     while(data.length > 0 && ++iteration < 3) {
                         const sliceLength = data.length < pageSize
@@ -112,7 +114,8 @@ export class PhotosPageComponent {
                         const slice = new Set(data.splice(0, sliceLength));
 
                         const pageNumber = currentPage && currentPage - iteration;
-                        const pageIndex = store.pages.findIndex(p => p.page === pageNumber);
+                        const pageIndex = store.page.findIndex(p => p.page === pageNumber);
+
                         if (pageIndex === -1) {
                             store.pages.push({
                                 page: pageNumber,
@@ -128,7 +131,7 @@ export class PhotosPageComponent {
                     }
                     
                     return store;
-                })
+                })*/
             })
             .catch(err => {
                 console.error('[searchForPhotos] Error!', err);

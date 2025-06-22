@@ -29,7 +29,7 @@ public class AlbumsController(IAlbumHandler handler) : ControllerBase
         await handler.GetAlbum(album_id);
 
     /// <summary>
-    /// Get / Query for many <see cref="DisplayAlbum"/> instances that match provided search criterias passed as URL/Query Parameters.
+    /// Get / Query for many <see cref="DisplayAlbum"/> instances filtered by the given parameters passed.
     /// </summary>
     /// <param name="createdBefore">
     /// Albums created <strong>before</strong> the given date, cannot be used with <paramref name="createdAfter"/>
@@ -38,12 +38,12 @@ public class AlbumsController(IAlbumHandler handler) : ControllerBase
     /// Albums created <strong>after</strong> the given date, cannot be used with <paramref name="createdBefore"/>
     /// </param>
     [HttpGet]
-    [Tags(ControllerTags.ALBUMS, ControllerTags.PHOTOS_ENTITIES)]
+    [Tags(ControllerTags.ALBUMS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IEnumerable<DisplayAlbum>>> GetAlbums(
+    public async Task<ActionResult<IEnumerable<DisplayAlbum>>> FilterAlbums(
         [Required] int limit = 99,
         [Required] int offset = 0,
         [FromQuery] string? title = null,
@@ -54,6 +54,43 @@ public class AlbumsController(IAlbumHandler handler) : ControllerBase
         [FromQuery] DateTime? createdAfter = null
     ) =>
         await handler.FilterAlbums(opts =>
+        {
+            opts.Limit = limit;
+            opts.Offset = offset;
+            opts.Title = title;
+            opts.Summary = summary;
+            opts.CreatedBy = createdBy;
+            opts.CreatedBefore = createdBefore;
+            opts.CreatedAfter = createdAfter;
+            opts.Tags = tags;
+        });
+
+    /// <summary>
+    /// Get / Query for many <see cref="DisplayAlbum"/> instances that match provided search criterias passed as URL/Query Parameters.
+    /// </summary>
+    /// <param name="createdBefore">
+    /// Albums created <strong>before</strong> the given date, cannot be used with <paramref name="createdAfter"/>
+    /// </param>
+    /// <param name="createdAfter">
+    /// Albums created <strong>after</strong> the given date, cannot be used with <paramref name="createdBefore"/>
+    /// </param>
+    [HttpGet("search")]
+    [Tags(ControllerTags.ALBUMS)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<DisplayAlbum>>> SearchAlbums(
+        [Required] int limit = 99,
+        [Required] int offset = 0,
+        [FromQuery] string? title = null,
+        [FromQuery] string? summary = null,
+        [FromQuery] string[]? tags = null,
+        [FromQuery] int? createdBy = null,
+        [FromQuery] DateTime? createdBefore = null,
+        [FromQuery] DateTime? createdAfter = null
+    ) =>
+        await handler.SearchForAlbums(opts =>
         {
             opts.Limit = limit;
             opts.Offset = offset;

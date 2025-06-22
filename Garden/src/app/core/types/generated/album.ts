@@ -4,8 +4,9 @@ import { FavoriteAlbumRelation } from './favorite-album-relation';
 import { Account } from './account';
 import { Category } from './category';
 import { AlbumTagRelation } from './album-tag-relation';
+import { IAlbumDTO } from './album-dto';
 
-export type Album = {
+export type Album = IAlbumDTO & {
     id: number,
     categoryId: number | null,
     thumbnailId: number | null,

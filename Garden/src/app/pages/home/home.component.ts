@@ -1,6 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { BaseToolbarComponent } from '../../layout/toolbar/toolbar-base.component';
-import { defaultPhotoPageContainer } from '../../core/types/photos.types';
 import { PhotosService } from '../../core/api/services/photos.service';
 
 @Component({

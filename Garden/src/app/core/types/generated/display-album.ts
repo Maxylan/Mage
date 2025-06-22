@@ -1,5 +1,5 @@
-import { AccountDTO } from './account-dto';
-import { TagDTO } from './tag-dto';
+import { IAccountDTO } from './account-dto';
+import { ITagDTO } from './tag-dto';
 import { DisplayPhoto } from './display-photo';
 
 export type DisplayAlbum = {
@@ -7,7 +7,7 @@ export type DisplayAlbum = {
     readonly count: number,
     readonly favorites: number,
     readonly isFavorite: boolean,
-    readonly tags: TagDTO[] | null,
-    updatedByUser: AccountDTO,
-    createdByUser: AccountDTO,
+    readonly tags: ITagDTO[] | null,
+    updatedByUser: IAccountDTO,
+    createdByUser: IAccountDTO,
 }

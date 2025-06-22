@@ -113,7 +113,7 @@ public interface IPhotoHandler
 
     #region Update a photo entity.
     /// <summary>
-    /// Favorites a <see cref="Reception.Database.Models.Photo"/>.
+    /// Toggles the 'Favorite' status of a <see cref="Reception.Database.Models.Photo"/> for a single user.
     /// </summary>
     public abstract Task<ActionResult> ToggleFavorite(int photoId);
 
