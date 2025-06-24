@@ -1,5 +1,5 @@
 import { inject, signal } from '@angular/core';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../api/services/auth.service';
 
 export default abstract class ApiBase {
     public static readonly API_URL: string = '/reception';
@@ -113,35 +113,35 @@ export default abstract class ApiBase {
     /**
      * Perform a `GET` request to the given API Endpoint.
      */
-    public get(endpoint: string, opts?: RequestInit): Promise<Response> {
+    protected get(endpoint: string, opts?: RequestInit): Promise<Response> {
         return this.sendRequest('GET', endpoint, opts);
     }
 
     /**
      * Perform a `PUT` request to the given API Endpoint.
      */
-    public put(endpoint: string, opts?: RequestInit): Promise<Response> {
+    protected put(endpoint: string, opts?: RequestInit): Promise<Response> {
         return this.sendRequest('PUT', endpoint, opts);
     }
 
     /**
      * Perform a `PATCH` request to the given API Endpoint.
      */
-    public patch(endpoint: string, opts?: RequestInit): Promise<Response> {
+    protected patch(endpoint: string, opts?: RequestInit): Promise<Response> {
         return this.sendRequest('PATCH', endpoint, opts);
     }
 
     /**
      * Perform a `POST` request to the given API Endpoint.
      */
-    public post(endpoint: string, opts?: RequestInit): Promise<Response> {
+    protected post(endpoint: string, opts?: RequestInit): Promise<Response> {
         return this.sendRequest('POST', endpoint, opts);
     }
 
     /**
      * Perform a `DELETE` request to the given API Endpoint.
      */
-    public delete(endpoint: string, opts?: RequestInit): Promise<Response> {
+    protected delete(endpoint: string, opts?: RequestInit): Promise<Response> {
         return this.sendRequest('DELETE', endpoint, opts);
     }
 }

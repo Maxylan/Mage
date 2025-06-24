@@ -1,6 +1,6 @@
 <photos-toolbar
     (onSearch)="search($event)"
-    [limit]="photoStore().pageSize"
+    [limit]="pageService.searchParameters()"
     [offset]="photoStore().pageSize * photoStore().currentPage"
 />
 <div

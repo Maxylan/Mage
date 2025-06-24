@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import ApiBase from '../classes/base.class';
+import ApiBase from '../../classes/base.class';
 import { Photo } from '../../types/generated/photo';
 import { DisplayPhoto } from '../../types/generated/display-photo';
 import { Dimension } from '../../types/generated/dimension';

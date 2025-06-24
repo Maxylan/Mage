@@ -1,6 +1,6 @@
 import { Component, inject, model } from '@angular/core';
 import { CardThumbnailComponent } from '../../shared/cards/thumbnail/card-thumbnail.component';
-import { SelectionObserver } from '../toolbar/selection-observer.component';
+import { SelectionObserver } from '../toolbar/selection-observer.service';
 import { CardComponent } from '../../shared/cards/card.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';

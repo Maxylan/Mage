@@ -14,7 +14,7 @@ namespace Reception.Controllers;
 public class TagsController(ITagHandler handler) : ControllerBase
 {
     /// <summary>
-    /// Get all tags as a <see cref="string[]"/> of unique tag names.
+    /// Get all tags as a <see cref="TagDTO[]"/> of unique tag names.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -27,7 +27,7 @@ public class TagsController(ITagHandler handler) : ControllerBase
     /// <summary>
     /// Get the <see cref="Tag"/> with Unique '<paramref ref="name"/>' (string)
     /// </summary>
-    [HttpGet("{name}")]
+    [HttpGet("name/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -42,7 +42,7 @@ public class TagsController(ITagHandler handler) : ControllerBase
     /// <returns>
     /// <seealso cref="TagAlbumCollection"/>
     /// </returns>
-    [HttpGet("{name}/albums")]
+    [HttpGet("name/{name}/albums")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -57,7 +57,7 @@ public class TagsController(ITagHandler handler) : ControllerBase
     /// <returns>
     /// <seealso cref="TagPhotoCollection"/>
     /// </returns>
-    [HttpGet("{name}/photos")]
+    [HttpGet("name/{name}/photos")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -81,7 +81,7 @@ public class TagsController(ITagHandler handler) : ControllerBase
     /// <summary>
     /// Update the properties of the <see cref="Tag"/> with '<paramref ref="name"/>' (string), *not* its members (i.e Photos or Albums).
     /// </summary>
-    [HttpPut("{name}")]
+    [HttpPut("name/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
@@ -92,7 +92,7 @@ public class TagsController(ITagHandler handler) : ControllerBase
     /// <summary>
     /// Delete the <see cref="Tag"/> with '<paramref ref="name"/>' (string).
     /// </summary>
-    [HttpDelete("{name}")]
+    [HttpDelete("name/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]

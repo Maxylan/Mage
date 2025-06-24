@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { SelectionObserver, SelectionState } from '../../layout/toolbar/selection-observer.component';
+import { SelectionObserver, SelectionState } from '../../layout/toolbar/selection-observer.service';
 import { CardSummaryDialogComponent } from './summary/card-summary.component';
 import { CardMenuItemComponent } from './menu-item/card-menu-item.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';

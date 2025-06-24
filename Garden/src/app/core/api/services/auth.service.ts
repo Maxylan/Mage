@@ -1,7 +1,7 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { HashedUserDetails } from '../../types/auth';
 import { Session } from '../../types/generated/session';
-import ApiBase from '../classes/base.class';
+import ApiBase from '../../classes/base.class';
 
 @Injectable({
     providedIn: 'root'

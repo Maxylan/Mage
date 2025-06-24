@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
@@ -33,28 +33,25 @@ export class PhotoToolbarComponent {
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly route = inject(ActivatedRoute);
 
-    public readonly expandSearchForm = signal<boolean>(false);
-
-    public readonly searchOffset = input<number>(0, { alias: 'offset' });
-    public readonly searchLimit = input<number>(32, { alias: 'limit' });
     public readonly initialSearch = input<boolean>(true);
+    public readonly searchParameters =
+        model.required<SearchPhotosParameters>({ alias: 'parameters' });
 
     public readonly searchControl = new FormControl<string>('');
     public readonly tags = signal<string[]>([]);
 
-    private readonly lastParameters = signal<SearchPhotosParameters|undefined>(undefined);
+    public readonly expandSearchForm = signal<boolean>(false);
 
     /**
      * Parse the `ParamMap` URL/Query Parameters observable into a supported
      * `IPhotoQueryParameters` collection.
      */
-    public readonly queryParameters = toSignal<SearchPhotosParameters>(
+    public readonly queryParameters$ = 
         this.route.queryParamMap.pipe(
             map(params => {
                 let query: SearchPhotosParameters = {
+                    ...this.searchParameters(),
                     search: this.searchControl.value?.trim()?.normalize() || '',
-                    offset: this.searchOffset(),
-                    limit: this.searchLimit(),
                     tags: this.tags()
                 };
 
@@ -119,8 +116,7 @@ export class PhotoToolbarComponent {
                 return query;
             }),
             last()
-        )
-    );
+        );
 
     /**
      * Compute Query Parameters into a supported `IPhotoQueryParameters` collection.

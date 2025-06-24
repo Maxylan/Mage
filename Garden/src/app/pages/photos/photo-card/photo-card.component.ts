@@ -2,7 +2,7 @@ import { Component, inject, signal, effect, input, untracked } from '@angular/co
 import { PhotosService } from '../../../core/api/services/photos.service';
 import { CardThumbnailComponent } from '../../../shared/cards/thumbnail/card-thumbnail.component';
 import { CardComponent } from '../../../shared/cards/card.component';
-import { SelectionObserver, SelectionState } from '../../../layout/toolbar/selection-observer.component';
+import { SelectionObserver, SelectionState } from '../../../layout/toolbar/selection-observer.service';
 import { Photo } from '../../../core/types/generated/photo';
 
 @Component({
