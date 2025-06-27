@@ -62,14 +62,14 @@ public record class DisplayClient
             .Any(entry => entry.ExpiresAt >= DateTime.Now);
     }
 
-    public readonly int? Id;
-    public readonly bool Trusted;
-    public readonly string Address;
-    public readonly string? UserAgent;
-    public readonly int Logins;
-    public readonly int FailedLogins;
-    public readonly DateTime CreatedAt;
-    public readonly DateTime LastVisit;
+    public int? Id { get; init; }
+    public bool Trusted { get; init; }
+    public string Address { get; init; } = null!;
+    public string? UserAgent { get; init; }
+    public int Logins { get; init; }
+    public int FailedLogins { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime LastVisit { get; init; }
 
     protected bool _isBanned;
     public bool IsBanned => this._isBanned;

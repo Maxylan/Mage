@@ -1,222 +1,168 @@
-import { Injectable, Signal, signal } from '@angular/core';
-import { HashedUserDetails } from '../../types/auth';
-import { Session } from '../../types/generated/session';
+import { Injectable } from '@angular/core';
 import ApiBase from '../../classes/base.class';
+import { Account } from '../../types/generated/account';
+import { Session } from 'inspector';
+import { Login } from '../../types/generated/login';
+
+export interface PrivilegeChecks {
+    /** ..view any? */
+    View(): boolean,
+    /** ..view all? */
+    ViewAll(): boolean,
+    /** ..create? */
+    Create(): boolean,
+    /** ..delete? */
+    Delete(): boolean,
+    /** ..administrate? */
+    Administrate(): boolean,
+    /** ..match the given `privilege`? */
+    CheckPrivilege(privilege: number): boolean
+}
 
 @Injectable({
     providedIn: 'root'
 })
-export class AuthService {
-    public static readonly HEADER = 'x-mage-token';
-    public static readonly STORED_SESSION = 'mage-stored-usr';
-    public static readonly STORED_CREDENTIALS = 'mage-stored-creds';
-
-    public readonly isLoading = signal<boolean>(false);
-    protected readonly sessionToken = signal<string|null>(
-        localStorage.getItem(AuthService.STORED_SESSION)
-    );
-
-    protected readonly storedCredentials = signal<string|null>( // HashedUserDetails
-        localStorage.getItem(AuthService.STORED_CREDENTIALS)
-    );
+export class AuthService extends ApiBase {
+    public static readonly VIEW = 0b00001;
+    public static readonly VIEW_ALL = 0b00010;
+    public static readonly CREATE = 0b00100;
+    public static readonly DELETE = 0b01000;
+    public static readonly ADMIN = 0b10000;
 
     /**
-     * Get the token.
+     * Is the given user privileged enough to..
      */
-    public get getToken(): Signal<string|null> {
-        // Attempt to consume one from an URL, probably won't be successfully, but doesn't hurt.
-        this.consumeToken();
-
-        const token = this.sessionToken();
-        if (!token) {
-            const localStorageSession = 
-                localStorage.getItem(AuthService.STORED_SESSION);
-
-            if (localStorageSession) {
-                this.sessionToken.set(localStorageSession);
-            }
-        }
-
-        return this.sessionToken.asReadonly();
-    }
-
-    /**
-     * Authorize the user, either via stored credentials (remember-me), or via redirection to 'Guard' (login)
-     */
-    public async authorize(): Promise<string|null> {
-        // TODO - Check to see if we have a stored session already, and if that session is valid?
-        // Not strictly necessary, but would prevent some potentially unecessary re-logins.
-
-        let localStorageCreds = this.storedCredentials();
-        if (!localStorageCreds) {
-            localStorageCreds = 
-                localStorage.getItem(AuthService.STORED_CREDENTIALS);
-
-            if (!localStorageCreds) {
-                this.fallbackToAuth();
-                return null;
-            }
-
-            this.storedCredentials.set(localStorageCreds);
-        }
-
-        const creds: HashedUserDetails = JSON.parse(localStorageCreds);
-
-        if (!creds.username || !creds.hash) {
-            console.warn('[authorize] Stored credentials are invalid!', creds);
-            localStorage.removeItem(AuthService.STORED_CREDENTIALS);
-            return null;
-        }
-
-        this.isLoading.set(true);
-
-        // TODO! Remove log
-        console.debug('[AuthService] Attempting auto-refresh (remember me)', creds);
-
-        const session = await this.refreshLogin(creds.username, creds.hash)
-            .catch(this.handleErrors);
-
-        return session?.code || null;
-    }
-
-    /**
-     * Fallback on a redirect to 'Guard' to have the user re-authorize (login)
-     */
-    public fallbackToAuth(failedResponse?: Response) {
-        console.debug('[AuthService] Falling-back to \'Guard\'..');
-        this.isLoading.set(true);
-
-        if (failedResponse && failedResponse instanceof Response) {
-            console.warn(`[AuthService] Failed attempt to re-authorize (${failedResponse.status}, ${failedResponse.statusText})`);
-        }
-        else if (failedResponse !== undefined) {
-            console.warn('[AuthService] Failed to authorize user!', failedResponse);
-        }
-
-        location.href = '/guard';
-        return;
-    }
-
-    /**
-     * Refresh logins for people who have their credentials stored in their browser (remember-me)
-     */
-    private async refreshLogin(username: string, hashedPassword: string): Promise<Session> {
-        if (this.isLoading() === false) {
-            this.isLoading.set(true);
-        }
-
-        return await fetch(ApiBase.API_URL + '/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+    public static Can(user: Account|null): PrivilegeChecks {
+        return {
+            /** ..view any? */
+            View(): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
+                }
+                return (AuthService.VIEW & user.privilege) === AuthService.VIEW;
             },
-            body: JSON.stringify({
-                username: username,
-                hash: hashedPassword
-            })
-        })
-            .then(
-                res => {
-                    if (!res || res.status != 200) {
-                        console.error('[AuthService] Falsy / Unsuccessfull fetch `Response`', res?.status);
-                        return Promise.reject(res.body);
-                    }
-
-                    return res.json();
+            /** ..view all? */
+            ViewAll(): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
                 }
-            )
-            .then(
-                parsed => {
-                    const session: Session = parsed;
-                    if (!session.id ||
-                        session.id < 1 ||
-                        !session.accountId ||
-                        session.accountId < 1
-                    ) {
-                        console.error('[AuthService] (sendLoginRequest) Session Response missing / invalid IDs', session.id, session.accountId);
-                        return Promise.reject('Session Response missing / invalid IDs');
-                    }
-
-                    if (!session.code || session.code.length !== 36) {
-                        console.error('[AuthService] (sendLoginRequest) Session `code` missing / invalid', session.code);
-                        return Promise.reject('Session `code` missing / invalid');
-                    }
-
-                    localStorage.setItem(AuthService.STORED_SESSION, session.code!);
-                    this.sessionToken.set(session.code);
-
-                    return session;
+                return (AuthService.VIEW_ALL & user.privilege) === AuthService.VIEW_ALL;
+            },
+            /** ..create? */
+            Create(): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
                 }
-            )
-            .finally(
-                () => this.isLoading.set(false)
-            );
-    }
-
-    private async handleErrors(error: Error): Promise<void> {
-        console.error('Login / Auto-refresh failed!', error);
-
-        if (error instanceof ReadableStream) {
-            let processErrorResponse: string = '';
-            const utf8Decoder = new TextDecoder('utf-8');
-            const reader = error.getReader();
-
-            function processText<T extends AllowSharedBufferSource>(
-                { done, value }: ReadableStreamReadResult<T>
-            ): Promise<string> {
-                processErrorResponse += utf8Decoder.decode(value);
-
-                if (done) {
-                    return Promise.resolve(
-                        processErrorResponse
-                            .trim()
-                            .replace(/^[\\"]{0,3}(.*)/, '$1')
-                            .replace(/[\\"]*$/, '')
-                    );
+                return (AuthService.CREATE & user.privilege) === AuthService.CREATE;
+            },
+            /** ..delete? */
+            Delete(): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
                 }
-
-                return reader
-                    .read()
-                    .then(processText);
-            };
-
-            await reader
-                .read()
-                .then(processText)
-                .then(errorMessage => 
-                    // TODO! Growl? Alert?
-                    console.error(errorMessage)
-                );
-        }
-        else if (!!error) {
-            const message = JSON.stringify(error, null, 4);
-            // TODO! Growl? Alert?
-            console.error(message);
+                return (AuthService.DELETE & user.privilege) === AuthService.DELETE;
+            },
+            /** ..administrate? */
+            Administrate(): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
+                }
+                return (AuthService.ADMIN & user.privilege) === AuthService.ADMIN;
+            },
+            /** ..match the given `privilege`? */
+            CheckPrivilege(privilege: number): boolean {
+                if (!user?.privilege || user.privilege < 0) {
+                    return false;
+                }
+                return (privilege & user.privilege) === privilege;
+            }
         }
     }
 
     /**
-     * Attempt to consume a token/session-code from a URL hash-value
+     * Validates that a session (..inferred from `<see cref="HttpContext"/>`) ..exists and is valid.
+     * In other words this endpoint tests my Authentication Pipeline.
+     *
+     * [Authorize]
+     * [HttpHead("validate")]
      */
-    public consumeToken(): void {
-        if (!location.hash) {
-            return;
-        }
-        const [
-            url,
-            token
-        ] = location.href.split('#');
-
-        if (token) {
-            this.sessionToken.set(
-                token.replace(/^#?@?/, '')
+    public async validateSession(): Promise<void> {
+        return await this.head('/auth/')
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[validateSession] Error!', err);
+                    return err;
+                }
             );
-
-            window.history.replaceState(null, '', url);
-        }
     }
 
-    constructor() {
-        this.consumeToken();
+    /**
+     * Returns the `<see cref="Account"/>` tied to the requesting client's session (i.e, in our `<see cref="HttpContext"/>` pipeline).
+     *
+     * [Authorize]
+     * [HttpGet("me")]
+     */
+    public async me(): Promise<Account> {
+        return await this.get('/auth/me')
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[me] Error!', err);
+                    return err;
+                }
+            );
+    }
+
+    /**
+     * Attempt to grab a full `<see cref="Session"/>` instance, identified by PK (uint) <paramref name="id"/>.
+     * 
+     * [Authorize]
+     * [HttpGet("session/{id:int}")]
+     */
+    public async getSessionDetails(id: number): Promise<Session> {
+        return await this.get('/auth/session/' + id)
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[getSessionDetails] Error!', err);
+                    return err;
+                }
+            );
+    }
+
+    /**
+     * Attempt to grab a full `<see cref="Session"/>` instance, identified by unique <paramref name="session"/> code (string).
+     * 
+     * [Authorize]
+     * [HttpGet("session/code/{session}")]
+     */
+    public async getSessionDetailsByCode(session: string): Promise<Session> {
+        return await this.get('/auth/session/code/' + session)
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[getSessionDetailsByCode] Error!', err);
+                    return err;
+                }
+            );
+    }
+
+    /**
+     * Attempt to login a user, creating a new `<see cref="Session"/>` instance.
+     * 
+     * [HttpPost("login")]
+     */
+    public async login(credentials: Login): Promise<Session> {
+        const body = JSON.stringify(credentials);
+
+        return await this.post('/auth/login', { body })
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[login] Error!', err);
+                    return err;
+                }
+            );
     }
 }

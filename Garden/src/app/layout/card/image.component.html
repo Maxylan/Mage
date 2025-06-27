@@ -1,0 +1,9 @@
+@if (source()) {
+    <img
+        [src]="source()"
+        [alt]="alt()"
+    />
+}
+@else {
+    <mat-progress-bar mode="indeterminate"/>
+}

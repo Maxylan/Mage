@@ -1,36 +1,124 @@
-<photos-toolbar
-    (onSearch)="search($event)"
-    [limit]="pageService.searchParameters()"
-    [offset]="photoStore().pageSize * photoStore().currentPage"
+<photos-searchbar
+    (onSearch)="page.update($event)"
+    [(parameters)]="page.searchParameters"
 />
 <div
     class="photos-container"
-    [ngClass]="isHandset() ? 'handset' : ''"
+    [ngClass]="page.isHandset() ? 'handset' : ''"
 >
-    @if (!isLoadingPhotos() && !photoStore().pageSize) {
-        <p>
-          photos works but no photos was fetched!
-        </p>
+    @if (!page.isLoading()) {
+        <mat-spinner/>
     }
-    @if (photoStore().page()) {
-        @for (photo of photoStore().page()!.set; track photo.source.photoId) {
-                <photo-card
-                    [photo]="photo.source"
-                    [isHandset]="isHandset()"
-                    [linkUrl]="'/garden/photos/single/' + photo.source.photoId"
-                    [shareUrl]="'/garden/photos/single/' + photo.source.photoId"
-                    [isFavorite]="isFavorite()(photo.source.photoId)"
-                    [selectionState]="selectionState()"
-                    [deselect]="deselect"
-                    [select]="select"
-                />
+    @else if (page.photos().length > 0) {
+        @for (photo of page.photos(); track photo.source.photoId) {
+            @if (photo.photoId && page.auth(photo.requiredPrivilege)) {
+                <app-card
+                    [id]="photo.photoId"
+                    [title]="photo.title"
+                    [summary]="photo.summary"
+                    [isHandset]="page.isHandset()"
+                    (deselect)="page.selectionObserver.deselectItems($event)"
+                    (select)="page.selectionObserver.selectItems($event)"
+                >
+                    @if (page.selectionObserver.isSelected(photo.photoId)) {
+                        <!--
+                            Deselect
+                            Delete all
+                            Share all
+                            Download all
+                            Add all to album
+                            Add tag
+                            Mark all as favorite (If at least one selected is not favorite)
+                            Remove all from favorite (if at least one selected is favorite)
+                        -->
+                        <button mat-menu-item>
+                            <mat-icon>deselect</mat-icon>
+                            <span>Deselect</span>
+                        </button>
+                        @if (page.delete) {
+                            <button mat-menu-item>
+                                <mat-icon>delete_selected</mat-icon>
+                                <span>Delete all selected</span>
+                            </button>
+                        }
+                        <button mat-menu-item>
+                            <mat-icon>share_selected</mat-icon>
+                            <span>Share all</span>
+                        </button>
+                        <button mat-menu-item>
+                            <mat-icon>download_selected</mat-icon>
+                            <span>Download all</span>
+                        </button>
+                        <button mat-menu-item>
+                            <mat-icon>add_all_to_album</mat-icon>
+                            <span>Add all to album</span>
+                        </button>
+                        <button mat-menu-item>
+                            <mat-icon>favorite_toggle_selected</mat-icon>
+                            <span>Toggle Favorite</span>
+                        </button>
+                    }
+                    @else {
+                        <!--
+                            Select
+                            Delete
+                            Share
+                            Download
+                            Add to album
+                            Add tag
+                            Mark as favorite (If not favorite)
+                            Remove from favorite (if favorite)
+                            Make avatar
+                            Info
+                        -->
+                        <button mat-menu-item>
+                            <mat-icon>select</mat-icon>
+                            <span>Select</span>
+                        </button>
+                        <button mat-menu-item>
+                            <mat-icon>share</mat-icon>
+                            <span>Share</span>
+                        </button>
+                        <button mat-menu-item>
+                            <mat-icon>download</mat-icon>
+                            <span>Download</span>
+                        </button>
+                        @if (photo.isFavorite) {
+                            <button mat-menu-item>
+                                <mat-icon>un_favorite</mat-icon>
+                                <span>Un-favorite</span>
+                            </button>
+                        }
+                        @else {
+                            <button mat-menu-item>
+                                <mat-icon>favorite</mat-icon>
+                                <span>Favorite</span>
+                            </button>
+                        }
+                        <button mat-menu-item>
+                            <mat-icon>add_to_album</mat-icon>
+                            <span>Add to album</span>
+                        </button>
+                        @if (page.delete) {
+                            <button mat-menu-item>
+                                <mat-icon>delete</mat-icon>
+                                <span>Delete</span>
+                            </button>
+                        }
+                    }
+                </app-card>
+            }
         }
     }
+    @else {
+        <p>No photos exists!</p>
+    }
 </div>
-<shared-paginator
-    [length]="photoStore().page()?.set?.size ?? 0"
-    [pageSize]="photoStore().pageSize"
-    [pageIndex]="photoStore().currentPage"
-    [disabled]="isLoadingPhotos()"
+<mat-paginator
+    (page)="updatePagination($event)"
+    [pageIndex]="pageIndex()"
+    [pageSize]="page.searchParameters().limit"
+    [length]="page.photos().length"
+    [disabled]="page.isLoading()"
     color="primary"
 />

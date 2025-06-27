@@ -95,6 +95,51 @@ public class TagHandler(
     }
 
     /// <summary>
+    /// Get all tags (<see cref="Tag"/>) matching names in '<paramref ref="tagNames"/>' (string[])
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<TagDTO>>> GetTagsByNames(IEnumerable<string> tagNames)
+    {
+        if (tagNames.Count() > 9999)
+        {
+            tagNames = tagNames
+                .Take(9999);
+        }
+
+        tagNames = tagNames
+            .Where(name => string.IsNullOrWhiteSpace(name));
+
+        if (!tagNames.Any())
+        {
+            string message = $"Parameter {nameof(tagNames)} cannot be empty/omitted!";
+            logging
+                .Action(nameof(TagHandler.GetTagsByNames))
+                .ExternalDebug(message)
+                .LogAndEnqueue();
+
+            return new BadRequestObjectResult(
+                Program.IsProduction ? HttpStatusCode.BadRequest.ToString() : message
+            );
+        }
+
+        var tags = await tagService.GetTagsByNames(tagNames);
+
+        if (tags.Value is null)
+        {
+            string message = $"Failed to get {nameof(Tag)}(s) matching the provided {nameof(tagNames)}!";
+            logging
+                .Action(nameof(TagHandler.GetTagsByNames))
+                .LogDebug(message)
+                .LogAndEnqueue();
+
+            return tags.Result!;
+        }
+
+        return tags.Value
+            .Select(tag => (TagDTO)tag)
+            .ToArray();
+    }
+
+    /// <summary>
     /// Get the <see cref="Tag"/> with Primary Key '<paramref ref="tagId"/>' (int)
     /// </summary>
     public async Task<ActionResult<TagDTO>> GetTagById(int tagId)
@@ -229,7 +274,7 @@ public class TagHandler(
 
         if (newTags.Value is null)
         {
-            string message = $"Failed to get {nameof(Tag)} {nameof(Photo)}(s) for the '{newTags}' {nameof(Tag)}!";
+            string message = $"Failed to get / create {nameof(Tag)}(s) matching the provided {nameof(tagNames)}!";
             logging
                 .Action(nameof(TagHandler.CreateTags))
                 .LogDebug(message)

@@ -1,19 +1,15 @@
 import { Component, inject, model } from '@angular/core';
-import { CardThumbnailComponent } from '../../shared/cards/thumbnail/card-thumbnail.component';
+import { HttpClient } from "@angular/common/http";
+import { ReactiveFormsModule } from '@angular/forms';
 import { SelectionObserver } from '../toolbar/selection-observer.service';
-import { CardComponent } from '../../shared/cards/card.component';
+import { UploadCardThumbnailComponent } from './thumbnail.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
-import { ReactiveFormsModule } from '@angular/forms';
-import { HttpClient } from "@angular/common/http";
-import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'upload-form',
     imports: [
-        CardComponent,
-        CardThumbnailComponent,
-        CardThumbnailComponent,
+        UploadCardThumbnailComponent,
         ReactiveFormsModule,
         MatButtonModule,
         MatChipsModule

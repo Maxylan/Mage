@@ -5,18 +5,10 @@
     @if (files() && files()!.length > 0) {
         <div class="uploaded-photos-container">
             @for (file of files(); track file.name) {
-                <shared-card
-                    [key]="file.name"
-                    [title]="file.name"
-                    [selectionState]="selectionState()"
-                    [deselect]="deselect"
-                    [select]="select"
-                >
-                    <shared-card-thumbnail
-                        [alt]="file.name"
-                        [file]="file"
-                    />
-                </shared-card>
+                <app-upload-card-thumbnail
+                    [alt]="file.name"
+                    [file]="file"
+                />
             }
         </div>
     }

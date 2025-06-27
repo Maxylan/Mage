@@ -104,17 +104,17 @@ public record class DisplayPhoto
         }
     }
 
-    public readonly int? PhotoId;
-    public readonly string Slug;
-    public readonly string Title;
-    public readonly string? Summary;
-    public readonly string? Description;
-    public readonly DateTime UploadedAt;
-    public readonly DateTime UpdatedAt;
-    public readonly DateTime CreatedAt;
-    public readonly bool IsAnalyzed;
-    public readonly DateTime? AnalyzedAt;
-    public readonly byte RequiredPrivilege;
+    public int? PhotoId { get; init; }
+    public string Slug { get; init; } = null!;
+    public string Title { get; init; } = null!;
+    public string? Summary { get; init; }
+    public string? Description { get; init; }
+    public DateTime UploadedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public bool IsAnalyzed { get; init; }
+    public DateTime? AnalyzedAt { get; init; }
+    public byte RequiredPrivilege { get; init; }
 
     protected int? _currentUserId;
     protected IEnumerable<FavoritePhotoRelation> _favoritedBy;

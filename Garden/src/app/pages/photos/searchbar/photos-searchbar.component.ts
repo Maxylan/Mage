@@ -4,20 +4,17 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { BaseToolbarComponent } from '../../../layout/toolbar/toolbar-base.component';
 import { HttpUrlEncodingCodec } from '@angular/common/http';
 import { MatInput } from '@angular/material/input';
 import { NgClass } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { last, map } from 'rxjs';
 import { SearchPhotosParameters } from '../../../core/types/search-photos-parameters';
 
 @Component({
-    selector: 'photos-toolbar',
+    selector: 'photos-searchbar',
     imports: [
         PhotoTagsInputComponent,
-        BaseToolbarComponent,
         ReactiveFormsModule,
         MatFormFieldModule,
         MatButtonModule,
@@ -26,10 +23,13 @@ import { SearchPhotosParameters } from '../../../core/types/search-photos-parame
         MatInput,
         NgClass
     ],
-    templateUrl: 'photos-toolbar.component.html',
-    styleUrl: 'photos-toolbar.component.scss'
+    providers: [
+        HttpUrlEncodingCodec
+    ],
+    templateUrl: 'photos-searchbar.component.html',
+    styleUrl: 'photos-searchbar.component.scss'
 })
-export class PhotoToolbarComponent {
+export class PhotoSearchbarComponent {
     private readonly urlEncoder = inject(HttpUrlEncodingCodec);
     private readonly route = inject(ActivatedRoute);
 

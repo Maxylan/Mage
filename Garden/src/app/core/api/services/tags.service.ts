@@ -74,6 +74,25 @@ export class TagsService extends ApiBase {
             );
     }
 
+    
+    /**
+     * Get all tags (<see cref="Tag"/>) matching names in '<paramref ref="tagNames"/>' (string[])
+     *
+     * [HttpPost("name")]
+     */
+    public async getTagsByNames(tagNames: string[]): Promise<ITagDTO[]> {
+        const body = JSON.stringify(tagNames);
+
+        return await this.post('/tags/name', { body })
+            .then(res => res.json())
+            .catch(
+                err => {
+                    console.error('[getTagsByNames] Error!', err);
+                    return err;
+                }
+            );
+    }
+
     /**
      * Create all non-existing tags in the '<paramref ref="tagNames"/>' (string[]) array.
      *

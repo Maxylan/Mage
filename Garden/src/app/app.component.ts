@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { UploadFormContainerComponent } from './layout/upload-form/upload-images.component';
+import { BaseToolbarComponent } from './layout/toolbar/toolbar-base.component';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { LayoutNavComponent } from './layout/nav/nav.component';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -11,6 +12,7 @@ import { map, shareReplay } from 'rxjs';
     selector: 'app-root',
     imports: [
         UploadFormContainerComponent,
+        BaseToolbarComponent,
         LayoutNavComponent,
         RouterOutlet
     ],

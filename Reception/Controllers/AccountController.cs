@@ -17,7 +17,7 @@ public class AccountsController(IAccountHandler handler) : ControllerBase
     /// <summary>
     /// Get a single <see cref="AccountDTO"/> (user) by its <paramref name="account_id"/> (PK, uint).
     /// </summary>
-    [HttpGet("{id:int}")]
+    [HttpGet("{account_id:int}")]
     [Tags(ControllerTags.USERS, ControllerTags.ACCOUNTS)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]

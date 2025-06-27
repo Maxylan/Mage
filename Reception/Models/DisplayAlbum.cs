@@ -132,17 +132,17 @@ public record class DisplayAlbum
         _currentUserId > 0 &&
         this._favoritedBy.Any(f => f.AccountId == _currentUserId);
 
-    public readonly int? AlbumId;
-    public readonly int? ThumbnailId;
-    public readonly DisplayPhoto? Thumbnail;
-    public readonly int? CategoryId;
-    public readonly CategoryDTO? Category;
-    public readonly string Title;
-    public readonly string? Summary;
-    public readonly string? Description;
-    public readonly DateTime CreatedAt;
-    public readonly DateTime UpdatedAt;
-    public readonly byte RequiredPrivilege;
+    public int? AlbumId { get; init; }
+    public int? ThumbnailId { get; init; }
+    public DisplayPhoto? Thumbnail { get; init; }
+    public int? CategoryId { get; init; }
+    public CategoryDTO? Category { get; init; }
+    public string Title { get; init; } = null!;
+    public string? Summary { get; init; }
+    public string? Description { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
+    public byte RequiredPrivilege { get; init; }
 
     protected IEnumerable<TagDTO> _tags;
     public IEnumerable<TagDTO> Tags => this._tags;

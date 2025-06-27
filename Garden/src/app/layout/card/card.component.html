@@ -1,0 +1,25 @@
+<div>
+    <button
+        matIconButton
+        [matMenuTriggerFor]="cardMenu"
+    >
+        <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #cardMenu="matMenu">
+        <ng-template matMenuContent>
+            <ng-content select="mat-menu-item"/>
+        </ng-template>
+    </mat-menu>
+    @if(thumbnail()) {
+        <app-card-image
+            [photoId]="thumbnail()!"
+            [alt]="title()"
+        />
+    }
+    @if(title()) {
+        <p>{{ title() }}</p>
+    }
+    @if(summary()) {
+        <p>{{ summary() }}</p>
+    }
+</div>

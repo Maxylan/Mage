@@ -494,6 +494,73 @@ public class TagService(
     }
 
     /// <summary>
+    /// Get all tags (<see cref="Tag"/>) matching names in '<paramref ref="tagNames"/>' (string[])
+    /// </summary>
+    public async Task<ActionResult<IEnumerable<Tag>>> GetTagsByNames(IEnumerable<string> tagNames)
+    {
+        if (tagNames.Count() > 9999)
+        {
+            tagNames = tagNames
+                .Take(9999);
+        }
+
+        Account? user;
+        try
+        {
+            user = MemoAuth.GetAccount(contextAccessor);
+
+            if (user is null) {
+                return new ObjectResult("Prevented attempted unauthorized access.") {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            string message = $"Cought an '{ex.GetType().FullName}' invoking {nameof(MemoAuth.GetAccount)}!";
+            logging
+                .Action(nameof(GetTagsByNames))
+                .ExternalError(message, opts => { opts.Exception = ex; })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        if ((user.Privilege & Privilege.VIEW) != Privilege.VIEW)
+        {
+            string message = $"Prevented action with 'RequiredPrivilege' ({Privilege.VIEW}), which exceeds the user's 'Privilege' of ({user.Privilege}).";
+            logging
+                .Action(nameof(GetTagsByNames))
+                .ExternalSuspicious(message, opts => {
+                    opts.SetUser(user);
+                })
+                .LogAndEnqueue();
+
+            return new ObjectResult(Program.IsProduction ? HttpStatusCode.Forbidden.ToString() : message) {
+                StatusCode = StatusCodes.Status403Forbidden
+            };
+        }
+
+        tagNames = tagNames
+            .Where(tn => !string.IsNullOrWhiteSpace(tn))
+            .Where(tn => tn.Length < 128)
+            .Distinct();
+
+        if (tagNames.Count() <= 0)
+        {
+            return new OkObjectResult(Array.Empty<Tag>());
+        }
+
+        var tags = await db.Tags
+            .Where(tag => tagNames.Contains(tag.Name))
+            .ToArrayAsync();
+
+        return tags;
+    }
+
+    /// <summary>
     /// Create all non-existing tags in the '<paramref ref="tagNames"/>' (string[]) array.
     /// </summary>
     public async Task<ActionResult<IEnumerable<Tag>>> CreateTags(IEnumerable<string> tagNames)

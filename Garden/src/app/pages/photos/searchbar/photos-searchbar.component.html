@@ -1,0 +1,60 @@
+<div class="advanced-form" [ngClass]="expandSearchForm() ? 'expanded-toolbar':'hidden-toolbar'">
+    <photo-tags-input 
+        aria-label="Search Photos With Tags Input"
+        (blur)="triggerSearch()"
+        [(tags)]="tags"
+    />
+</div>
+<mat-form-field
+    class="search-bar"
+    subscriptSizing="dynamic"
+>
+    <input
+        matInput
+        color="secondary"
+        name="search-photos-input"
+        aria-label="Search Photos Input"
+        placeholder="Search for Photos!"
+        [formControl]="searchControl"
+        (submit)="triggerSearch()"
+        (blur)="triggerSearch()"
+    />
+</mat-form-field>
+<button
+    mat-button
+    class="advanced-form-button"
+    (click)="toggleExpand()"
+>
+    <mat-icon
+        matPrefix
+        matIconPrefix
+        fontSet="hack"
+        class="search-submit-button-icon"
+        aria-label="Search photos icon'"
+    >
+        @if (expandSearchForm()) {
+            
+        }
+        @else {
+            
+        }
+    </mat-icon>
+    Advanced
+</button>
+<button
+    mat-icon-button
+    class="search-submit"
+    aria-label="Icon submit search button"
+    (click)="triggerSearch()"
+    type="submit"
+>
+    <mat-icon
+        matPrefix
+        matIconPrefix
+        fontSet="hack"
+        class="search-submit-button-icon"
+        aria-label="Search photos icon'"
+    >
+        
+    </mat-icon>
+</button>

@@ -17,6 +17,11 @@ public interface ITagService
     public abstract Task<ActionResult<Tag>> GetTag(string name);
 
     /// <summary>
+    /// Get all tags (<see cref="Tag"/>) matching names in '<paramref ref="tagNames"/>' (string[])
+    /// </summary>
+    public abstract Task<ActionResult<IEnumerable<Tag>>> GetTagsByNames(IEnumerable<string> tagNames);
+
+    /// <summary>
     /// Get the <see cref="Tag"/> with Primary Key '<paramref ref="tagId"/>' (int)
     /// </summary>
     public abstract Task<ActionResult<Tag>> GetTagById(int tagId);

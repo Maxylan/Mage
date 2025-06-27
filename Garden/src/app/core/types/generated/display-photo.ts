@@ -5,6 +5,17 @@ import { IPublicLinkDTO } from './public-link-dto';
 import { IFilepathDTO } from './filepath-dto';
 
 export type DisplayPhoto = {
+    photoId: number | null,
+    slug: string,
+    title: string,
+    summary: string | null,
+    description: string | null,
+    uploadedAt: Date,
+    updatedAt: Date,
+    createdAt: Date,
+    isAnalyzed: boolean,
+    analyzedAt: Date | null,
+    requiredPrivilege: number,
     readonly favorites: number,
     readonly isFavorite: boolean,
     source: IFilepathDTO,

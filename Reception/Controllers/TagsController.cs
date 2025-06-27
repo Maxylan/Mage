@@ -37,6 +37,18 @@ public class TagsController(ITagHandler handler) : ControllerBase
         await handler.GetTag(name);
 
     /// <summary>
+    /// Get all tags (<see cref="Tag"/>) matching names in '<paramref ref="tagNames"/>' (string[])
+    /// </summary>
+    [HttpPost("name")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<TagDTO>>> GetTagsByNames([FromBody] string[] tagNames) =>
+        await handler.GetTagsByNames(tagNames);
+
+
+    /// <summary>
     /// Get the <see cref="Tag"/> with '<paramref ref="name"/>' (string) along with a collection of all associated Albums.
     /// </summary>
     /// <returns>

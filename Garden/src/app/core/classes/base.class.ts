@@ -1,18 +1,40 @@
 import { inject, signal } from '@angular/core';
-import { AuthService } from '../api/services/auth.service';
+import { TokenService } from '../api/services/token.service';
 
 export default abstract class ApiBase {
     public static readonly API_URL: string = '/reception';
 
     public readonly isLoading = signal<boolean>(false);
 
-    protected readonly authService = inject(AuthService);
+    protected readonly tokenService = inject(TokenService);
 
     /**
-     * Get the token from `{AuthService}`.
+     * Get the token from `{TokenService}`.
      */
     protected get token(): string|null {
-        return this.authService.getToken();
+        return this.tokenService.getToken();
+    };
+
+    /**
+     * Create a {RequestInit} options instance for fetches.
+     */
+    protected queryParameters(
+        parameters: object
+    ): string {
+        if (!parameters) {
+            return '';
+        }
+
+        let queryParams = [];
+        for (const [key, value] of Object.entries(parameters)) {
+            queryParams.push(`${key}=${value}`);
+        }
+
+        if (queryParams.length === 0) {
+            return '';
+        }
+
+        return '?' + queryParams.join('&');
     };
 
     /**
@@ -32,7 +54,7 @@ export default abstract class ApiBase {
             headers: {  
                 'Accepts': 'application/json',
                 'Content-Type': 'application/json',
-                [AuthService.HEADER]: token
+                [TokenService.HEADER]: token
             }
         };
 
@@ -74,7 +96,7 @@ export default abstract class ApiBase {
             .then(res => {
                 if (res?.status === 401) {
                     console.warn('401 Unauthorized, probably session expiry, falling back on auth...');
-                    this.authService!.fallbackToAuth(res);
+                    this.tokenService!.fallbackToAuth(res);
                 }
 
                 return res;
@@ -88,7 +110,7 @@ export default abstract class ApiBase {
         /* if (this.cache?.options?.enabled) {
             return requestFuture.then(res => {
                 if (res?.status === 401) {
-                    this.authService!.fallbackToAuth(res);
+                    this.tokenService!.fallbackToAuth(res);
                     Promise.reject('Unauthorized, falling back to auth...');
                 }
 

@@ -19,7 +19,8 @@ export default abstract class PageBase {
             .pipe(
                 map(result => result.matches),
                 shareReplay()
-            )
+            ),
+        { initialValue: true }
     );
 
     public abstract refetch(): Promise<void>;

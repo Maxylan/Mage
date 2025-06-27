@@ -113,4 +113,12 @@ export class SelectionObserver {
             }
         );
     }
+
+    public isSelected = (item: string|number): boolean => {
+        if (!item) {
+            return false;
+        }
+
+        return this.selection().includes(item);
+    }
 }

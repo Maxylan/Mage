@@ -1,4 +1,6 @@
-import { computed, inject, Injectable, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { AuthService } from "../../../core/api/services/auth.service";
+import { TagsService } from "../../../core/api/services/tags.service";
 import { PhotosService } from "../../../core/api/services/photos.service";
 import { SelectionObserver } from "../../../layout/toolbar/selection-observer.service";
 import { SearchPhotosParameters } from "../../../core/types/search-photos-parameters";
@@ -6,14 +8,19 @@ import { DisplayPhoto } from "../../../core/types/generated/display-photo";
 import { PhotosPageComponent } from "../photos.component";
 import PageBase from "../../../core/classes/page.class";
 import { PageEvent } from "@angular/material/paginator";
+import { Account } from "../../../core/types/generated/account";
+import { ITagDTO } from "../../../core/types/generated/tag-dto";
 
 @Injectable({
     providedIn: PhotosPageComponent,
 })
 export class PhotosPageService extends PageBase {
     // Dependencies
-    private readonly photoService = inject(PhotosService);
-    private readonly selectionObserver = inject(SelectionObserver);
+    private readonly tagsService = inject(TagsService);
+    private readonly photosService = inject(PhotosService);
+    private readonly authService = inject(AuthService);
+
+    public readonly selectionObserver = inject(SelectionObserver);
 
     // States
     public readonly isEmpty = computed<boolean>(() => this.photos().length === 0);
@@ -22,12 +29,17 @@ export class PhotosPageService extends PageBase {
         limit: 0
     });
 
+    public readonly me = signal<Account|null>(null);
+
     public readonly selectionState = this.selectionObserver.State;
     public readonly photos = signal<DisplayPhoto[]>([]);
 
+    public readonly tagNames = signal<string[]>([]);
+    public readonly tags = signal<ITagDTO[]>([]);
+
     // Photos
     public async toggleFavorite(photoId: number): Promise<void> {
-        await this.photoService
+        await this.photosService
             .toggleFavorite(photoId)
             .then(this.refetch);
     }
@@ -40,26 +52,91 @@ export class PhotosPageService extends PageBase {
     public async refetch(): Promise<void> {
         this.isLoading.set(true);
         this.photos.set([]);
+        this.photos.set([]);
 
-        await this.photoService
+        const myAccount = await this.authService.me();
+        if (!myAccount) {
+            throw Error('[PhotosPageService] Failed to get account details of the current user!');
+        }
+
+        this.me.set(myAccount);
+
+        const searchPhotosPromise = this.photosService
             .searchDisplayPhotos(this.searchParameters())
             .then(
                 res => this.photos.set(res),
                 rej => console.warn('', rej)
-            )
+            );
+
+        const tagsPromise = this.getOrCreateTags(
+            this.tagNames()
+        )
+            .then(
+                res => this.tags.set(res),
+                rej => console.warn('', rej)
+            );
+
+        await Promise.all([searchPhotosPromise, tagsPromise])
             .finally(() => this.isLoading.set(true));
     }
 
     // Update main-page data, incl. pagination-related parameters
-    public async update(event?: PageEvent): Promise<void> {
+    public searchParametersSideEffect = effect(() => {
+        void this.refetch();
+    });
+
+    public async update(params?: SearchPhotosParameters): Promise<void> {
+        if (params) {
+            this.searchParameters.set(params);
+        }
+
+        await this.refetch();
+    }
+
+    // Update pagination-related parameters
+    public async pagination(event?: PageEvent): Promise<void> {
         if (event) {
             this.searchParameters.update(params => {
                 params.limit = event.pageSize;
                 params.offset = event.pageIndex;
                 return params;
             });
+
+            await this.refetch();
+        }
+    }
+
+    // Selects what function to use to fetch tags, based on the user's permissions. 
+    public get view() {
+        return this.auth(AuthService.VIEW);
+    }
+    public get viewAll() {
+        return this.auth(AuthService.VIEW_ALL);
+    }
+    public get create() {
+        return this.auth(AuthService.CREATE);
+    }
+    public get delete() {
+        return this.auth(AuthService.DELETE);
+    }
+    public get administrate() {
+        return this.auth(AuthService.ADMIN);
+    }
+    public auth(privilege: number): boolean {
+        const me = this.me();
+        if (!me) {
+            return false;
         }
 
-        await this.refetch();
+        return AuthService.Can(this.me()).CheckPrivilege(privilege);
+    }
+
+    // Selects what function to use to fetch tags, based on the user's permissions. 
+    public getOrCreateTags(tagNames: string[]): Promise<ITagDTO[]> {
+        if (AuthService.Can(this.me()).Create()) {
+            return this.tagsService.createTags(tagNames);
+        }
+
+        return this.tagsService.getTagsByNames(tagNames);
     }
 }
