@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, model, output, signal, untracked } from '@angular/core';
+import { Component, effect, inject, input, model, output, signal } from '@angular/core';
 import { PhotoTagsInputComponent } from './tags/photo-tags-input.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
@@ -124,9 +124,7 @@ export class PhotoSearchbarComponent {
      */
     private readonly computeSearchParameters = (): SearchPhotosParameters => {
         let parameters: SearchPhotosParameters = {
-            ...this.queryParameters(),
-            offset: this.searchOffset(),
-            limit: this.searchLimit(),
+            ...this.searchParameters(),
             tags: this.tags()
         };
 
@@ -159,11 +157,11 @@ export class PhotoSearchbarComponent {
     public readonly triggerSearch = () => {
         const parameters = this.computeSearchParameters();
 
-        if (untracked(this.lastParameters) === parameters) {
+        /* if (untracked(this.lastParameters) === parameters) {
             return;
-        }
+        } */
 
-        this.lastParameters.set(parameters);
+        // this.lastParameters.set(parameters);
         this.searchEvent.emit(parameters);
     };
 

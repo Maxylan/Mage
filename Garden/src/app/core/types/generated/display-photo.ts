@@ -6,8 +6,8 @@ import { IFilepathDTO } from './filepath-dto';
 
 export type DisplayPhoto = {
     photoId: number | null,
-    slug: string,
-    title: string,
+    slug: string | null,
+    title: string | null,
     summary: string | null,
     description: string | null,
     uploadedAt: Date,

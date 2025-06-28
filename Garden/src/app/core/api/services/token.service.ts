@@ -1,7 +1,8 @@
-import { Injectable, Signal, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { HashedUserDetails } from '../../types/auth';
 import { Session } from '../../types/generated/session';
 import ApiBase from '../../classes/base.class';
+import { ISessionDTO } from '../../types/generated/session-dto';
 
 @Injectable({
     providedIn: 'root'
@@ -11,8 +12,13 @@ export class TokenService {
     public static readonly STORED_SESSION = 'mage-stored-usr';
     public static readonly STORED_CREDENTIALS = 'mage-stored-creds';
 
+    private token: string|null = null;
+    public get sessionToken() {
+        return (this.token || this.session()?.code) ?? null;
+    }
+
     public readonly isLoading = signal<boolean>(false);
-    protected readonly sessionToken = signal<string|null>(
+    protected readonly storedSession = signal<string|null>(
         localStorage.getItem(TokenService.STORED_SESSION)
     );
 
@@ -20,24 +26,43 @@ export class TokenService {
         localStorage.getItem(TokenService.STORED_CREDENTIALS)
     );
 
+    protected readonly session = computed<ISessionDTO|null>(() => {
+        const stringifiedStoredSession = this.storedSession();
+        if (!stringifiedStoredSession) {
+            return null;
+        }
+
+        let session: ISessionDTO|null = null;
+        try {
+            session = JSON.parse(stringifiedStoredSession);
+            if (session?.code) {
+                this.token = session?.code;
+            }
+        }
+        catch(err) {
+            console.error('Failed to parse stored session!', err);
+        }
+
+        return session;
+    });
+
     /**
      * Get the token.
      */
-    public get getToken(): Signal<string|null> {
+    public get getToken(): string|null {
         // Attempt to consume one from an URL, probably won't be successfully, but doesn't hurt.
         this.consumeToken();
 
-        const token = this.sessionToken();
-        if (!token) {
+        if (!this.sessionToken) {
             const localStorageSession = 
                 localStorage.getItem(TokenService.STORED_SESSION);
 
             if (localStorageSession) {
-                this.sessionToken.set(localStorageSession);
+                this.storedSession.set(localStorageSession);
             }
         }
 
-        return this.sessionToken.asReadonly();
+        return this.sessionToken;
     }
 
     /**
@@ -143,7 +168,7 @@ export class TokenService {
                     }
 
                     localStorage.setItem(TokenService.STORED_SESSION, session.code!);
-                    this.sessionToken.set(session.code);
+                    this.storedSession.set(JSON.stringify(parsed));
 
                     return session;
                 }
@@ -208,11 +233,25 @@ export class TokenService {
         ] = location.href.split('#');
 
         if (token) {
-            this.sessionToken.set(
-                token.replace(/^#?@?/, '')
-            );
-
+            this.token = token.replace(/^#?@?/, '');
             window.history.replaceState(null, '', url);
+
+            const session = this.session();
+            if (!session) {
+                return;
+            }
+
+            try {
+                const stringified = JSON.stringify({
+                    ...session,
+                    code: this.token
+                });
+
+                this.storedSession.set(stringified);
+            }
+            catch(err) {
+                console.error('Failed to update stored session `code` with token extracted from URL!', err);
+            }
         }
     }
 

@@ -1,7 +1,8 @@
 import { Client } from './client';
 import { Account } from './account';
+import { ISessionDTO } from './session-dto';
 
-export type Session = {
+export type Session = ISessionDTO & {
     id: number,
     accountId: number,
     clientId: number,

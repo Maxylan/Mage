@@ -218,7 +218,7 @@ export class AppLoginComponent {
         location.href = '/garden#@' + session.code;
     }
 
-    private async sendLoginRequest(creds: HashedUserDetails): Promise<Session> {
+    private async sendLoginRequest(creds: HashedUserDetails): Promise<ISessionDTO> {
         const body = JSON.stringify(creds);
 
         return await fetch(AppLoginComponent.API_URL + '/auth/login', {

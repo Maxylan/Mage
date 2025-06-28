@@ -1,10 +1,11 @@
 import { Client } from './client';
 import { Session } from './session';
+import { Photo } from './photo';
 import { PublicLink } from './public-link';
 import { FavoritePhotoRelation } from './favorite-photo-relation';
 import { FavoriteAlbumRelation } from './favorite-album-relation';
 import { Category } from './category';
-import { Photo } from './photo';
+import { IPhotoDTO } from './photo-dto';
 import { Album } from './album';
 
 export interface IAccountDTO {
@@ -30,7 +31,7 @@ export interface IAccountDTO {
     avatarId?: number | null,
     albumsCreated?: Album[] | null,
     albumsUpdated?: Album[] | null,
-    avatar: Photo,
+    avatar: IPhotoDTO,
     createdCategories?: Category[] | null,
     updatedCategories?: Category[] | null,
     favoriteAlbums?: FavoriteAlbumRelation[] | null,

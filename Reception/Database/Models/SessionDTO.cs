@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -28,11 +27,9 @@ public class SessionDTO : Session, IDataTransferObject<Session>
     public new DateTime ExpiresAt { get; set; }
     */
 
-    [JsonIgnore, SwaggerIgnore]
-    public new Account Account { get; set; } = null!;
+    public new AccountDTO Account { get; set; } = null!;
 
-    [JsonIgnore, SwaggerIgnore]
-    public new Client Client { get; set; } = null!;
+    public new ClientDTO Client { get; set; } = null!;
 
     /// <summary>
     /// Convert this <see cref="SessionDTO"/> instance to its <see cref="Session"/> equivalent.

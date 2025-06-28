@@ -2,7 +2,10 @@ import { inject, signal } from '@angular/core';
 import { TokenService } from '../api/services/token.service';
 
 export default abstract class ApiBase {
-    public static readonly API_URL: string = '/reception';
+    public static readonly API_URL: string = (() => {
+        const currentUrl = new URL(window.location.href);
+        return `${currentUrl.protocol}//${currentUrl.hostname}/reception`;
+    })();
 
     public readonly isLoading = signal<boolean>(false);
 
@@ -12,7 +15,7 @@ export default abstract class ApiBase {
      * Get the token from `{TokenService}`.
      */
     protected get token(): string|null {
-        return this.tokenService.getToken();
+        return this.tokenService.getToken;
     };
 
     /**

@@ -1,5 +1,5 @@
-import { Account } from './account';
-import { Session } from './session';
+import { IAccountDTO } from './account-dto';
+import { ISessionDTO } from './session-dto';
 import { BanEntry } from './ban-entry';
 
 export interface IClientDTO {
@@ -20,6 +20,6 @@ export interface IClientDTO {
     createdAt: Date,
     lastVisit: Date,
     banEntries?: BanEntry[] | null,
-    sessions?: Session[] | null,
-    accounts?: Account[] | null,
+    sessions?: ISessionDTO[] | null,
+    accounts?: IAccountDTO[] | null,
 }

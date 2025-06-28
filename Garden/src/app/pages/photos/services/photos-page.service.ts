@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, signal, untracked } from "@angular/core";
 import { AuthService } from "../../../core/api/services/auth.service";
 import { TagsService } from "../../../core/api/services/tags.service";
 import { PhotosService } from "../../../core/api/services/photos.service";
@@ -52,7 +52,7 @@ export class PhotosPageService extends PageBase {
     public async refetch(): Promise<void> {
         this.isLoading.set(true);
         this.photos.set([]);
-        this.photos.set([]);
+        this.tags.set([]);
 
         const myAccount = await this.authService.me();
         if (!myAccount) {
@@ -61,8 +61,9 @@ export class PhotosPageService extends PageBase {
 
         this.me.set(myAccount);
 
+        const searchParameters = untracked(this.searchParameters);
         const searchPhotosPromise = this.photosService
-            .searchDisplayPhotos(this.searchParameters())
+            .searchDisplayPhotos(searchParameters)
             .then(
                 res => this.photos.set(res),
                 rej => console.warn('', rej)
@@ -76,25 +77,36 @@ export class PhotosPageService extends PageBase {
                 rej => console.warn('', rej)
             );
 
-        await Promise.all([searchPhotosPromise, tagsPromise])
-            .finally(() => this.isLoading.set(true));
+        await Promise.all([
+            searchPhotosPromise,
+            tagsPromise
+        ])
+            .finally(() => this.isLoading.set(false));
     }
 
     // Update main-page data, incl. pagination-related parameters
-    public searchParametersSideEffect = effect(() => {
-        void this.refetch();
+    private runs: number = 0;
+    public searchParametersSideEffect = effect(cleanup => {
+        const isLoading = untracked(this.isLoading);
+        console.log('searchParametersSideEffect ' + ++this.runs, '- isLoading', isLoading);
+        if (isLoading) {
+            cleanup(this.refetch);
+        }
+        else {
+            void this.refetch();
+        }
     });
 
-    public async update(params?: SearchPhotosParameters): Promise<void> {
+    public /* async */ update(params?: SearchPhotosParameters): void /* Promise<void> */ {
         if (params) {
             this.searchParameters.set(params);
         }
 
-        await this.refetch();
+        // await this.refetch();
     }
 
     // Update pagination-related parameters
-    public async pagination(event?: PageEvent): Promise<void> {
+    public /* async */ pagination(event?: PageEvent): void /* Promise<void> */ {
         if (event) {
             this.searchParameters.update(params => {
                 params.limit = event.pageSize;
@@ -102,7 +114,7 @@ export class PhotosPageService extends PageBase {
                 return params;
             });
 
-            await this.refetch();
+            // await this.refetch();
         }
     }
 

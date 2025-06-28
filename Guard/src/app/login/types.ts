@@ -23,7 +23,7 @@ export type Client = {
     lastVisit: Date,
     banEntries: BanEntry[],
     /*
-    sessions: [null],
+    sessions: ISessionDTO[],
     accounts: []
     */
 }
@@ -52,7 +52,7 @@ export type Account = {
     */
 }
 
-export type Session = {
+export type Session = ISessionDTO & {
     id: number,
     accountId: number,
     clientId: number,
@@ -61,4 +61,15 @@ export type Session = {
     expiresAt: string,
     client: Client,
     account: Account
+};
+
+export interface ISessionDTO {
+    id?: number,
+    accountId: number,
+    clientId: number,
+    code: string,
+    createdAt: string,
+    expiresAt: string,
+    client?: Client|null,
+    account?: Account|null
 }

@@ -1,7 +1,8 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
-using Reception.Caching;
 using Reception.Interfaces;
 using Reception.Interfaces.DataAccess;
 using Reception.Middleware;
@@ -181,6 +182,17 @@ public sealed class Program
                     Console.WriteLine("Swagger Path: " + opts.RoutePrefix);
                 });
             }
+
+            app.UseCors(options => {
+                options.AllowAnyHeader();
+                options.WithOrigins("https://torpssons.se", "http://localhost", "http://localhost:4200");
+            });
+        }
+        else {
+            app.UseCors(options => {
+                options.WithHeaders(Reception.Middleware.Authentication.Constants.SESSION_TOKEN_HEADER);
+                options.WithOrigins("https://torpssons.se");
+            });
         }
 
         app.UseForwardedHeaders();

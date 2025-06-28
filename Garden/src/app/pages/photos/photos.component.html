@@ -14,7 +14,7 @@
             @if (photo.photoId && page.auth(photo.requiredPrivilege)) {
                 <app-card
                     [id]="photo.photoId"
-                    [title]="photo.title"
+                    [title]="photo.title ?? 'Untitled'"
                     [summary]="photo.summary"
                     [isHandset]="page.isHandset()"
                     (deselect)="page.selectionObserver.deselectItems($event)"

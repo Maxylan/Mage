@@ -38,7 +38,7 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<Account>> Me()
+    public async Task<ActionResult<AccountDTO>> Me()
     {
         var sessionValidation = await authorization.ValidateSession(Source.EXTERNAL);
         var session = sessionValidation.Value;
@@ -73,7 +73,7 @@ public class AuthController(
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionDetails([FromRoute] int id)
+    public async Task<ActionResult<SessionDTO>> GetSessionDetails([FromRoute] int id)
     {
         await sessions.CleanupSessions(); // Do a little cleaning first..
         var getSession = await sessions.GetSessionById(id);
@@ -98,7 +98,7 @@ public class AuthController(
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Session>> GetSessionDetailsByCode([FromRoute] string session)
+    public async Task<ActionResult<SessionDTO>> GetSessionDetailsByCode([FromRoute] string session)
     {
         await sessions.CleanupSessions(); // Do a little cleaning first..
         var getSession = await sessions.GetSession(session);
@@ -121,6 +121,26 @@ public class AuthController(
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<IStatusCodeActionResult>(StatusCodes.Status408RequestTimeout)]
-    public async Task<ActionResult<Session>> Login([FromBody] Login body) =>
-        await authorization.Login(body.Username, body.Hash);
+    public async Task<ActionResult<SessionDTO>> Login([FromBody] Login body) {
+        var getSession = await authorization.Login(body.Username, body.Hash);
+        if (getSession.Value is null) {
+            return getSession.Result!;
+        }
+
+        var dto = (SessionDTO)getSession.Value;
+        if (dto.Account.Sessions is not null) {
+            dto.Account.Sessions = Array.Empty<Session>();
+        }
+        if (dto.Account.Clients is not null) {
+            dto.Account.Clients = Array.Empty<Client>();
+        }
+        if (dto.Client.Sessions is not null) {
+            dto.Client.Sessions = Array.Empty<SessionDTO>();
+        }
+        if (dto.Client.Accounts is not null) {
+            dto.Client.Accounts = Array.Empty<AccountDTO>();
+        }
+        
+        return dto;
+    }
 }

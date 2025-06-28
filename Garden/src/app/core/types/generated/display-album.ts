@@ -13,7 +13,7 @@ export type DisplayAlbum = {
     thumbnail: DisplayPhoto,
     categoryId: number | null,
     category: ICategoryDTO,
-    title: string,
+    title: string | null,
     summary: string | null,
     description: string | null,
     createdAt: Date,

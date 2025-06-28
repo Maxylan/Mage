@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Reception.Database.Models;
 
@@ -36,13 +37,11 @@ public class ClientDTO : Client, IDataTransferObject<Client>
     /*
     [JsonIgnore, SwaggerIgnore]
     public new ICollection<BanEntry> BanEntries { get; set; } = new List<BanEntry>();
-
-    [JsonIgnore, SwaggerIgnore]
-    public new ICollection<Session> Sessions { get; set; } = new List<Session>();
-
-    [JsonIgnore, SwaggerIgnore]
-    public new ICollection<Account> Accounts { get; set; } = new List<Account>();
     */
+
+    public new ICollection<SessionDTO>? Sessions { get; set; }
+
+    public new ICollection<AccountDTO>? Accounts { get; set; }
 
     /// <summary>
     /// Convert this <see cref="ClientDTO"/> instance to its <see cref="Client"/> equivalent.
@@ -58,8 +57,8 @@ public class ClientDTO : Client, IDataTransferObject<Client>
         LastVisit = this.LastVisit,
         // Navigations
         BanEntries = this.BanEntries,
-        Sessions = this.Sessions,
-        Accounts = this.Accounts
+        Sessions = this.Sessions!.Select(s => (SessionDTO)s).ToArray(),
+        Accounts = this.Accounts!.Select(a => (AccountDTO)a).ToArray()
     };
 
     /// <summary>

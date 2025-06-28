@@ -43,10 +43,11 @@ public class AccountDTO : Account, IDataTransferObject<Account>
 
     [JsonIgnore, SwaggerIgnore]
     public new ICollection<Album> AlbumsUpdated { get; set; } = new List<Album>();
+    */
 
-    [JsonIgnore, SwaggerIgnore]
-    public new Photo? Avatar { get; set; }
+    public new PhotoDTO? Avatar { get; set; }
 
+    /*
     [JsonIgnore, SwaggerIgnore]
     public new ICollection<Category> CreatedCategories { get; set; } = new List<Category>();
 

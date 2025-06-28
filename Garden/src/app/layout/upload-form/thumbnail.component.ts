@@ -14,7 +14,7 @@ export type MenuEvent = [string, number];
 export class UploadCardThumbnailComponent {
     private readonly photoService = inject(PhotosService);
 
-    public readonly photoId = input.required<number>();
+    public readonly file = input.required<File>();
     public readonly alt = input<string>();
 
     public readonly source = signal<string|null>(null);
